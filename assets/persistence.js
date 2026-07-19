@@ -98,3 +98,9 @@ export async function replaceWithFreshDraft(repository, current, storage = local
     storage.setItem(ACTIVE_DRAFT_POINTER_KEY, fresh.draftId);
     return fresh;
 }
+export async function replaceWithImportedDraft(repository, current, imported, storage = localStorage) {
+    const restored = normalizeDraft(imported);
+    await repository.replaceDraft(current.draftId, restored);
+    storage.setItem(ACTIVE_DRAFT_POINTER_KEY, restored.draftId);
+    return restored;
+}

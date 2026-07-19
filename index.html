@@ -13,7 +13,8 @@
   <header class="topbar">
     <div class="brand"><span class="brand__mark" aria-hidden="true"><i></i></span><div><strong>Musikraum Werkzeug</strong><span>Die Website von Franz – einfach anpassbar</span></div></div>
     <div class="topbar__actions">
-      <span id="saveStatus" class="status-pill" aria-live="polite">Lokal gespeichert</span>
+      <span id="saveStatus" class="status-pill" aria-live="polite">Auf diesem Gerät gespeichert</span>
+      <div class="history-actions" role="group" aria-label="Änderungen"><button id="undoButton" class="button button--quiet button--compact" type="button" data-action="undo" disabled title="Rückgängig (Strg oder Cmd + Z)">↶ <span>Rückgängig</span></button><button id="redoButton" class="button button--quiet button--compact" type="button" data-action="redo" disabled title="Wiederholen (Umschalt + Strg oder Cmd + Z)">↷ <span>Wiederholen</span></button></div>
       <button class="button button--quiet" type="button" data-action="reset">Zurücksetzen</button>
       <button class="button button--primary" type="button" data-action="export">HTML exportieren</button>
     </div>
@@ -22,7 +23,7 @@
   <main id="builder-main" class="workspace">
     <aside class="control-surface" aria-label="Musikraum-Website bearbeiten">
       <nav class="surface-nav" aria-label="Bearbeitungsbereiche">
-        <button class="surface-nav__item is-active" type="button" data-panel-target="site">Grundlage</button>
+        <button class="surface-nav__item is-active" type="button" data-panel-target="site" aria-current="step">Grundlage</button>
         <button class="surface-nav__item" type="button" data-panel-target="hero">Einstieg</button>
         <button class="surface-nav__item" type="button" data-panel-target="content">Inhalte</button>
         <button class="surface-nav__item" type="button" data-panel-target="services">Angebote</button>
@@ -32,7 +33,7 @@
         <button class="surface-nav__item" type="button" data-panel-target="publish">Fertig</button>
       </nav>
 
-      <div class="surface-stage"><div id="surfaceCard" class="surface-card">
+      <div class="surface-stage"><p id="panelStatus" class="panel-status" aria-live="polite">Schritt 1 von 8: Grundlage</p><div id="surfaceCard" class="surface-card">
         <section class="panel is-active" data-panel="site" aria-labelledby="panel-site-title">
           <div class="panel__header"><p class="eyebrow">Die Website</p><h1 id="panel-site-title">Musikraum</h1><p>Hier stehen Name und kurzer Leitsatz. Änderungen erscheinen sofort rechts in der Vorschau.</p></div>
           <label class="field"><span>Name der Website</span><input type="text" data-bind="site.name" autocomplete="organization" required></label>
@@ -92,7 +93,7 @@
         <section class="panel" data-panel="publish" aria-labelledby="panel-publish-title" hidden>
           <div class="panel__header"><p class="eyebrow">Mitnehmen</p><h2 id="panel-publish-title">Die Website ist bereit</h2><p>Das Werkzeug prüft die wichtigsten Inhalte. Danach erhältst du eine einzelne HTML-Datei, die direkt gehostet werden kann.</p></div>
           <div id="readinessList" class="readiness-list"></div>
-          <div class="publish-actions"><button class="button button--primary button--large" type="button" data-action="export">Website als HTML exportieren</button><button class="button button--quiet" type="button" data-action="copy-draft">Entwurf als Sicherung kopieren</button></div>
+          <div class="publish-actions"><button class="button button--primary button--large" type="button" data-action="export">Website als HTML exportieren</button><button class="button button--quiet" type="button" data-action="download-backup">Sicherung herunterladen</button><button class="button button--quiet" type="button" data-action="restore-backup">Sicherung wiederherstellen</button><input id="backupInput" class="visually-hidden" type="file" accept="application/json,.json" aria-label="Musikraum-Sicherung auswählen"></div>
           <p class="privacy-note">Texte und Reihenfolge werden lokal in diesem Browser gespeichert. Das Titelbild ist vorgegeben, bis die Bildverwaltung ergänzt wird.</p>
         </section>
       </div></div>

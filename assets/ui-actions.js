@@ -1,5 +1,5 @@
-import { PRESETS, createId, slugify } from "./domain.js";
-import { replaceWithFreshDraft } from "./persistence.js";
+import { PRESETS, createId, normalizeDraft, slugify } from "./domain.js";
+import { replaceWithFreshDraft, replaceWithImportedDraft } from "./persistence.js";
 import { buildWebsiteHtml, MUSICRAUM_HERO_URL } from "./website.js";
 import { inputValue, setAtPath } from "./ui-shared.js";
 import { bindStaticInputs, renderDynamicControls, renderOffers, renderPreview, renderStructure, setViewport, showPanel, showToast, syncPresetInputs, updateReadiness } from "./ui-render.js";
@@ -37,8 +37,14 @@ export function handleClick(context, event) {
         removeOffer(context, actionButton.closest("[data-offer-card]")?.dataset.offerId ?? "");
     if (action === "export")
         void exportHtml(context);
-    if (action === "copy-draft")
-        void copyDraftData(context);
+    if (action === "download-backup")
+        downloadBackup(context);
+    if (action === "restore-backup")
+        context.backupInput.click();
+    if (action === "undo")
+        undo(context);
+    if (action === "redo")
+        redo(context);
     if (action === "reset")
         void resetBuilder(context);
 }
@@ -46,6 +52,10 @@ export function handleInput(context, event) {
     const target = event.target;
     if (!(target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement))
         return;
+    if (target === context.backupInput && target.files?.[0]) {
+        void restoreBackup(context, target.files[0]);
+        return;
+    }
     if (target.matches("[data-layout-visible]")) {
         const key = target.closest("[data-section-key]")?.dataset.sectionKey;
         if (!key)
@@ -59,7 +69,7 @@ export function handleInput(context, event) {
     const bind = target.dataset.bind;
     if (bind) {
         try {
-            context.store.mutate((draft) => setAtPath(draft, bind, inputValue(target)));
+            context.store.mutate((draft) => setAtPath(draft, bind, inputValue(target)), `field:${bind}`);
         }
         catch (error) {
             console.error(error);
@@ -70,7 +80,7 @@ export function handleInput(context, event) {
     const card = target.closest("[data-offer-card]");
     if (field && card?.dataset.offerId) {
         context.store.mutate((draft) => { const offer = draft.offers.find((item) => item.id === card.dataset.offerId); if (offer)
-            offer[field] = target.value; });
+            offer[field] = target.value; }, `offer:${card.dataset.offerId}:${field}`);
         if (field === "title") {
             const number = card.querySelector("[data-offer-number]");
             const index = context.store.snapshot.offers.findIndex((offer) => offer.id === card.dataset.offerId);
@@ -90,44 +100,66 @@ function moveSection(context, button) {
 }
 function addOffer(context) { context.store.mutate((draft) => { draft.offers.push({ id: createId("offer"), title: "Neuer Klangmoment", text: "" }); }); renderOffers(context); }
 function removeOffer(context, id) { if (!id)
-    return; context.store.mutate((draft) => { draft.offers = draft.offers.filter((offer) => offer.id !== id); }); renderOffers(context); }
+    return; const offer = context.store.snapshot.offers.find((item) => item.id === id); if (!offer)
+    return; const meaningful = offer.title.trim() || offer.text.trim(); if (meaningful && !window.confirm(`„${offer.title.trim() || "Dieser Klangmoment"}“ wirklich entfernen? Du kannst den Schritt danach rückgängig machen.`))
+    return; context.store.mutate((draft) => { draft.offers = draft.offers.filter((item) => item.id !== id); }); renderOffers(context); showToast("Klangmoment entfernt. Rückgängig ist weiterhin möglich."); }
 function applyPreset(context, name) { const preset = PRESETS[name]; if (!preset)
     return; context.store.mutate((draft) => { draft.theme.preset = name; draft.theme.primary = preset.primary; draft.theme.accent = preset.accent; }); syncPresetInputs(context, name); }
 async function exportHtml(context) {
+    const buttons = [...document.querySelectorAll('[data-action="export"]')];
+    const labels = buttons.map((button) => button.textContent ?? "");
+    buttons.forEach((button) => { button.disabled = true; button.textContent = "Export wird vorbereitet …"; });
     let heroImageUrl = MUSICRAUM_HERO_URL;
+    let embedded = true;
     try {
         heroImageUrl = await fetchAsDataUrl(MUSICRAUM_HERO_URL);
     }
     catch (error) {
+        embedded = false;
         console.warn("Das Titelbild konnte nicht eingebettet werden.", error);
     }
-    const html = buildWebsiteHtml(context.store.snapshot, { heroImageUrl });
-    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `${slugify(context.store.snapshot.site.name || "musikraum")}.html`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 0);
-    showToast("Deine Website wurde als einzelne HTML-Datei exportiert.");
+    try {
+        const html = buildWebsiteHtml(context.store.snapshot, { heroImageUrl });
+        downloadBlob(new Blob([html], { type: "text/html;charset=utf-8" }), `${slugify(context.store.snapshot.site.name || "musikraum")}.html`);
+        showToast(embedded ? "Website fertig: Eine vollständige HTML-Datei wurde heruntergeladen." : "Website exportiert. Das Titelbild benötigt beim Öffnen eine Internetverbindung.");
+    }
+    finally {
+        buttons.forEach((button, index) => { button.disabled = false; button.textContent = labels[index] ?? "HTML exportieren"; });
+    }
 }
 async function fetchAsDataUrl(url) { const response = await fetch(url); if (!response.ok)
     throw new Error(`ASSET_FETCH_FAILED:${response.status}`); const blob = await response.blob(); return await new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result)); reader.onerror = () => reject(reader.error ?? new Error("ASSET_READ_FAILED")); reader.readAsDataURL(blob); }); }
-async function copyDraftData(context) { try {
-    await navigator.clipboard.writeText(JSON.stringify(context.store.snapshot, null, 2));
-    showToast("Deine Musikraum-Sicherung wurde kopiert.");
+function downloadBlob(blob, filename) { const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.href = url; link.download = filename; document.body.appendChild(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 0); }
+function downloadBackup(context) { const name = slugify(context.store.snapshot.site.name || "musikraum"); downloadBlob(new Blob([JSON.stringify(context.store.snapshot, null, 2)], { type: "application/json;charset=utf-8" }), `${name}-sicherung.json`); showToast("Sicherung heruntergeladen. Bewahre die JSON-Datei gut auf."); }
+async function restoreBackup(context, file) { try {
+    const parsed = JSON.parse(await file.text());
+    const restored = normalizeDraft(parsed);
+    await replaceWithImportedDraft(context.repository, context.store.snapshot, restored);
+    context.store.replace(restored, false);
+    bindStaticInputs(context);
+    renderDynamicControls(context);
+    renderPreview(context);
+    updateReadiness(context);
+    showPanel(context, "site");
+    showToast("Sicherung wiederhergestellt. Prüfe kurz die Vorschau.");
 }
-catch {
-    showToast("Kopieren wurde vom Browser blockiert.");
+catch (error) {
+    console.error(error);
+    showToast("Diese Datei ist keine gültige Musikraum-Sicherung.");
+}
+finally {
+    context.backupInput.value = "";
 } }
+function undo(context) { if (!context.store.undo())
+    return; bindStaticInputs(context); renderDynamicControls(context); showToast("Letzte Änderung rückgängig gemacht."); }
+function redo(context) { if (!context.store.redo())
+    return; bindStaticInputs(context); renderDynamicControls(context); showToast("Änderung wiederhergestellt."); }
 async function resetBuilder(context) {
     if (!window.confirm("Alle eigenen Änderungen verwerfen und zum Musikraum-Ausgangspunkt zurückkehren?"))
         return;
     try {
         const fresh = await replaceWithFreshDraft(context.repository, context.store.snapshot);
-        context.store.replace(fresh, false);
+        context.store.replace(fresh, false, false);
         bindStaticInputs(context);
         renderDynamicControls(context);
         renderPreview(context);

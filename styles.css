@@ -94,6 +94,7 @@ button { color: inherit; }
   transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease, background .16s ease;
 }
 .button:hover { transform: translateY(-1px); border-color: #bcb5ad; box-shadow: 0 8px 20px rgba(34, 27, 22, .08); }
+.button:disabled { opacity: .45; cursor: default; transform: none; box-shadow: none; }
 .button:focus-visible, .surface-nav__item:focus-visible, .preset-card:focus-visible, .viewport-switch__button:focus-visible, .icon-button:focus-visible {
   outline: 3px solid rgba(124, 92, 77, .28);
   outline-offset: 2px;
@@ -102,6 +103,9 @@ button { color: inherit; }
 .button--primary:hover { border-color: var(--accent-dark); background: var(--accent-dark); }
 .button--quiet { background: transparent; }
 .button--large { width: 100%; min-height: 50px; }
+.button--compact { min-height: 38px; padding: 7px 10px; }
+.history-actions { display: flex; gap: 4px; }
+.visually-hidden { position: absolute !important; width: 1px !important; height: 1px !important; padding: 0 !important; margin: -1px !important; overflow: hidden !important; clip: rect(0, 0, 0, 0) !important; white-space: nowrap !important; border: 0 !important; }
 
 .workspace {
   display: grid;
@@ -140,6 +144,7 @@ button { color: inherit; }
 .surface-nav__item.is-active { background: var(--paper); color: var(--accent-dark); box-shadow: 0 6px 18px rgba(40, 32, 24, .08); }
 
 .surface-stage { overflow: hidden auto; perspective: 1400px; }
+.panel-status { margin: 0; padding: 10px 24px 0; color: var(--muted); font-size: 11px; font-weight: 800; letter-spacing: .04em; }
 .surface-card {
   min-height: 100%;
   padding: 24px;
@@ -300,6 +305,9 @@ button { color: inherit; }
   .topbar { align-items: flex-start; }
   .brand span { display: none; }
   .status-pill { display: none; }
+  .history-actions .button span { display: none; }
+  .history-actions .button { width: 38px; padding-inline: 0; font-size: 18px; }
+  .topbar__actions > [data-action="reset"] { display: none; }
   .workspace { display: block; }
   .control-surface { grid-template-columns: 1fr; }
   .surface-nav { position: sticky; top: 72px; z-index: 30; flex-direction: row; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--line); padding: 8px; }
