@@ -10,6 +10,7 @@
 </head>
 <body>
   <a class="skip-link" href="#builder-main">Zum Werkzeug springen</a>
+  <div id="editorAnnouncer" class="visually-hidden" aria-live="polite"></div>
   <header class="topbar">
     <div class="brand"><span class="brand__mark" aria-hidden="true"><img src="logo.svg" alt=""></span><div class="brand__copy"><strong>Musikraum Werkzeug</strong><span>Franz’ Website einfach bearbeiten</span></div></div>
     <div class="topbar__actions">
@@ -102,8 +103,8 @@
     </aside>
 
     <section class="preview-area" aria-label="Live-Vorschau">
-      <div class="preview-toolbar"><div><strong>Live-Vorschau</strong><span id="previewHint">Desktop</span></div><div class="viewport-switch" role="group" aria-label="Vorschaugrösse"><button class="viewport-switch__button is-active" type="button" data-viewport="desktop">Desktop</button><button class="viewport-switch__button" type="button" data-viewport="tablet">Tablet</button><button class="viewport-switch__button" type="button" data-viewport="mobile">Mobile</button></div></div>
-      <div class="preview-desk"><iframe id="previewFrame" title="Vorschau der Musikraum-Website" sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"></iframe></div>
+      <div class="preview-toolbar"><div><strong>Live-Vorschau</strong><span class="preview-meta"><span id="previewHint">Desktop</span> · Text anklicken zum Bearbeiten</span></div><div class="viewport-switch" role="group" aria-label="Vorschaugrösse"><button class="viewport-switch__button is-active" type="button" data-viewport="desktop">Desktop</button><button class="viewport-switch__button" type="button" data-viewport="tablet">Tablet</button><button class="viewport-switch__button" type="button" data-viewport="mobile">Mobile</button></div></div>
+      <div class="preview-desk"><iframe id="previewFrame" title="Vorschau der Musikraum-Website" sandbox="allow-scripts"></iframe></div>
     </section>
   </main>
 

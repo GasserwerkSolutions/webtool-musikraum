@@ -38,7 +38,7 @@ export function renderStructure(context: UiContext): void {
 
 export function renderPresets(context: UiContext): void { document.querySelectorAll<HTMLElement>("[data-preset]").forEach((button) => { const active = button.dataset.preset === context.store.snapshot.theme.preset; button.classList.toggle("is-active", active); button.setAttribute("aria-checked", String(active)); }); }
 export function syncPresetInputs(context: UiContext, name: ThemePresetName): void { const preset = PRESETS[name]; const primary = document.querySelector<HTMLInputElement>('[data-bind="theme.primary"]'); const accent = document.querySelector<HTMLInputElement>('[data-bind="theme.accent"]'); if (primary) primary.value = preset.primary; if (accent) accent.value = preset.accent; renderPresets(context); }
-export function renderPreview(context: UiContext): void { context.previewFrame.srcdoc = buildWebsiteHtml(context.store.snapshot as MusicraumDraft); }
+export function renderPreview(context: UiContext): void { if (context.previewTimer) { clearTimeout(context.previewTimer); context.previewTimer = null; } const instanceId = crypto.randomUUID(); context.previewInstanceId = instanceId; context.previewFrame.srcdoc = buildWebsiteHtml(context.store.snapshot as MusicraumDraft, { preview: true, previewInstanceId: instanceId, parentOrigin: location.origin === "null" ? "*" : location.origin, previewScroll: context.previewScroll }); }
 export function schedulePreview(context: UiContext): void { if (context.previewTimer) clearTimeout(context.previewTimer); context.previewTimer = setTimeout(() => renderPreview(context), 80); }
 
 export function updateReadiness(context: UiContext): void {

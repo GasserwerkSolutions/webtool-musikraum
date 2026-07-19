@@ -12,6 +12,7 @@ Ein bewusst einfaches, persönliches Website-Werkzeug für Franz Gasser. Datenmo
 - Kontaktangaben und Abschluss
 - vier kuratierte Farbwelten
 - responsive Live-Vorschau für Desktop, Tablet und Mobiltelefon
+- direkte Bearbeitung: Ein Klick auf sichtbaren Text öffnet exakt das zugehörige Feld
 - ruhige Vorschau-Aktualisierung nach abgeschlossener Texteingabe, damit das feste Titelbild beim Schreiben stabil bleibt
 - Rückgängig/Wiederholen per Knopf oder Tastatur
 - herunterladbare und wieder einlesbare Entwurfssicherung
@@ -36,5 +37,7 @@ python3 -m http.server 8080
 Danach `http://localhost:8080` öffnen.
 
 Die TypeScript-Quellen liegen unter `src/`; die kompilierten, statisch auslieferbaren Browsermodule unter `assets/` werden bewusst mitcommittet.
+
+Die Editorvorschau und der HTML-Export entstehen aus demselben Renderer. Nur `preview: true` ergänzt die kurzlebigen Zielkennungen, das versionierte Nachrichtenprotokoll und die Bedienhilfen. Der Export enthält diese Editorbestandteile von Anfang an nicht. Die Funktion verändert das Entwurfsschema nicht.
 
 Nach dem Zusammenführen kann das Werkzeug direkt über GitHub Pages ausgeliefert werden.
