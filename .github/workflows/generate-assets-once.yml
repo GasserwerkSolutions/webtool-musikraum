@@ -1,0 +1,34 @@
+name: Generate browser assets once
+
+on:
+  push:
+    branches: [agent/harden-export-and-inputs]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/harden-export-and-inputs
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Commit generated assets
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets
+          if git diff --cached --quiet; then
+            echo "Assets already current"
+          else
+            git commit -m "Build browser assets"
+            git push origin HEAD:agent/harden-export-and-inputs
+          fi
