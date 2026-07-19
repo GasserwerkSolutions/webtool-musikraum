@@ -12,6 +12,7 @@ export class BuilderStore {
   private listeners = new Set<StoreListener>();
   private saveListeners = new Set<SaveListener>();
   private saveChain: Promise<void> = Promise.resolve();
+  private saveGeneration = 0;
   private undoStack: MusicraumDraft[] = [];
   private redoStack: MusicraumDraft[] = [];
   private historyListeners = new Set<HistoryListener>();
@@ -32,7 +33,7 @@ export class BuilderStore {
     if (!mergesWithPrevious) { this.undoStack.push(previous); if (this.undoStack.length > this.historyLimit) this.undoStack.shift(); }
     this.redoStack = []; this.lastHistoryKey = historyKey; this.lastHistoryAt = now; this.draft = normalized; this.emit(); this.emitHistory(); this.scheduleSave();
   }
-  replace(next: MusicraumDraft, persist = true, remember = true): void { if (remember) { this.undoStack.push(cloneDraft(this.draft)); if (this.undoStack.length > this.historyLimit) this.undoStack.shift(); } this.redoStack = []; this.lastHistoryKey = ""; this.draft = normalizeDraft(next); this.emit(); this.emitHistory(); if (persist) this.scheduleSave(0); }
+  replace(next: MusicraumDraft, persist = true, remember = true): void { if (remember) { this.undoStack.push(cloneDraft(this.draft)); if (this.undoStack.length > this.historyLimit) this.undoStack.shift(); } else { this.undoStack = []; this.saveGeneration += 1; if (this.saveTimer) { clearTimeout(this.saveTimer); this.saveTimer = null; } } this.redoStack = []; this.lastHistoryKey = ""; this.lastHistoryAt = 0; this.draft = normalizeDraft(next); this.emit(); this.emitHistory(); if (persist) this.scheduleSave(0); else this.emitSave("saved"); }
   undo(): boolean { const previous = this.undoStack.pop(); if (!previous) return false; this.redoStack.push(cloneDraft(this.draft)); this.draft = normalizeDraft(previous); this.lastHistoryKey = ""; this.emit(); this.emitHistory(); this.scheduleSave(0); return true; }
   redo(): boolean { const next = this.redoStack.pop(); if (!next) return false; this.undoStack.push(cloneDraft(this.draft)); this.draft = normalizeDraft(next); this.lastHistoryKey = ""; this.emit(); this.emitHistory(); this.scheduleSave(0); return true; }
   async flush(): Promise<void> { if (this.saveTimer) { clearTimeout(this.saveTimer); this.saveTimer = null; } await this.enqueueSave(); }
@@ -42,7 +43,8 @@ export class BuilderStore {
   private scheduleSave(delay = this.debounceMs): void { this.emitSave("saving"); if (this.saveTimer) clearTimeout(this.saveTimer); this.saveTimer = setTimeout(() => { this.saveTimer = null; void this.enqueueSave().catch((error) => console.error("Draft save failed.", error)); }, delay); }
   private enqueueSave(): Promise<void> {
     const snapshot = cloneDraft(this.draft);
-    const operation = this.saveChain.then(async () => { this.emitSave("saving"); try { await this.repository.putDraft(snapshot); this.emitSave("saved"); } catch (error) { this.emitSave("error", error); throw error; } });
+    const generation = this.saveGeneration;
+    const operation = this.saveChain.then(async () => { if (generation !== this.saveGeneration) return; this.emitSave("saving"); try { await this.repository.putDraft(snapshot); this.emitSave("saved"); } catch (error) { this.emitSave("error", error); throw error; } });
     this.saveChain = operation.catch(() => undefined);
     return operation;
   }

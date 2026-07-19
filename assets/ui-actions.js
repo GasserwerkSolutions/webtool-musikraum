@@ -151,9 +151,10 @@ function downloadBlob(blob, filename) { const url = URL.createObjectURL(blob); c
 function downloadBackup(context) { const name = slugify(context.store.snapshot.site.name || "musikraum"); downloadBlob(new Blob([JSON.stringify(context.store.snapshot, null, 2)], { type: "application/json;charset=utf-8" }), `${name}-sicherung.json`); showToast("Sicherung heruntergeladen. Bewahre die JSON-Datei gut auf."); }
 async function restoreBackup(context, file) { try {
     const parsed = JSON.parse(await file.text());
-    const restored = normalizeDraft(parsed);
-    await replaceWithImportedDraft(context.repository, context.store.snapshot, restored);
-    context.store.replace(restored, false);
+    const imported = normalizeDraft(parsed);
+    await context.store.flush();
+    const restored = await replaceWithImportedDraft(context.repository, context.store.snapshot, imported);
+    context.store.replace(restored, false, false);
     bindStaticInputs(context);
     renderDynamicControls(context);
     renderPreview(context);
@@ -176,6 +177,7 @@ async function resetBuilder(context) {
     if (!window.confirm("Alle eigenen Änderungen verwerfen und zum Musikraum-Ausgangspunkt zurückkehren?"))
         return;
     try {
+        await context.store.flush();
         const fresh = await replaceWithFreshDraft(context.repository, context.store.snapshot);
         context.store.replace(fresh, false, false);
         bindStaticInputs(context);

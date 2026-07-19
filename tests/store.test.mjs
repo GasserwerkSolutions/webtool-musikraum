@@ -33,3 +33,25 @@ test("groups consecutive edits to the same field into one undo step", () => {
   store.mutate((next) => { next.site.tagline = "A"; }, "field:site.tagline"); store.mutate((next) => { next.site.tagline = "Ab"; }, "field:site.tagline"); store.mutate((next) => { next.site.tagline = "Abc"; }, "field:site.tagline");
   store.undo(); assert.equal(store.snapshot.site.tagline, original); assert.equal(store.canUndo, false);
 });
+
+test("non-remembered replacements clear undo and redo history", () => {
+  const repository = new MemoryDraftRepository(); const draft = createDefaultDraft(); const store = new BuilderStore(draft, repository, 1000);
+  store.mutate((next) => { next.site.name = "Vor dem Import"; });
+  assert.equal(store.canUndo, true);
+  const restored = createDefaultDraft(); restored.draftId = draft.draftId; restored.site.name = "Importiert";
+  store.replace(restored, false, false);
+  assert.equal(store.snapshot.site.name, "Importiert");
+  assert.equal(store.canUndo, false);
+  assert.equal(store.canRedo, false);
+  assert.equal(store.undo(), false);
+});
+
+test("authoritative replacements cancel pending stale saves", async () => {
+  const repository = new MemoryDraftRepository(); const draft = createDefaultDraft(); const store = new BuilderStore(draft, repository, 20);
+  store.mutate((next) => { next.site.name = "Veraltet"; });
+  const restored = createDefaultDraft(); restored.draftId = draft.draftId; restored.site.name = "Wiederhergestellt";
+  await repository.putDraft(restored);
+  store.replace(restored, false, false);
+  await new Promise((resolve) => setTimeout(resolve, 40));
+  assert.equal((await repository.getDraft(draft.draftId)).site.name, "Wiederhergestellt");
+});
