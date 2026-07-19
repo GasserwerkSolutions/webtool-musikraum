@@ -31,6 +31,11 @@ const PANELS = new Set(["site", "hero", "content", "services", "structure", "con
 const FIELDS = new Set(Object.keys(STATIC_FIELD_REGISTRY));
 function record(value) { return value !== null && typeof value === "object" && !Array.isArray(value) ? value : null; }
 export function isPreviewTarget(value, draft) {
+    if (!isPreviewTargetShape(value))
+        return false;
+    return value.kind !== "offer" || draft.offers.some((offer) => offer.id === value.offerId);
+}
+export function isPreviewTargetShape(value) {
     const target = record(value);
     if (!target || typeof target.kind !== "string")
         return false;
@@ -39,12 +44,12 @@ export function isPreviewTarget(value, draft) {
     if (target.kind === "panel")
         return typeof target.panel === "string" && PANELS.has(target.panel);
     if (target.kind === "offer")
-        return typeof target.offerId === "string" && (target.field === "title" || target.field === "text") && draft.offers.some((offer) => offer.id === target.offerId);
+        return typeof target.offerId === "string" && (target.field === "title" || target.field === "text");
     return false;
 }
 export function parseNavigateMessage(value, instanceId, draft) {
     const message = record(value);
-    if (!message || message.channel !== "musikraum-preview" || message.version !== 1 || message.instanceId !== instanceId || message.action !== "navigate-to-editor" || !isPreviewTarget(message.target, draft))
+    if (!message || message.channel !== "musikraum-preview" || message.version !== 1 || message.instanceId !== instanceId || message.action !== "navigate-to-editor" || !isPreviewTargetShape(message.target))
         return null;
     return message;
 }

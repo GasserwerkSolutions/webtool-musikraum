@@ -13,7 +13,9 @@
     "check": "npm run typecheck && npm test"
   },
   "devDependencies": {
+    "@sparticuz/chromium": "^149.0.0",
     "jsdom": "^26.1.0",
+    "puppeteer-core": "^25.3.0",
     "typescript": "5.8.3"
   }
 }

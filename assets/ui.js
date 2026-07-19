@@ -3,6 +3,7 @@ import { bindStaticInputs, renderDynamicControls, renderPreview, renderSaveState
 import { createUiContext } from "./ui-shared.js";
 import { parseNavigateMessage } from "./preview-contract.js";
 import { navigateToPreviewTarget } from "./preview-navigation.js";
+import { initSidebar } from "./sidebar.js";
 export class BuilderUi {
     context;
     constructor(store, repository) {
@@ -10,6 +11,7 @@ export class BuilderUi {
     }
     init(options) {
         this.context.volatileStorage = Boolean(options.volatileStorage);
+        initSidebar(this.context);
         bindStaticInputs(this.context);
         renderDynamicControls(this.context);
         renderPreview(this.context);

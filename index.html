@@ -27,14 +27,16 @@
         <button class="surface-nav__item is-active" type="button" data-panel-target="site" aria-current="step">Grundlage</button>
         <button class="surface-nav__item" type="button" data-panel-target="hero">Einstieg</button>
         <button class="surface-nav__item" type="button" data-panel-target="content">Inhalte</button>
-        <button class="surface-nav__item" type="button" data-panel-target="services">Klangmomente</button>
+        <button class="surface-nav__item" type="button" data-panel-target="services" aria-label="Klangmomente"><span aria-hidden="true">Klang<wbr>momente</span></button>
         <button class="surface-nav__item" type="button" data-panel-target="structure">Aufbau</button>
         <button class="surface-nav__item" type="button" data-panel-target="contact">Kontakt</button>
         <button class="surface-nav__item" type="button" data-panel-target="design">Farben</button>
         <button class="surface-nav__item" type="button" data-panel-target="publish">Fertig</button>
       </nav>
+      <button id="sidebarToggle" class="sidebar-toggle" type="button" aria-controls="surfaceStage" aria-expanded="true" title="Bearbeitungsfläche einklappen"><span aria-hidden="true">‹</span><span class="visually-hidden">Bearbeitungsfläche einklappen</span></button>
+      <div id="sidebarResizer" class="sidebar-resizer" role="separator" aria-label="Breite der Bearbeitungsfläche" aria-orientation="vertical" aria-valuemin="420" aria-valuemax="720" aria-valuenow="560" tabindex="0"></div>
 
-      <div class="surface-stage"><p id="panelStatus" class="panel-status" aria-live="polite">Schritt 1 von 8: Grundlage</p><div id="surfaceCard" class="surface-card">
+      <div id="surfaceStage" class="surface-stage"><p id="panelStatus" class="panel-status" aria-live="polite">Schritt 1 von 8: Grundlage</p><div id="surfaceCard" class="surface-card">
         <section class="panel is-active" data-panel="site" aria-labelledby="panel-site-title">
           <div class="panel__header"><p class="eyebrow">Die Grundlage</p><h1 id="panel-site-title">Dein Musikraum</h1><p>Gib der Website ihren Namen und einen kurzen Leitsatz. Jede Änderung erscheint sofort in der Vorschau.</p></div>
           <label class="field"><span>Name der Website</span><input type="text" data-bind="site.name" autocomplete="organization" required></label>
@@ -103,8 +105,8 @@
     </aside>
 
     <section class="preview-area" aria-label="Live-Vorschau">
-      <div class="preview-toolbar"><div><strong>Live-Vorschau</strong><span class="preview-meta"><span id="previewHint">Desktop</span> · Text anklicken zum Bearbeiten</span></div><div class="viewport-switch" role="group" aria-label="Vorschaugrösse"><button class="viewport-switch__button is-active" type="button" data-viewport="desktop">Desktop</button><button class="viewport-switch__button" type="button" data-viewport="tablet">Tablet</button><button class="viewport-switch__button" type="button" data-viewport="mobile">Mobile</button></div></div>
-      <div class="preview-desk"><iframe id="previewFrame" title="Vorschau der Musikraum-Website" sandbox="allow-scripts"></iframe></div>
+      <div class="preview-toolbar"><div><strong>Live-Vorschau</strong><span class="preview-meta"><span id="previewHint">Desktop</span> · Text anklicken zum Bearbeiten</span></div><div class="viewport-switch" role="group" aria-label="Vorschaugrösse"><button class="viewport-switch__button is-active" type="button" data-viewport="desktop" aria-pressed="true">Desktop</button><button class="viewport-switch__button" type="button" data-viewport="tablet" aria-pressed="false">Tablet</button><button class="viewport-switch__button" type="button" data-viewport="mobile" aria-pressed="false">Mobile</button></div></div>
+      <div class="preview-desk"><iframe id="previewFrame" title="Vorschau der Musikraum-Website" sandbox="allow-scripts" data-viewport="desktop"></iframe></div>
     </section>
   </main>
 

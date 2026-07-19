@@ -1,0 +1,48 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { createServer } from "node:http";
+import { readFile, stat } from "node:fs/promises";
+import { extname, join, normalize } from "node:path";
+import chromium from "@sparticuz/chromium";
+import puppeteer from "puppeteer-core";
+import { createDefaultDraft } from "../assets/domain.js";
+import { buildWebsiteHtml } from "../assets/website.js";
+
+const MIME = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".svg": "image/svg+xml", ".webp": "image/webp" };
+async function staticServer() {
+  const root = new URL("../", import.meta.url).pathname;
+  const server = createServer(async (request, response) => { try { const pathname = decodeURIComponent(new URL(request.url ?? "/", "http://local").pathname); const relative = pathname === "/" ? "index.html" : pathname.slice(1); const path = normalize(join(root, relative)); if (!path.startsWith(root) || !(await stat(path)).isFile()) throw new Error("not found"); response.setHeader("content-type", MIME[extname(path)] ?? "application/octet-stream"); response.end(await readFile(path)); } catch { response.statusCode = 404; response.end("Not found"); } });
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve)); const address = server.address(); return { server, url: `http://127.0.0.1:${address.port}` };
+}
+
+test("real browser layout, navigation and sidebar contract", { timeout: 90000 }, async () => {
+  const { server, url } = await staticServer(); const browser = await puppeteer.launch({ args: chromium.args, defaultViewport: { width: 1440, height: 900 }, executablePath: await chromium.executablePath(), headless: true });
+  try {
+    const page = await browser.newPage(); await page.goto(url, { waitUntil: "domcontentloaded" }); await page.waitForSelector("#previewFrame"); let preview = await waitForPreview(page);
+
+    const desktop = await page.evaluate(() => { const frame = document.querySelector("#previewFrame"); const desk = document.querySelector(".preview-desk"); return { frameWidth: frame.getBoundingClientRect().width, outerVertical: desk.scrollHeight - desk.clientHeight, bodyVertical: document.documentElement.scrollHeight - document.documentElement.clientHeight }; });
+    assert.equal(desktop.frameWidth, 1200); assert.equal(desktop.outerVertical, 0); assert.ok(desktop.bodyVertical <= 1); assert.ok(await preview.evaluate(() => document.documentElement.scrollHeight > innerHeight));
+
+    await page.click('[data-viewport="tablet"]'); await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 450))); assert.ok(Math.abs(await page.$eval("#previewFrame", (frame) => frame.getBoundingClientRect().width) - 768) < .1); assert.equal(await page.$eval('[data-viewport="tablet"]', (button) => button.getAttribute("aria-pressed")), "true");
+    assert.notEqual(await preview.$eval(".menu-button", (button) => getComputedStyle(button).display), "none"); await preview.click(".menu-button"); assert.equal(await preview.$eval(".main-nav", (nav) => nav.classList.contains("is-open")), true);
+    await preview.click('.main-nav a[href="#franz"]'); await preview.waitForFunction(() => scrollY > 0); assert.equal(await preview.$eval(".main-nav", (nav) => nav.classList.contains("is-open")), false);
+
+    await page.click('[data-viewport="mobile"]'); await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 450))); assert.ok(Math.abs(await page.$eval("#previewFrame", (frame) => frame.getBoundingClientRect().width) - 390) < .1); await preview.click(".menu-button"); assert.equal(await preview.$eval(".main-nav", (nav) => nav.classList.contains("is-open")), true); await preview.click(".menu-button");
+
+    const previousLocation = preview.url(); const mail = await preview.$('a[href^="mailto:"]'); if (mail) await mail.click(); assert.equal(preview.url(), previousLocation);
+
+    await preview.click("h1 .preview-edit-trigger"); await page.waitForFunction(() => document.activeElement?.getAttribute("data-bind") === "copy.heroTitle"); assert.equal(await page.evaluate(() => document.querySelector('[data-panel="hero"]')?.hidden), false);
+
+    await page.click('[data-viewport="desktop"]'); await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 450))); const separator = await page.$("#sidebarResizer"); const separatorBox = await separator.boundingBox(); const beforeDrag = await page.$eval(".control-surface", (surface) => surface.getBoundingClientRect().width); await page.mouse.move(separatorBox.x + separatorBox.width / 2, separatorBox.y + 80); await page.mouse.down(); await page.mouse.move(separatorBox.x + separatorBox.width / 2 + 42, separatorBox.y + 80, { steps: 4 }); await page.mouse.up(); const afterDrag = await page.$eval(".control-surface", (surface) => surface.getBoundingClientRect().width); assert.ok(afterDrag > beforeDrag);
+    await page.focus("#sidebarResizer"); await page.keyboard.press("End"); const resized = await page.evaluate(() => ({ editor: document.querySelector(".control-surface").getBoundingClientRect().width, frame: document.querySelector("#previewFrame").getBoundingClientRect().width })); assert.ok(resized.editor <= 720 && resized.editor >= 420); assert.equal(resized.frame, 1200);
+    await page.click("#sidebarToggle"); assert.equal(await page.$eval(".control-surface", (surface) => surface.classList.contains("is-collapsed")), true); await preview.click("h1 .preview-edit-trigger"); await page.waitForFunction(() => !document.querySelector(".control-surface")?.classList.contains("is-collapsed"));
+
+    await page.focus("#sidebarResizer"); await page.keyboard.press("Home"); await page.keyboard.press("ArrowRight"); const storedWidth = await page.$eval(".control-surface", (surface) => surface.getBoundingClientRect().width); await page.reload({ waitUntil: "domcontentloaded" }); const restoredWidth = await page.$eval(".control-surface", (surface) => surface.getBoundingClientRect().width); assert.ok(Math.abs(restoredWidth - storedWidth) <= 1);
+
+    await page.setViewport({ width: 1051, height: 520 }); await page.waitForFunction(() => document.querySelector(".surface-nav").scrollHeight > document.querySelector(".surface-nav").clientHeight); const compactLayout = await page.evaluate(() => ({ bodyVertical: document.documentElement.scrollHeight - document.documentElement.clientHeight, navContained: (() => { const button = document.querySelector('[data-panel-target="services"]'); const span = button.querySelector("span"); const buttonRect = button.getBoundingClientRect(); const textRect = span.getBoundingClientRect(); return textRect.left >= buttonRect.left && textRect.right <= buttonRect.right + .5; })() })); assert.ok(compactLayout.bodyVertical <= 1); assert.equal(compactLayout.navContained, true);
+
+    const exportedPage = await browser.newPage(); await exportedPage.setViewport({ width: 1200, height: 700 }); await exportedPage.setContent(buildWebsiteHtml(createDefaultDraft()), { waitUntil: "domcontentloaded" }); assert.equal(await exportedPage.$("[data-preview-target], .sidebar-resizer, .sidebar-toggle"), null); await exportedPage.click('.main-nav a[href="#franz"]'); await exportedPage.waitForFunction(() => location.hash === "#franz" && scrollY > 0); await exportedPage.close();
+  } catch (error) { console.error("E2E failure:", error); throw error; } finally { await browser.close(); await new Promise((resolve) => server.close(resolve)); }
+});
+
+async function waitForPreview(page) { await page.waitForFunction(() => (document.querySelector("#previewFrame")?.getAttribute("srcdoc")?.length ?? 0) > 100); const handle = await page.$("#previewFrame"); const frame = await handle.contentFrame(); if (!frame) throw new Error("Preview frame unavailable"); await frame.waitForSelector(".hero"); return frame; }
