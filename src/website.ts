@@ -7,19 +7,20 @@ import {
   type MusicraumDraft,
   type SectionKey,
 } from "./domain.js";
+import type { EditorPanel, PreviewScrollState, PreviewTarget, StaticEditableField } from "./preview-contract.js";
 
 export const MUSICRAUM_HERO_URL = "https://raw.githubusercontent.com/GasserwerkSolutions/musikraum/main/assets/photos/hero-klangraum-wood-1200w.webp";
 const HARFE_FAVICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='15' fill='%23343b39'/%3E%3Cpath d='M17 50.5h33' fill='none' stroke='%23f3dfae' stroke-width='4.5' stroke-linecap='round'/%3E%3Cpath d='M19.5 49.5c7-8.5 10-21.5 8.8-36 8.7 2.8 15.8 7.7 21.2 14.2' fill='none' stroke='%23d9ba70' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M49.5 27.7c-1.2 7.8-.9 15.3.5 22.8' fill='none' stroke='%23f3dfae' stroke-width='5' stroke-linecap='round'/%3E%3Cg fill='none' stroke='%239fb9b3' stroke-width='1.35' stroke-linecap='round'%3E%3Cpath d='M30 18.5v26'/%3E%3Cpath d='M34 20.2v24.3'/%3E%3Cpath d='M38 22.2v22.3'/%3E%3Cpath d='M42 24.5v20'/%3E%3Cpath d='M46 27v17.5'/%3E%3C/g%3E%3C/svg%3E";
 
-const SECTION_META: Record<SectionKey, { id: string; nav: string }> = {
-  intro: { id: "franz", nav: "Über Franz" },
-  why: { id: "frei-spielen", nav: "Frei spielen" },
-  offers: { id: "angebote", nav: "Klangabende" },
-  story: { id: "geschichte", nav: "Geschichte" },
-  contact: { id: "kontakt", nav: "Kontakt" },
+const SECTION_META: Record<SectionKey, { id: string; nav: string; panel: EditorPanel }> = {
+  intro: { id: "franz", nav: "Über Franz", panel: "content" },
+  why: { id: "frei-spielen", nav: "Frei spielen", panel: "content" },
+  offers: { id: "angebote", nav: "Klangabende", panel: "services" },
+  story: { id: "geschichte", nav: "Geschichte", panel: "content" },
+  contact: { id: "kontakt", nav: "Kontakt", panel: "contact" },
 };
 
-type BuildOptions = { preview?: boolean; heroImageUrl?: string };
+type BuildOptions = { preview?: boolean; heroImageUrl?: string; previewInstanceId?: string; parentOrigin?: string; previewScroll?: PreviewScrollState | null };
 
 export function buildWebsiteHtml(draft: MusicraumDraft, options: BuildOptions = {}): string {
   const preset = PRESETS[draft.theme.preset] ?? PRESETS.musikraum;
@@ -28,8 +29,9 @@ export function buildWebsiteHtml(draft: MusicraumDraft, options: BuildOptions = 
   const address = [draft.site.address, [draft.site.postalCode, draft.site.city].filter(Boolean).join(" ")].filter(Boolean).join(", ");
   const visibleOrder = draft.layout.order.filter((key) => draft.layout.visibility[key]);
   const firstContentId = SECTION_META[visibleOrder.find((key) => key !== "contact") ?? "contact"].id;
-  const nav = visibleOrder.map((key) => `<a href="#${SECTION_META[key].id}">${escapeHtml(SECTION_META[key].nav)}</a>`).join("");
-  const sections = visibleOrder.map((key) => renderSection(key, draft, address)).join("");
+  const nav = visibleOrder.map((key) => `<a href="#${SECTION_META[key].id}"${previewTargetAttr(options, { kind: "panel", panel: SECTION_META[key].panel })}>${escapeHtml(SECTION_META[key].nav)}</a>`).join("");
+  const sections = visibleOrder.map((key) => renderSection(key, draft, address, options)).join("");
+  const brand = `<span class="brand-mark" aria-hidden="true"><img src="${HARFE_FAVICON}" alt="" style="display:block;width:100%;height:100%;object-fit:contain;border-radius:inherit"></span><span><strong>${editable(draft.site.name, "site.name", options)}</strong><small>${editable(draft.site.tagline, "site.tagline", options)}</small></span>`;
   const schema = {
     "@context": "https://schema.org",
     "@type": "ProfessionalService",
@@ -52,50 +54,66 @@ export function buildWebsiteHtml(draft: MusicraumDraft, options: BuildOptions = 
   <title>${escapeHtml(title)}</title>
   <link rel="icon" type="image/svg+xml" href="${HARFE_FAVICON}">
   <script type="application/ld+json">${safeJson(schema)}</script>
-  <style>${websiteCss(theme, heroImageUrl)}</style>
+  <style>${websiteCss(theme, heroImageUrl)}${options.preview ? PREVIEW_CSS : ""}</style>
 </head>
 <body>
   <a class="skip-link" href="#main">Zum Inhalt springen</a>
   <header class="site-header">
     <div class="container header-inner">
-      <a class="brand" href="#top"><span class="brand-mark" aria-hidden="true"><img src="${HARFE_FAVICON}" alt="" style="display:block;width:100%;height:100%;object-fit:contain;border-radius:inherit"></span><span><strong>${escapeHtml(draft.site.name)}</strong><small>${escapeHtml(draft.site.tagline)}</small></span></a>
+      ${options.preview ? `<div class="brand"${previewTargetAttr(options, { kind: "panel", panel: "site" })}>${brand}</div>` : `<a class="brand" href="#top">${brand}</a>`}
       <button class="menu-button" type="button" aria-label="Navigation anzeigen" aria-expanded="false"><span></span><span></span><span></span></button>
       <nav class="main-nav" aria-label="Hauptnavigation">${nav}</nav>
     </div>
   </header>
   <main id="main">
-    <section class="hero" id="top">
+    <section class="hero" id="top"${previewSectionAttr(options, "top", "hero")}>
       <div class="container hero-inner">
-        <p class="eyebrow">${escapeHtml(draft.copy.heroLabel)}</p>
-        <h1>${escapeHtml(draft.copy.heroTitle)}</h1>
-        <p class="hero-lead">${escapeHtml(draft.copy.heroSubtitle)}</p>
-        <div class="actions"><a class="button button-light" href="#${firstContentId}">${escapeHtml(draft.copy.heroPrimaryAction)}</a>${draft.layout.visibility.contact ? `<a class="button button-ghost" href="#kontakt">${escapeHtml(draft.copy.heroSecondaryAction)}</a>` : ""}</div>
-        <div class="hero-notes" aria-label="Auf einen Blick"><span>In der Gruppe</span><span>Viele Instrumente</span><span>Frei statt vorgegeben</span></div>
+        <p class="eyebrow">${editable(draft.copy.heroLabel, "copy.heroLabel", options)}</p>
+        <h1>${editable(draft.copy.heroTitle, "copy.heroTitle", options)}</h1>
+        <p class="hero-lead">${editable(draft.copy.heroSubtitle, "copy.heroSubtitle", options)}</p>
+        <div class="actions">${previewAction(draft.copy.heroPrimaryAction, "copy.heroPrimaryAction", `#${firstContentId}`, "button button-light", options)}${draft.layout.visibility.contact ? previewAction(draft.copy.heroSecondaryAction, "copy.heroSecondaryAction", "#kontakt", "button button-ghost", options) : ""}</div>
+        <div class="hero-notes" aria-label="Auf einen Blick" data-preview-no-action><span>In der Gruppe</span><span>Viele Instrumente</span><span>Frei statt vorgegeben</span></div>
       </div>
     </section>
     ${sections}
   </main>
-  <footer class="site-footer"><div class="container footer-grid"><div><strong>${escapeHtml(draft.site.name)}</strong><p>${escapeHtml(draft.site.tagline)}</p></div><div>${address ? `<p>${escapeHtml(address)}</p>` : ""}${draft.site.email ? `<a href="mailto:${escapeAttr(draft.site.email)}">${escapeHtml(draft.site.email)}</a>` : ""}</div><p>© ${new Date().getFullYear()} ${escapeHtml(draft.site.name)}</p></div></footer>
+  <footer class="site-footer"${previewSectionAttr(options, "footer", "site")}><div class="container footer-grid"><div><strong>${editable(draft.site.name, "site.name", options)}</strong><p>${editable(draft.site.tagline, "site.tagline", options)}</p></div><div>${addressParts(draft, options)}${draft.site.email ? previewLink(draft.site.email, "site.email", `mailto:${escapeAttr(draft.site.email)}`, options) : ""}</div><p data-preview-no-action>© ${new Date().getFullYear()} ${escapeHtml(draft.site.name)}</p></div></footer>
   <script>(()=>{const b=document.querySelector('.menu-button'),n=document.querySelector('.main-nav');if(!b||!n)return;b.addEventListener('click',()=>{const o=b.getAttribute('aria-expanded')==='true';b.setAttribute('aria-expanded',String(!o));n.classList.toggle('is-open',!o)});n.addEventListener('click',()=>{b.setAttribute('aria-expanded','false');n.classList.remove('is-open')})})();</script>
+  ${options.preview ? previewBridge(options) : ""}
 </body>
 </html>`;
 }
 
-function renderSection(key: SectionKey, draft: MusicraumDraft, address: string): string {
+function renderSection(key: SectionKey, draft: MusicraumDraft, address: string, options: BuildOptions): string {
   const copy = draft.copy;
-  if (key === "intro") return `<section class="section intro" id="franz"><div class="container split"><div><p class="eyebrow">${escapeHtml(copy.introLabel)}</p><h2>${escapeHtml(copy.introTitle)}</h2><blockquote>„${escapeHtml(copy.introQuote)}“</blockquote></div><div><p class="lead">${escapeHtml(copy.introText)}</p><ul class="plain-list"><li>gemeinsam spielen und aufeinander hören</li><li>Instrumente aus aller Welt ausprobieren</li><li>ohne Noten und ohne Leistungsdruck</li></ul></div></div></section>`;
-  if (key === "why") return `<section class="section dark-band" id="frei-spielen"><div class="container narrow"><p class="eyebrow">${escapeHtml(copy.whyLabel)}</p><h2>${escapeHtml(copy.whyTitle)}</h2><p class="lead">${escapeHtml(copy.whyText)}</p><div class="resonance" aria-hidden="true"><span></span><span></span><span></span></div></div></section>`;
+  if (key === "intro") return `<section class="section intro" id="franz"${previewSectionAttr(options, "franz", "content")}><div class="container split"><div><p class="eyebrow">${editable(copy.introLabel, "copy.introLabel", options)}</p><h2>${editable(copy.introTitle, "copy.introTitle", options)}</h2><blockquote>„${editable(copy.introQuote, "copy.introQuote", options)}“</blockquote></div><div><p class="lead">${editable(copy.introText, "copy.introText", options)}</p><ul class="plain-list" data-preview-no-action><li>gemeinsam spielen und aufeinander hören</li><li>Instrumente aus aller Welt ausprobieren</li><li>ohne Noten und ohne Leistungsdruck</li></ul></div></div></section>`;
+  if (key === "why") return `<section class="section dark-band" id="frei-spielen"${previewSectionAttr(options, "frei-spielen", "content")}><div class="container narrow"><p class="eyebrow">${editable(copy.whyLabel, "copy.whyLabel", options)}</p><h2>${editable(copy.whyTitle, "copy.whyTitle", options)}</h2><p class="lead">${editable(copy.whyText, "copy.whyText", options)}</p><div class="resonance" aria-hidden="true" data-preview-no-action><span></span><span></span><span></span></div></div></section>`;
   if (key === "offers") {
-    const cards = draft.offers.filter((offer) => offer.title.trim()).map((offer, index) => `<article class="card"><span class="card-number">0${index + 1}</span><h3>${escapeHtml(offer.title)}</h3>${offer.text ? `<p>${escapeHtml(offer.text)}</p>` : ""}</article>`).join("");
-    return `<section class="section offers" id="angebote"><div class="container"><div class="section-head"><p class="eyebrow">Die Klangabende</p><h2>${escapeHtml(copy.offersTitle)}</h2><p class="lead">${escapeHtml(copy.offersIntro)}</p></div><div class="card-grid">${cards || '<p class="empty">Weitere Angaben folgen.</p>'}</div></div></section>`;
+    const cards = draft.offers.filter((offer) => offer.title.trim()).map((offer, index) => `<article class="card"><span class="card-number" data-preview-no-action>0${index + 1}</span><h3>${editableOffer(offer.title, offer.id, "title", options)}</h3>${offer.text ? `<p>${editableOffer(offer.text, offer.id, "text", options)}</p>` : ""}</article>`).join("");
+    return `<section class="section offers" id="angebote"${previewSectionAttr(options, "angebote", "services")}><div class="container"><div class="section-head"><p class="eyebrow" data-preview-no-action>Die Klangabende</p><h2>${editable(copy.offersTitle, "copy.offersTitle", options)}</h2><p class="lead">${editable(copy.offersIntro, "copy.offersIntro", options)}</p></div><div class="card-grid">${cards || '<p class="empty" data-preview-no-action>Weitere Angaben folgen.</p>'}</div></div></section>`;
   }
-  if (key === "story") return `<section class="section story" id="geschichte"><div class="container split"><div><p class="eyebrow">${escapeHtml(copy.storyLabel)}</p><h2>${escapeHtml(copy.storyTitle)}</h2></div><p class="lead">${escapeHtml(copy.storyText)}</p></div></section>`;
+  if (key === "story") return `<section class="section story" id="geschichte"${previewSectionAttr(options, "geschichte", "content")}><div class="container split"><div><p class="eyebrow">${editable(copy.storyLabel, "copy.storyLabel", options)}</p><h2>${editable(copy.storyTitle, "copy.storyTitle", options)}</h2></div><p class="lead">${editable(copy.storyText, "copy.storyText", options)}</p></div></section>`;
   const contactLinks = [
     draft.site.email ? `<a class="button button-light" href="mailto:${escapeAttr(draft.site.email)}?subject=Anfrage%20${escapeAttr(draft.site.name)}">Jetzt unverbindlich anfragen</a>` : "",
     draft.site.phone ? `<a class="button button-ghost" href="tel:${escapeAttr(draft.site.phone.replace(/\s+/g, ""))}">${escapeHtml(draft.site.phone)} anrufen</a>` : "",
     isSafeHttpUrl(draft.site.instagram) ? `<a class="button button-ghost" href="${escapeAttr(draft.site.instagram)}" target="_blank" rel="noopener">Instagram</a>` : "",
   ].filter(Boolean).join("");
-  return `<section class="section contact" id="kontakt"><div class="container narrow"><p class="eyebrow">Kontakt</p><h2>${escapeHtml(copy.contactTitle)}</h2><p class="lead">${escapeHtml(copy.contactText)}</p>${address ? `<p class="address">${escapeHtml(address)}</p>` : ""}<div class="actions centered">${contactLinks}</div></div></section>`;
+  const previewLinks = options.preview ? `${draft.site.email ? `<button class="button button-light" type="button"${previewTargetAttr(options, { kind: "panel", panel: "contact" })}>Jetzt unverbindlich anfragen</button>` : ""}${draft.site.phone ? `<button class="button button-ghost" type="button"${previewTargetAttr(options, { kind: "field", field: "site.phone" })}>${escapeHtml(draft.site.phone)} anrufen</button>` : ""}${isSafeHttpUrl(draft.site.instagram) ? `<button class="button button-ghost" type="button"${previewTargetAttr(options, { kind: "panel", panel: "contact" })}>Instagram</button>` : ""}` : contactLinks;
+  return `<section class="section contact" id="kontakt"${previewSectionAttr(options, "kontakt", "contact")}><div class="container narrow"><p class="eyebrow" data-preview-no-action>Kontakt</p><h2>${editable(copy.contactTitle, "copy.contactTitle", options)}</h2><p class="lead">${editable(copy.contactText, "copy.contactText", options)}</p>${address ? `<p class="address">${addressParts(draft, options)}</p>` : ""}<div class="actions centered">${previewLinks}</div></div></section>`;
+}
+
+function previewTargetAttr(options: BuildOptions, target: PreviewTarget): string { return options.preview ? ` data-preview-target="${escapeAttr(JSON.stringify(target))}"` : ""; }
+function previewSectionAttr(options: BuildOptions, section: string, panel: EditorPanel): string { return options.preview ? ` data-preview-section="${escapeAttr(section)}" data-preview-panel="${panel}"` : ""; }
+function editable(value: string, field: StaticEditableField, options: BuildOptions): string { return options.preview ? `<button class="preview-edit-trigger" type="button"${previewTargetAttr(options, { kind: "field", field })}>${escapeHtml(value)}</button>` : escapeHtml(value); }
+function editableOffer(value: string, offerId: string, field: "title" | "text", options: BuildOptions): string { return options.preview ? `<button class="preview-edit-trigger" type="button"${previewTargetAttr(options, { kind: "offer", offerId, field })}>${escapeHtml(value)}</button>` : escapeHtml(value); }
+function previewAction(value: string, field: StaticEditableField, href: string, classes: string, options: BuildOptions): string { return options.preview ? `<button class="${classes} preview-action" type="button"${previewTargetAttr(options, { kind: "field", field })}>${escapeHtml(value)}</button>` : `<a class="${classes}" href="${href}">${escapeHtml(value)}</a>`; }
+function previewLink(value: string, field: StaticEditableField, href: string, options: BuildOptions): string { return options.preview ? `<button class="preview-edit-trigger preview-inline-link" type="button"${previewTargetAttr(options, { kind: "field", field })}>${escapeHtml(value)}</button>` : `<a href="${href}">${escapeHtml(value)}</a>`; }
+function addressParts(draft: MusicraumDraft, options: BuildOptions): string { const street = draft.site.address ? editable(draft.site.address, "site.address", options) : ""; const postal = draft.site.postalCode ? editable(draft.site.postalCode, "site.postalCode", options) : ""; const city = draft.site.city ? editable(draft.site.city, "site.city", options) : ""; return [street, [postal, city].filter(Boolean).join(" ")].filter(Boolean).join(", "); }
+
+const PREVIEW_CSS = `.preview-edit-trigger{all:unset;display:inline;box-decoration-break:clone;-webkit-box-decoration-break:clone;border-radius:.18em;cursor:pointer;color:inherit;font:inherit;letter-spacing:inherit;line-height:inherit;text-align:inherit}.preview-edit-trigger:hover,.preview-edit-trigger:focus-visible{outline:2px solid #d6b96f;outline-offset:4px;background:rgba(214,185,111,.14)}.preview-inline-link{text-decoration:underline}.preview-action{cursor:pointer}[data-preview-panel]{cursor:default}`;
+function previewBridge(options: BuildOptions): string {
+  const config = safeJson({ channel: "musikraum-preview", version: 1, instanceId: options.previewInstanceId ?? "", parentOrigin: options.parentOrigin ?? "*", restore: options.previewScroll ?? null });
+  return `<script>(()=>{const c=${config};const send=(action,payload)=>parent.postMessage({channel:c.channel,version:c.version,instanceId:c.instanceId,action,...payload},c.parentOrigin);document.addEventListener('click',e=>{const el=e.target instanceof Element?e.target.closest('[data-preview-target]'):null;if(el){e.preventDefault();e.stopPropagation();try{send('navigate-to-editor',{target:JSON.parse(el.getAttribute('data-preview-target')||'')})}catch{}return}const interactive=e.target instanceof Element?e.target.closest('a,button'):null;if(interactive){e.preventDefault();e.stopPropagation();return}if(e.target instanceof Element&&e.target.closest('[data-preview-no-action]'))return;const section=e.target instanceof Element?e.target.closest('[data-preview-panel]'):null;if(section)send('navigate-to-editor',{target:{kind:'panel',panel:section.getAttribute('data-preview-panel')}})},true);let pending=false;const report=()=>{pending=false;const y=scrollY;const sections=[...document.querySelectorAll('[data-preview-section]')];const current=sections.findLast(el=>el.offsetTop<=y+100)||sections[0];if(current)send('preview-scroll',{position:{section:current.getAttribute('data-preview-section')||'',offsetWithinSection:Math.max(0,y-current.offsetTop),fallbackScrollY:y}})};addEventListener('scroll',()=>{if(!pending){pending=true;requestAnimationFrame(report)}},{passive:true});addEventListener('load',()=>{const r=c.restore;if(r){const section=document.querySelector('[data-preview-section="'+CSS.escape(r.section)+'"]');const y=section?section.offsetTop+r.offsetWithinSection:r.fallbackScrollY;scrollTo(0,Math.max(0,Math.min(y,document.documentElement.scrollHeight-innerHeight)))}report()})})();</script>`;
 }
 
 function websiteCss(theme: (typeof PRESETS)[keyof typeof PRESETS], heroImageUrl: string): string {

@@ -1,5 +1,6 @@
 import type { DraftRepository } from "./persistence.js";
 import type { BuilderStore } from "./store.js";
+import type { PreviewScrollState } from "./preview-contract.js";
 
 export type UiContext = {
   store: BuilderStore;
@@ -12,12 +13,15 @@ export type UiContext = {
   undoButton: HTMLButtonElement;
   redoButton: HTMLButtonElement;
   backupInput: HTMLInputElement;
+  announcer: HTMLElement;
   offerList: HTMLElement;
   structureList: HTMLElement;
   readinessList: HTMLElement;
   offerTemplate: HTMLTemplateElement;
   previewTimer: ReturnType<typeof setTimeout> | null;
   suppressPreview: boolean;
+  previewInstanceId: string;
+  previewScroll: PreviewScrollState | null;
   volatileStorage: boolean;
 };
 
@@ -28,7 +32,7 @@ function requiredElement<T extends Element>(id: string): T {
 }
 
 export function createUiContext(store: BuilderStore, repository: DraftRepository): UiContext {
-  return { store, repository, surfaceCard: requiredElement("surfaceCard"), previewFrame: requiredElement("previewFrame"), previewHint: requiredElement("previewHint"), saveStatus: requiredElement("saveStatus"), panelStatus: requiredElement("panelStatus"), undoButton: requiredElement("undoButton"), redoButton: requiredElement("redoButton"), backupInput: requiredElement("backupInput"), offerList: requiredElement("offerList"), structureList: requiredElement("structureList"), readinessList: requiredElement("readinessList"), offerTemplate: requiredElement("offerTemplate"), previewTimer: null, suppressPreview: false, volatileStorage: false };
+  return { store, repository, surfaceCard: requiredElement("surfaceCard"), previewFrame: requiredElement("previewFrame"), previewHint: requiredElement("previewHint"), saveStatus: requiredElement("saveStatus"), panelStatus: requiredElement("panelStatus"), undoButton: requiredElement("undoButton"), redoButton: requiredElement("redoButton"), backupInput: requiredElement("backupInput"), announcer: requiredElement("editorAnnouncer"), offerList: requiredElement("offerList"), structureList: requiredElement("structureList"), readinessList: requiredElement("readinessList"), offerTemplate: requiredElement("offerTemplate"), previewTimer: null, suppressPreview: false, previewInstanceId: "", previewScroll: null, volatileStorage: false };
 }
 
 export function getAtPath(object: unknown, path: string): unknown { return path.split(".").reduce<unknown>((value, key) => value && typeof value === "object" ? (value as Record<string, unknown>)[key] : undefined, object); }
