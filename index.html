@@ -11,7 +11,7 @@
 <body>
   <a class="skip-link" href="#builder-main">Zum Werkzeug springen</a>
   <header class="topbar">
-    <div class="brand"><span class="brand__mark" aria-hidden="true"><i></i></span><div><strong>Musikraum Werkzeug</strong><span>Die Website von Franz – einfach anpassbar</span></div></div>
+    <div class="brand"><span class="brand__mark" aria-hidden="true"><img src="favicon.svg" alt=""></span><div class="brand__copy"><strong>Musikraum Werkzeug</strong><span>Franz’ Website einfach bearbeiten</span></div></div>
     <div class="topbar__actions">
       <span id="saveStatus" class="status-pill" aria-live="polite">Auf diesem Gerät gespeichert</span>
       <div class="history-actions" role="group" aria-label="Änderungen"><button id="undoButton" class="button button--quiet button--compact" type="button" data-action="undo" disabled title="Rückgängig (Strg oder Cmd + Z)">↶ <span>Rückgängig</span></button><button id="redoButton" class="button button--quiet button--compact" type="button" data-action="redo" disabled title="Wiederholen (Umschalt + Strg oder Cmd + Z)">↷ <span>Wiederholen</span></button></div>
@@ -26,7 +26,7 @@
         <button class="surface-nav__item is-active" type="button" data-panel-target="site" aria-current="step">Grundlage</button>
         <button class="surface-nav__item" type="button" data-panel-target="hero">Einstieg</button>
         <button class="surface-nav__item" type="button" data-panel-target="content">Inhalte</button>
-        <button class="surface-nav__item" type="button" data-panel-target="services">Angebote</button>
+        <button class="surface-nav__item" type="button" data-panel-target="services">Klangmomente</button>
         <button class="surface-nav__item" type="button" data-panel-target="structure">Aufbau</button>
         <button class="surface-nav__item" type="button" data-panel-target="contact">Kontakt</button>
         <button class="surface-nav__item" type="button" data-panel-target="design">Farben</button>
@@ -35,42 +35,44 @@
 
       <div class="surface-stage"><p id="panelStatus" class="panel-status" aria-live="polite">Schritt 1 von 8: Grundlage</p><div id="surfaceCard" class="surface-card">
         <section class="panel is-active" data-panel="site" aria-labelledby="panel-site-title">
-          <div class="panel__header"><p class="eyebrow">Die Website</p><h1 id="panel-site-title">Musikraum</h1><p>Hier stehen Name und kurzer Leitsatz. Änderungen erscheinen sofort rechts in der Vorschau.</p></div>
+          <div class="panel__header"><p class="eyebrow">Die Grundlage</p><h1 id="panel-site-title">Dein Musikraum</h1><p>Gib der Website ihren Namen und einen kurzen Leitsatz. Jede Änderung erscheint sofort in der Vorschau.</p></div>
           <label class="field"><span>Name der Website</span><input type="text" data-bind="site.name" autocomplete="organization" required></label>
           <label class="field"><span>Leitsatz</span><input type="text" data-bind="site.tagline" placeholder="Lauschen. Spielen. Entdecken."></label>
-          <div class="foundation-note"><strong>Das Titelbild ist bereits eingebaut</strong><span>Bis die allgemeine Bildverwaltung fertig ist, verwendet das Werkzeug das kuratierte Musikraum-Titelbild. Beim HTML-Export wird es nach Möglichkeit direkt in die Datei eingebettet.</span></div>
-          <div class="foundation-note"><strong>Alles bleibt bei dir</strong><span>Der Entwurf wird nur in diesem Browser gespeichert. Es gibt keine Anmeldung und keine automatische Veröffentlichung.</span></div>
+          <div class="foundation-notes">
+            <div class="foundation-note"><span class="foundation-note__icon" aria-hidden="true">◇</span><div><strong>Das Titelbild ist bereits eingebaut</strong><span>Bis die Bildverwaltung fertig ist, verwendet das Werkzeug das ausgewählte Musikraum-Titelbild. Beim Export wird es nach Möglichkeit direkt in die HTML-Datei eingebettet.</span></div></div>
+            <div class="foundation-note"><span class="foundation-note__icon" aria-hidden="true">✓</span><div><strong>Alles bleibt bei dir</strong><span>Dein Entwurf wird nur in diesem Browser gespeichert. Es gibt keine Anmeldung und nichts wird automatisch veröffentlicht.</span></div></div>
+          </div>
         </section>
 
         <section class="panel" data-panel="hero" aria-labelledby="panel-hero-title" hidden>
-          <div class="panel__header"><p class="eyebrow">Erster Eindruck</p><h2 id="panel-hero-title">Der Einstieg</h2><p>Diese Texte liegen direkt auf dem grossen Titelbild.</p></div>
-          <label class="field"><span>Kleine Zeile</span><input type="text" data-bind="copy.heroLabel"></label>
+          <div class="panel__header"><p class="eyebrow">Der erste Eindruck</p><h2 id="panel-hero-title">Einstieg gestalten</h2><p>Diese Texte stehen direkt auf dem grossen Titelbild und begrüssen deine Besucherinnen und Besucher.</p></div>
+          <label class="field"><span>Kleine Überschrift</span><input type="text" data-bind="copy.heroLabel"></label>
           <label class="field"><span>Haupttitel</span><textarea data-bind="copy.heroTitle" rows="3"></textarea></label>
           <label class="field"><span>Einleitung</span><textarea data-bind="copy.heroSubtitle" rows="5"></textarea></label>
-          <div class="field-grid"><label class="field"><span>Erster Knopf</span><input type="text" data-bind="copy.heroPrimaryAction"></label><label class="field"><span>Kontakt-Knopf</span><input type="text" data-bind="copy.heroSecondaryAction"></label></div>
+          <div class="field-grid"><label class="field"><span>Text des ersten Knopfs</span><input type="text" data-bind="copy.heroPrimaryAction"></label><label class="field"><span>Text des Kontaktknopfs</span><input type="text" data-bind="copy.heroSecondaryAction"></label></div>
         </section>
 
         <section class="panel" data-panel="content" aria-labelledby="panel-content-title" hidden>
-          <div class="panel__header"><p class="eyebrow">Persönlich</p><h2 id="panel-content-title">Franz und seine Haltung</h2><p>Die drei längeren Inhaltsbereiche. Der Aufbau lässt sich im Bereich „Aufbau“ verändern.</p></div>
+          <div class="panel__header"><p class="eyebrow">Persönliche Inhalte</p><h2 id="panel-content-title">Deine Haltung und Geschichte</h2><p>Hier bearbeitest du die drei längeren Textbereiche. Ihre Reihenfolge kannst du später unter „Aufbau“ verändern.</p></div>
           <fieldset class="copy-group"><legend>Über Franz</legend><label class="field"><span>Kleine Zeile</span><input type="text" data-bind="copy.introLabel"></label><label class="field"><span>Titel</span><input type="text" data-bind="copy.introTitle"></label><label class="field"><span>Persönliches Zitat</span><textarea data-bind="copy.introQuote" rows="4"></textarea></label><label class="field"><span>Text</span><textarea data-bind="copy.introText" rows="6"></textarea></label></fieldset>
           <fieldset class="copy-group"><legend>Frei spielen</legend><label class="field"><span>Kleine Zeile</span><input type="text" data-bind="copy.whyLabel"></label><label class="field"><span>Titel</span><input type="text" data-bind="copy.whyTitle"></label><label class="field"><span>Text</span><textarea data-bind="copy.whyText" rows="6"></textarea></label></fieldset>
           <fieldset class="copy-group"><legend>Meine Geschichte</legend><label class="field"><span>Kleine Zeile</span><input type="text" data-bind="copy.storyLabel"></label><label class="field"><span>Titel</span><input type="text" data-bind="copy.storyTitle"></label><label class="field"><span>Text</span><textarea data-bind="copy.storyText" rows="6"></textarea></label></fieldset>
         </section>
 
         <section class="panel" data-panel="services" aria-labelledby="panel-services-title" hidden>
-          <div class="panel__header panel__header--action"><div><p class="eyebrow">Klangabende</p><h2 id="panel-services-title">Klangmomente</h2><p>Hier beschreibst du in kurzen Karten, was Menschen bei dir erleben können.</p></div><button class="button button--primary" type="button" data-action="add-offer">Klangmoment hinzufügen</button></div>
+          <div class="panel__header panel__header--action"><div><p class="eyebrow">Die Klangabende</p><h2 id="panel-services-title">Klangmomente</h2><p>Beschreibe in kurzen, übersichtlichen Karten, was Menschen bei dir erleben können.</p></div><button class="button button--primary" type="button" data-action="add-offer">Klangmoment hinzufügen</button></div>
           <label class="field"><span>Titel des Bereichs</span><input type="text" data-bind="copy.offersTitle"></label>
           <label class="field"><span>Einleitung</span><textarea data-bind="copy.offersIntro" rows="4"></textarea></label>
           <div id="offerList" class="item-list"></div>
         </section>
 
         <section class="panel" data-panel="structure" aria-labelledby="panel-structure-title" hidden>
-          <div class="panel__header"><p class="eyebrow">Reihenfolge</p><h2 id="panel-structure-title">Den Aufbau verändern</h2><p>Mit den Pfeilen verschiebst du einen Bereich. Mit „Sichtbar“ blendest du ihn ein oder aus. Das Titelbild bleibt immer am Anfang.</p></div>
+          <div class="panel__header"><p class="eyebrow">Reihenfolge und Sichtbarkeit</p><h2 id="panel-structure-title">Website aufbauen</h2><p>Verschiebe Bereiche mit den Pfeilen nach oben oder unten. Über „Sichtbar“ kannst du einen Bereich ein- oder ausblenden. Das Titelbild bleibt immer am Anfang.</p></div>
           <div id="structureList" class="structure-list"></div>
         </section>
 
         <section class="panel" data-panel="contact" aria-labelledby="panel-contact-title" hidden>
-          <div class="panel__header"><p class="eyebrow">Erreichbarkeit</p><h2 id="panel-contact-title">Kontakt und Abschluss</h2><p>Diese Angaben erzeugen direkt anklickbare E-Mail- und Telefon-Knöpfe.</p></div>
+          <div class="panel__header"><p class="eyebrow">Erreichbarkeit</p><h2 id="panel-contact-title">Kontakt und Abschluss</h2><p>Aus deinen Angaben entstehen direkt anklickbare E-Mail- und Telefonknöpfe.</p></div>
           <label class="field"><span>Abschluss-Titel</span><input type="text" data-bind="copy.contactTitle"></label>
           <label class="field"><span>Abschluss-Text</span><textarea data-bind="copy.contactText" rows="4"></textarea></label>
           <div class="field-grid"><label class="field"><span>Telefon</span><input type="tel" data-bind="site.phone" autocomplete="tel"></label><label class="field"><span>E-Mail</span><input type="email" data-bind="site.email" autocomplete="email"></label></div>
@@ -80,7 +82,7 @@
         </section>
 
         <section class="panel" data-panel="design" aria-labelledby="panel-design-title" hidden>
-          <div class="panel__header"><p class="eyebrow">Atmosphäre</p><h2 id="panel-design-title">Farbwelt wählen</h2><p>Vier ruhige Varianten auf derselben Musikraum-Gestaltung.</p></div>
+          <div class="panel__header"><p class="eyebrow">Atmosphäre</p><h2 id="panel-design-title">Farbwelt wählen</h2><p>Wähle eine von vier ruhigen Farbwelten. Texte und Aufbau bleiben dabei unverändert.</p></div>
           <div class="preset-grid" role="radiogroup" aria-label="Farbwelt">
             <button type="button" class="preset-card preset-card--music" data-preset="musikraum"><strong>Musikraum</strong><span>Warm, ruhig und vertraut</span></button>
             <button type="button" class="preset-card preset-card--forest" data-preset="waldton"><strong>Waldton</strong><span>Gedämpftes Grün</span></button>
@@ -91,10 +93,10 @@
         </section>
 
         <section class="panel" data-panel="publish" aria-labelledby="panel-publish-title" hidden>
-          <div class="panel__header"><p class="eyebrow">Mitnehmen</p><h2 id="panel-publish-title">Die Website ist bereit</h2><p>Das Werkzeug prüft die wichtigsten Inhalte. Danach erhältst du eine einzelne HTML-Datei, die direkt gehostet werden kann.</p></div>
+          <div class="panel__header"><p class="eyebrow">Prüfen und mitnehmen</p><h2 id="panel-publish-title">Deine Website ist bereit</h2><p>Prüfe die wichtigsten Inhalte. Danach kannst du die Website als einzelne HTML-Datei herunterladen oder deinen Entwurf sichern.</p></div>
           <div id="readinessList" class="readiness-list"></div>
           <div class="publish-actions"><button class="button button--primary button--large" type="button" data-action="export">Website als HTML exportieren</button><button class="button button--quiet" type="button" data-action="download-backup">Sicherung herunterladen</button><button class="button button--quiet" type="button" data-action="restore-backup">Sicherung wiederherstellen</button><input id="backupInput" class="visually-hidden" type="file" accept="application/json,.json" aria-label="Musikraum-Sicherung auswählen"></div>
-          <p class="privacy-note">Texte und Reihenfolge werden lokal in diesem Browser gespeichert. Das Titelbild ist vorgegeben, bis die Bildverwaltung ergänzt wird.</p>
+          <p class="privacy-note">Deine Texte, Farben und die Reihenfolge bleiben in diesem Browser gespeichert. Das Titelbild ist vorgegeben, bis die Bildverwaltung ergänzt wird.</p>
         </section>
       </div></div>
     </aside>
