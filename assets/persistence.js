@@ -72,9 +72,12 @@ export class MemoryDraftRepository {
     async getMeta(key) { return this.meta.get(key); }
     async clearAll() { this.drafts.clear(); this.meta.clear(); }
 }
+function pointerValue(value) { return typeof value === "string" ? value.trim() : ""; }
 export async function loadOrCreateDraft(repository, storage = localStorage) {
-    const pointer = storage.getItem(ACTIVE_DRAFT_POINTER_KEY) || String(await repository.getMeta("activeDraftId") ?? "");
-    if (pointer) {
+    const repositoryPointer = pointerValue(await repository.getMeta("activeDraftId"));
+    const storagePointer = pointerValue(storage.getItem(ACTIVE_DRAFT_POINTER_KEY));
+    const pointers = [...new Set([repositoryPointer, storagePointer].filter(Boolean))];
+    for (const pointer of pointers) {
         try {
             const existing = await repository.getDraft(pointer);
             if (existing) {
@@ -90,7 +93,7 @@ export async function loadOrCreateDraft(repository, storage = localStorage) {
     const draft = createDefaultDraft();
     await repository.putDraft(draft);
     storage.setItem(ACTIVE_DRAFT_POINTER_KEY, draft.draftId);
-    return { draft, recovered: Boolean(pointer) };
+    return { draft, recovered: pointers.length > 0 };
 }
 export async function replaceWithFreshDraft(repository, current, storage = localStorage) {
     const fresh = createDefaultDraft();
@@ -99,7 +102,7 @@ export async function replaceWithFreshDraft(repository, current, storage = local
     return fresh;
 }
 export async function replaceWithImportedDraft(repository, current, imported, storage = localStorage) {
-    const restored = normalizeDraft(imported);
+    const restored = normalizeDraft({ ...imported, draftId: current.draftId, createdAt: current.createdAt, updatedAt: new Date().toISOString() });
     await repository.replaceDraft(current.draftId, restored);
     storage.setItem(ACTIVE_DRAFT_POINTER_KEY, restored.draftId);
     return restored;
