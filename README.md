@@ -12,6 +12,8 @@ Ein bewusst einfaches, persönliches Website-Werkzeug für Franz Gasser. Datenmo
 - Kontaktangaben und Abschluss
 - vier kuratierte Farbwelten
 - responsive Live-Vorschau für Desktop, Tablet und Mobiltelefon
+- Rückgängig/Wiederholen per Knopf oder Tastatur
+- herunterladbare und wieder einlesbare Entwurfssicherung
 - Export als einzelne HTML-Datei
 
 Der Entwurf besteht nur aus Website-Angaben, Texten, Klangmomenten, Bereichsaufbau und Farbwelt. Er wird lokal in IndexedDB gespeichert. Es gibt keine Anmeldung und keine automatische Veröffentlichung.

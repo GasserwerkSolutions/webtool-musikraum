@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { ACTIVE_DRAFT_POINTER_KEY, createDefaultDraft } from "../assets/domain.js";
-import { MemoryDraftRepository, loadOrCreateDraft, replaceWithFreshDraft } from "../assets/persistence.js";
+import { MemoryDraftRepository, loadOrCreateDraft, replaceWithFreshDraft, replaceWithImportedDraft } from "../assets/persistence.js";
 
 class FakeStorage {
   data = new Map();
@@ -40,4 +40,11 @@ test("reset atomically replaces the current draft", async () => {
   const fresh = await replaceWithFreshDraft(repository, first, storage);
   assert.equal(await repository.getDraft(first.draftId), null);
   assert.ok(await repository.getDraft(fresh.draftId));
+});
+
+test("an imported backup becomes the active draft after reload", async () => {
+  const repository = new MemoryDraftRepository(); const storage = new FakeStorage(); const current = (await loadOrCreateDraft(repository, storage)).draft;
+  const imported = createDefaultDraft(); imported.site.name = "Wiederhergestellter Musikraum";
+  await replaceWithImportedDraft(repository, current, imported, storage);
+  const reloaded = await loadOrCreateDraft(repository, storage); assert.equal(reloaded.draft.draftId, imported.draftId); assert.equal(reloaded.draft.site.name, "Wiederhergestellter Musikraum");
 });

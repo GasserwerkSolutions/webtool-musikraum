@@ -87,3 +87,10 @@ export async function replaceWithFreshDraft(repository: DraftRepository, current
   storage.setItem(ACTIVE_DRAFT_POINTER_KEY, fresh.draftId);
   return fresh;
 }
+
+export async function replaceWithImportedDraft(repository: DraftRepository, current: MusicraumDraft, imported: MusicraumDraft, storage: Storage = localStorage): Promise<MusicraumDraft> {
+  const restored = normalizeDraft(imported);
+  await repository.replaceDraft(current.draftId, restored);
+  storage.setItem(ACTIVE_DRAFT_POINTER_KEY, restored.draftId);
+  return restored;
+}

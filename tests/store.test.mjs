@@ -19,3 +19,17 @@ test("surfaces durability failures and later saves recover", async () => {
   fail = false; store.mutate((next) => { next.site.name = "Zweiter Versuch"; }); await store.flush();
   assert.equal((await repository.getDraft(draft.draftId)).site.name, "Zweiter Versuch");
 });
+
+test("undoes, redoes and clears redo after a new change", () => {
+  const repository = new MemoryDraftRepository(); const draft = createDefaultDraft(); const original = draft.site.name; const store = new BuilderStore(draft, repository, 1000);
+  store.mutate((next) => { next.site.name = "Musikraum neu"; });
+  assert.equal(store.canUndo, true); assert.equal(store.undo(), true); assert.equal(store.snapshot.site.name, original); assert.equal(store.canRedo, true);
+  assert.equal(store.redo(), true); assert.equal(store.snapshot.site.name, "Musikraum neu");
+  store.undo(); store.mutate((next) => { next.site.name = "Anderer Name"; }); assert.equal(store.canRedo, false);
+});
+
+test("groups consecutive edits to the same field into one undo step", () => {
+  const repository = new MemoryDraftRepository(); const draft = createDefaultDraft(); const original = draft.site.tagline; const store = new BuilderStore(draft, repository, 1000);
+  store.mutate((next) => { next.site.tagline = "A"; }, "field:site.tagline"); store.mutate((next) => { next.site.tagline = "Ab"; }, "field:site.tagline"); store.mutate((next) => { next.site.tagline = "Abc"; }, "field:site.tagline");
+  store.undo(); assert.equal(store.snapshot.site.tagline, original); assert.equal(store.canUndo, false);
+});
