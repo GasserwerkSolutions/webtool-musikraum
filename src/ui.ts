@@ -40,9 +40,9 @@ export class BuilderUi {
     document.addEventListener("change", (event) => handleInput(this.context, event));
     window.addEventListener("message", (event) => this.handlePreviewMessage(event));
     document.addEventListener("keydown", (event) => { if (!(event.ctrlKey || event.metaKey) || event.altKey || event.key.toLowerCase() !== "z") return; event.preventDefault(); const action = event.shiftKey ? "redo" : "undo"; document.querySelector<HTMLButtonElement>(`[data-action="${action}"]`)?.click(); });
-    window.addEventListener("pagehide", () => {
-      void this.context.store.flush().catch((error) => console.error("Final draft flush failed.", error));
-    });
+    const flushBeforeLeave = () => { void this.context.store.flush().catch((error) => console.error("Final draft flush failed.", error)); };
+    document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") flushBeforeLeave(); });
+    window.addEventListener("pagehide", flushBeforeLeave);
     if (options.recovered) showToast("Der frühere Entwurf passte nicht mehr zum Musikraum-Werkzeug. Ein frischer Entwurf wurde angelegt.");
   }
 
