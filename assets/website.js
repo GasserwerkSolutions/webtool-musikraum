@@ -1,5 +1,6 @@
 import { PRESETS, escapeAttr, escapeHtml, isSafeHttpUrl, safeJson, } from "./domain.js";
 export const MUSICRAUM_HERO_URL = "https://raw.githubusercontent.com/GasserwerkSolutions/musikraum/main/assets/photos/hero-klangraum-wood-1200w.webp";
+const HARFE_FAVICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23403b34'/%3E%3Cpath d='M19 49c8-9 11-21 10-35 8 3 15 8 20 14' fill='none' stroke='%23d8c17d' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M19 49h31c-2-7-2-14-1-21' fill='none' stroke='%23f6e4c2' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M29 19l17 10M28 25l18 7M26 32l20 3M24 39h23' fill='none' stroke='%239eb2aa' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E";
 const SECTION_META = {
     intro: { id: "franz", nav: "Über Franz" },
     why: { id: "frei-spielen", nav: "Frei spielen" },
@@ -35,6 +36,7 @@ export function buildWebsiteHtml(draft, options = {}) {
   <meta name="description" content="${escapeAttr(draft.copy.heroSubtitle)}">
   <meta name="theme-color" content="${escapeAttr(theme.primary)}">
   <title>${escapeHtml(title)}</title>
+  <link rel="icon" type="image/svg+xml" href="${HARFE_FAVICON}">
   <script type="application/ld+json">${safeJson(schema)}</script>
   <style>${websiteCss(theme, heroImageUrl)}</style>
 </head>
