@@ -3,10 +3,11 @@ import { replaceWithFreshDraft, replaceWithImportedDraft } from "./persistence.j
 import { buildWebsiteHtml, MUSICRAUM_HERO_URL } from "./website.js";
 import { inputValue, setAtPath, type UiContext } from "./ui-shared.js";
 import { bindStaticInputs, renderDynamicControls, renderOffers, renderPreview, renderStructure, setViewport, showPanel, showToast, syncPresetInputs, updateReadiness } from "./ui-render.js";
+import { ensureEditorOpen } from "./sidebar.js";
 
 export function handleClick(context: UiContext, event: Event): void {
   const target = event.target; if (!(target instanceof Element)) return;
-  const panelButton = target.closest<HTMLElement>("[data-panel-target]"); if (panelButton) { showPanel(context, panelButton.dataset.panelTarget ?? "site"); return; }
+  const panelButton = target.closest<HTMLElement>("[data-panel-target]"); if (panelButton) { ensureEditorOpen(context); showPanel(context, panelButton.dataset.panelTarget ?? "site"); return; }
   const viewportButton = target.closest<HTMLElement>("[data-viewport]"); if (viewportButton) { setViewport(context, viewportButton.dataset.viewport ?? "desktop"); return; }
   const presetButton = target.closest<HTMLElement>("[data-preset]"); if (presetButton) { applyPreset(context, presetButton.dataset.preset as ThemePresetName); return; }
   const layoutButton = target.closest<HTMLElement>("[data-layout-action]"); if (layoutButton) { moveSection(context, layoutButton); return; }
@@ -30,8 +31,8 @@ export function handleInput(context: UiContext, event: Event): void {
     if (!(target instanceof HTMLInputElement)) return;
     context.store.mutate((draft) => { draft.layout.visibility[key] = target.checked; }); renderStructure(context); return;
   }
-  const deferPreview = isContinuousTextInput(target) && event.type === "input";
-  const bind = target.dataset.bind; if (bind) { try { context.suppressPreview = deferPreview; context.store.mutate((draft) => setAtPath(draft, bind, inputValue(target)), `field:${bind}`); } catch (error) { console.error(error); } finally { context.suppressPreview = false; } if (isContinuousTextInput(target) && event.type === "change") renderPreview(context); return; }
+  const deferPreview = isContinuousInput(target) && event.type === "input";
+  const bind = target.dataset.bind; if (bind) { try { context.suppressPreview = deferPreview; context.store.mutate((draft) => setAtPath(draft, bind, inputValue(target)), `field:${bind}`); } catch (error) { console.error(error); } finally { context.suppressPreview = false; } if (isContinuousInput(target) && event.type === "change") renderPreview(context); return; }
   const field = target.dataset.offerField as "title" | "text" | undefined;
   const card = target.closest<HTMLElement>("[data-offer-card]");
   if (field && card?.dataset.offerId) {
@@ -41,7 +42,7 @@ export function handleInput(context: UiContext, event: Event): void {
   }
 }
 
-function isContinuousTextInput(target: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement): boolean { return target instanceof HTMLTextAreaElement || target instanceof HTMLInputElement && ["text", "email", "tel", "url"].includes(target.type); }
+function isContinuousInput(target: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement): boolean { return target instanceof HTMLTextAreaElement || target instanceof HTMLInputElement && ["text", "email", "tel", "url", "color"].includes(target.type); }
 
 function moveSection(context: UiContext, button: HTMLElement): void {
   const key = button.closest<HTMLElement>("[data-section-key]")?.dataset.sectionKey as SectionKey | undefined; const direction = button.dataset.layoutAction; if (!key || (direction !== "up" && direction !== "down")) return;

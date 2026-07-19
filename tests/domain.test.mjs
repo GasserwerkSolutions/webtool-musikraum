@@ -39,7 +39,7 @@ test("website follows Franz' chosen order and emits structured offer data", () =
 test("preview contains editor instrumentation while export remains clean", () => {
   const draft = createDefaultDraft(); const preview = buildWebsiteHtml(draft, { preview: true, previewInstanceId: "preview-1", parentOrigin: "https://example.test" }); const exported = buildWebsiteHtml(draft);
   assert.match(preview, /data-preview-target/); assert.match(preview, /musikraum-preview/); assert.match(preview, /preview-1/); assert.match(preview, /preview-edit-trigger/);
-  assert.doesNotMatch(exported, /data-preview-(?:target|section|panel)/); assert.doesNotMatch(exported, /musikraum-preview|preview-edit-trigger|preview-1/);
+  assert.doesNotMatch(exported, /data-preview-(?:target|section|panel)/); assert.doesNotMatch(exported, /musikraum-preview|preview-edit-trigger|preview-1|sidebar-resizer|sidebar-toggle/);
 });
 
 test("preview identifies each offer card independently", () => {

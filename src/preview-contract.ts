@@ -54,14 +54,18 @@ const PANELS = new Set<EditorPanel>(["site", "hero", "content", "services", "str
 const FIELDS = new Set(Object.keys(STATIC_FIELD_REGISTRY));
 function record(value: unknown): Record<string, unknown> | null { return value !== null && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : null; }
 export function isPreviewTarget(value: unknown, draft: Readonly<MusicraumDraft>): value is PreviewTarget {
+  if (!isPreviewTargetShape(value)) return false;
+  return value.kind !== "offer" || draft.offers.some((offer) => offer.id === value.offerId);
+}
+export function isPreviewTargetShape(value: unknown): value is PreviewTarget {
   const target = record(value); if (!target || typeof target.kind !== "string") return false;
   if (target.kind === "field") return typeof target.field === "string" && FIELDS.has(target.field);
   if (target.kind === "panel") return typeof target.panel === "string" && PANELS.has(target.panel as EditorPanel);
-  if (target.kind === "offer") return typeof target.offerId === "string" && (target.field === "title" || target.field === "text") && draft.offers.some((offer) => offer.id === target.offerId);
+  if (target.kind === "offer") return typeof target.offerId === "string" && (target.field === "title" || target.field === "text");
   return false;
 }
 export function parseNavigateMessage(value: unknown, instanceId: string, draft: Readonly<MusicraumDraft>): PreviewNavigateMessage | null {
-  const message = record(value); if (!message || message.channel !== "musikraum-preview" || message.version !== 1 || message.instanceId !== instanceId || message.action !== "navigate-to-editor" || !isPreviewTarget(message.target, draft)) return null;
+  const message = record(value); if (!message || message.channel !== "musikraum-preview" || message.version !== 1 || message.instanceId !== instanceId || message.action !== "navigate-to-editor" || !isPreviewTargetShape(message.target)) return null;
   return message as PreviewNavigateMessage;
 }
 export function panelForTarget(target: PreviewTarget): EditorPanel { return target.kind === "field" ? STATIC_FIELD_REGISTRY[target.field].panel : target.kind === "offer" ? "services" : target.panel; }

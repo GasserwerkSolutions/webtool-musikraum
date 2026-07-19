@@ -1,10 +1,13 @@
 import { isPreviewTarget, panelForTarget } from "./preview-contract.js";
 import { showPanel } from "./ui-render.js";
+import { ensureEditorOpen } from "./sidebar.js";
+const highlightTimers = new WeakMap();
 export function navigateToPreviewTarget(context, target) {
     const valid = isPreviewTarget(target, context.store.snapshot);
     const panel = target.kind === "offer" ? "services" : valid ? panelForTarget(target) : null;
     if (!panel)
         return;
+    ensureEditorOpen(context);
     showPanel(context, panel);
     requestAnimationFrame(() => requestAnimationFrame(() => {
         const element = valid ? resolveTarget(target) : null;
@@ -15,10 +18,13 @@ export function navigateToPreviewTarget(context, target) {
             destination.tabIndex = -1;
         destination.focus({ preventScroll: true });
         revealTarget(context, destination);
+        const activeTimer = highlightTimers.get(destination);
+        if (activeTimer)
+            window.clearTimeout(activeTimer);
         destination.classList.remove("is-preview-target");
         void destination.offsetWidth;
         destination.classList.add("is-preview-target");
-        window.setTimeout(() => destination.classList.remove("is-preview-target"), 1800);
+        highlightTimers.set(destination, window.setTimeout(() => { destination.classList.remove("is-preview-target"); highlightTimers.delete(destination); }, 1800));
         const missing = target.kind === "offer" && !valid;
         context.announcer.textContent = missing ? "Der gewählte Klangmoment ist nicht mehr vorhanden. Der Bereich Klangmomente wurde geöffnet." : "Das passende Bearbeitungsfeld ist geöffnet.";
     }));

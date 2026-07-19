@@ -3,12 +3,14 @@ import { replaceWithFreshDraft, replaceWithImportedDraft } from "./persistence.j
 import { buildWebsiteHtml, MUSICRAUM_HERO_URL } from "./website.js";
 import { inputValue, setAtPath } from "./ui-shared.js";
 import { bindStaticInputs, renderDynamicControls, renderOffers, renderPreview, renderStructure, setViewport, showPanel, showToast, syncPresetInputs, updateReadiness } from "./ui-render.js";
+import { ensureEditorOpen } from "./sidebar.js";
 export function handleClick(context, event) {
     const target = event.target;
     if (!(target instanceof Element))
         return;
     const panelButton = target.closest("[data-panel-target]");
     if (panelButton) {
+        ensureEditorOpen(context);
         showPanel(context, panelButton.dataset.panelTarget ?? "site");
         return;
     }
@@ -66,7 +68,7 @@ export function handleInput(context, event) {
         renderStructure(context);
         return;
     }
-    const deferPreview = isContinuousTextInput(target) && event.type === "input";
+    const deferPreview = isContinuousInput(target) && event.type === "input";
     const bind = target.dataset.bind;
     if (bind) {
         try {
@@ -79,7 +81,7 @@ export function handleInput(context, event) {
         finally {
             context.suppressPreview = false;
         }
-        if (isContinuousTextInput(target) && event.type === "change")
+        if (isContinuousInput(target) && event.type === "change")
             renderPreview(context);
         return;
     }
@@ -104,7 +106,7 @@ export function handleInput(context, event) {
             renderPreview(context);
     }
 }
-function isContinuousTextInput(target) { return target instanceof HTMLTextAreaElement || target instanceof HTMLInputElement && ["text", "email", "tel", "url"].includes(target.type); }
+function isContinuousInput(target) { return target instanceof HTMLTextAreaElement || target instanceof HTMLInputElement && ["text", "email", "tel", "url", "color"].includes(target.type); }
 function moveSection(context, button) {
     const key = button.closest("[data-section-key]")?.dataset.sectionKey;
     const direction = button.dataset.layoutAction;

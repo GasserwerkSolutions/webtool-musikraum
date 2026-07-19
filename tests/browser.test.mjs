@@ -19,7 +19,7 @@ function editorFixture() {
   Object.assign(globalThis, { window: dom.window, document: dom.window.document, location: dom.window.location, Element: dom.window.Element, HTMLElement: dom.window.HTMLElement, HTMLInputElement: dom.window.HTMLInputElement, HTMLTextAreaElement: dom.window.HTMLTextAreaElement, HTMLSelectElement: dom.window.HTMLSelectElement, CSS: { escape: (value) => String(value).replaceAll('"', '\\"') }, matchMedia: () => ({ matches: true }) });
   globalThis.requestAnimationFrame = (callback) => { callback(0); return 1; }; dom.window.HTMLElement.prototype.scrollTo = () => {}; dom.window.HTMLElement.prototype.scrollIntoView = () => {};
   const draft = createDefaultDraft(); draft.offers = [{ id: "offer-1", title: "Eins", text: "Text eins" }, { id: "offer-2", title: "Zwei", text: "Text zwei" }]; const store = new BuilderStore(draft, new MemoryDraftRepository());
-  const context = { store, surfaceCard: document.getElementById("surfaceCard"), panelStatus: document.getElementById("panelStatus"), announcer: document.getElementById("announcer") };
+  const context = { store, surfaceCard: document.getElementById("surfaceCard"), controlSurface: document.querySelector(".control-surface"), panelStatus: document.getElementById("panelStatus"), announcer: document.getElementById("announcer") };
   return { dom, store, context };
 }
 
@@ -38,10 +38,11 @@ test("stale offer navigation falls back calmly to the offers heading", () => {
   assert.equal(dom.window.document.activeElement?.textContent, "Klangmomente"); assert.match(context.announcer.textContent, /nicht mehr vorhanden/); dom.window.close();
 });
 
-test("preview uses native buttons and prevents its links from navigating", () => {
+test("preview uses native buttons, permits hash navigation and blocks external actions", () => {
   const draft = createDefaultDraft(); const html = buildWebsiteHtml(draft, { preview: true, previewInstanceId: "browser", parentOrigin: "*" }); const dom = new JSDOM(html, { url: "https://preview.test", runScripts: "dangerously", pretendToBeVisual: true });
-  const link = dom.window.document.querySelector(".main-nav a"); const before = dom.window.location.hash; const event = new dom.window.MouseEvent("click", { bubbles: true, cancelable: true }); link.dispatchEvent(event);
-  assert.equal(event.defaultPrevented, true); assert.equal(dom.window.location.hash, before); assert.ok(dom.window.document.querySelector('h1 > button.preview-edit-trigger[type="button"]')); dom.window.close();
+  const link = dom.window.document.querySelector(".main-nav a"); const event = new dom.window.MouseEvent("click", { bubbles: true, cancelable: true }); link.dispatchEvent(event);
+  assert.equal(event.defaultPrevented, true); assert.ok(dom.window.document.querySelector('h1 > button.preview-edit-trigger[type="button"]'));
+  const external = dom.window.document.querySelector('a[href^="mailto:"]'); const blocked = new dom.window.MouseEvent("click", { bubbles: true, cancelable: true }); external?.dispatchEvent(blocked); if (external) assert.equal(blocked.defaultPrevented, true); dom.window.close();
 });
 
 test("typing saves without rebuilding preview and change rebuilds exactly once", () => {

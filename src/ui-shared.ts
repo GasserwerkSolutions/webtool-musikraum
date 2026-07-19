@@ -6,6 +6,11 @@ export type UiContext = {
   store: BuilderStore;
   repository: DraftRepository;
   surfaceCard: HTMLElement;
+  workspace: HTMLElement;
+  controlSurface: HTMLElement;
+  surfaceStage: HTMLElement;
+  sidebarToggle: HTMLButtonElement;
+  sidebarResizer: HTMLElement;
   previewFrame: HTMLIFrameElement;
   previewHint: HTMLElement;
   saveStatus: HTMLElement;
@@ -32,7 +37,7 @@ function requiredElement<T extends Element>(id: string): T {
 }
 
 export function createUiContext(store: BuilderStore, repository: DraftRepository): UiContext {
-  return { store, repository, surfaceCard: requiredElement("surfaceCard"), previewFrame: requiredElement("previewFrame"), previewHint: requiredElement("previewHint"), saveStatus: requiredElement("saveStatus"), panelStatus: requiredElement("panelStatus"), undoButton: requiredElement("undoButton"), redoButton: requiredElement("redoButton"), backupInput: requiredElement("backupInput"), announcer: requiredElement("editorAnnouncer"), offerList: requiredElement("offerList"), structureList: requiredElement("structureList"), readinessList: requiredElement("readinessList"), offerTemplate: requiredElement("offerTemplate"), previewTimer: null, suppressPreview: false, previewInstanceId: "", previewScroll: null, volatileStorage: false };
+  return { store, repository, surfaceCard: requiredElement("surfaceCard"), workspace: document.querySelector(".workspace") as HTMLElement, controlSurface: document.querySelector(".control-surface") as HTMLElement, surfaceStage: requiredElement("surfaceStage"), sidebarToggle: requiredElement("sidebarToggle"), sidebarResizer: requiredElement("sidebarResizer"), previewFrame: requiredElement("previewFrame"), previewHint: requiredElement("previewHint"), saveStatus: requiredElement("saveStatus"), panelStatus: requiredElement("panelStatus"), undoButton: requiredElement("undoButton"), redoButton: requiredElement("redoButton"), backupInput: requiredElement("backupInput"), announcer: requiredElement("editorAnnouncer"), offerList: requiredElement("offerList"), structureList: requiredElement("structureList"), readinessList: requiredElement("readinessList"), offerTemplate: requiredElement("offerTemplate"), previewTimer: null, suppressPreview: false, previewInstanceId: "", previewScroll: null, volatileStorage: false };
 }
 
 export function getAtPath(object: unknown, path: string): unknown { return path.split(".").reduce<unknown>((value, key) => value && typeof value === "object" ? (value as Record<string, unknown>)[key] : undefined, object); }

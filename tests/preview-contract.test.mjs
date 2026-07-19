@@ -14,7 +14,7 @@ test("accepts only current, well-formed preview targets", () => {
   assert.equal(parseNavigateMessage({ ...base, target: { kind: "offer", offerId: draft.offers[1].id, field: "text" } }, "current", draft)?.target.kind, "offer");
   assert.equal(parseNavigateMessage({ ...base, instanceId: "old", target: { kind: "panel", panel: "hero" } }, "current", draft), null);
   assert.equal(parseNavigateMessage({ ...base, target: { kind: "field", field: "site.unknown" } }, "current", draft), null);
-  assert.equal(parseNavigateMessage({ ...base, target: { kind: "offer", offerId: "deleted", field: "title" } }, "current", draft), null);
+  assert.equal(parseNavigateMessage({ ...base, target: { kind: "offer", offerId: "deleted", field: "title" } }, "current", draft)?.target.kind, "offer");
 });
 
 test("resolves the editor panel for all target kinds", () => {

@@ -13,6 +13,8 @@ Ein bewusst einfaches, persönliches Website-Werkzeug für Franz Gasser. Datenmo
 - vier kuratierte Farbwelten
 - responsive Live-Vorschau für Desktop, Tablet und Mobiltelefon
 - direkte Bearbeitung: Ein Klick auf sichtbaren Text öffnet exakt das zugehörige Feld
+- falt- und per Maus, Touch oder Tastatur grössenveränderbare Bearbeitungsfläche
+- feste Vorschaugrössen von 1200, 768 und 390 Pixeln mit eindeutiger Scrollverantwortung
 - ruhige Vorschau-Aktualisierung nach abgeschlossener Texteingabe, damit das feste Titelbild beim Schreiben stabil bleibt
 - Rückgängig/Wiederholen per Knopf oder Tastatur
 - herunterladbare und wieder einlesbare Entwurfssicherung
@@ -36,7 +38,7 @@ python3 -m http.server 8080
 
 Danach `http://localhost:8080` öffnen.
 
-Die TypeScript-Quellen liegen unter `src/`; die kompilierten, statisch auslieferbaren Browsermodule unter `assets/` werden bewusst mitcommittet.
+Die TypeScript-Quellen liegen unter `src/`; die kompilierten, statisch auslieferbaren Browsermodule unter `assets/` werden bewusst mitcommittet. `npm run check` umfasst zusätzlich zu Typ- und Logiktests eine echte Chromium-Abnahme für iframe-Navigation, Breakpoints, Scrollcontainer und Sidebar-Bedienung.
 
 Die Editorvorschau und der HTML-Export entstehen aus demselben Renderer. Nur `preview: true` ergänzt die kurzlebigen Zielkennungen, das versionierte Nachrichtenprotokoll und die Bedienhilfen. Der Export enthält diese Editorbestandteile von Anfang an nicht. Die Funktion verändert das Entwurfsschema nicht.
 
