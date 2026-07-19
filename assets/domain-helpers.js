@@ -10,6 +10,25 @@ export function normalizeHttpUrl(value) {
         return null;
     }
 }
+export function normalizeEmail(value) {
+    const email = typeof value === "string" ? value.trim() : "";
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : null;
+}
+export function normalizePhone(value) {
+    const phone = typeof value === "string" ? value.trim() : "";
+    if (!phone)
+        return null;
+    const normalized = phone.replace(/[^\d+]/g, "").replace(/(?!^)\+/g, "");
+    return /^\+?\d{6,15}$/.test(normalized) ? normalized : null;
+}
+export function normalizeInstagramUrl(value) {
+    const normalized = normalizeHttpUrl(value);
+    if (!normalized)
+        return null;
+    const url = new URL(normalized);
+    const host = url.hostname.toLowerCase();
+    return host === "instagram.com" || host.endsWith(".instagram.com") ? url.toString() : null;
+}
 export function escapeHtml(value) { return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
 export function escapeAttr(value) { return escapeHtml(value).replace(/`/g, "&#096;"); }
 export function safeJson(value) { return JSON.stringify(value, (_key, item) => item === undefined ? undefined : item).replace(/</g, "\\u003c"); }
