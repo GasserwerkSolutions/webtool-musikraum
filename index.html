@@ -7,7 +7,6 @@
   <title>Musikraum Website-Werkzeug</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="foundation.css">
 </head>
 <body>
   <a class="skip-link" href="#builder-main">Zum Werkzeug springen</a>
@@ -36,8 +35,8 @@
       <div class="surface-stage"><div id="surfaceCard" class="surface-card">
         <section class="panel is-active" data-panel="site" aria-labelledby="panel-site-title">
           <div class="panel__header"><p class="eyebrow">Die Website</p><h1 id="panel-site-title">Musikraum</h1><p>Hier stehen Name und kurzer Leitsatz. Änderungen erscheinen sofort rechts in der Vorschau.</p></div>
-          <label class="field"><span>Name der Website</span><input type="text" data-bind="salon.name" autocomplete="organization" required></label>
-          <label class="field"><span>Leitsatz</span><input type="text" data-bind="salon.tagline" placeholder="Lauschen. Spielen. Entdecken."></label>
+          <label class="field"><span>Name der Website</span><input type="text" data-bind="site.name" autocomplete="organization" required></label>
+          <label class="field"><span>Leitsatz</span><input type="text" data-bind="site.tagline" placeholder="Lauschen. Spielen. Entdecken."></label>
           <div class="foundation-note"><strong>Das Titelbild ist bereits eingebaut</strong><span>Bis die allgemeine Bildverwaltung fertig ist, verwendet das Werkzeug das kuratierte Musikraum-Titelbild. Beim HTML-Export wird es nach Möglichkeit direkt in die Datei eingebettet.</span></div>
           <div class="foundation-note"><strong>Alles bleibt bei dir</strong><span>Der Entwurf wird nur in diesem Browser gespeichert. Es gibt keine Anmeldung und keine automatische Veröffentlichung.</span></div>
         </section>
@@ -58,10 +57,10 @@
         </section>
 
         <section class="panel" data-panel="services" aria-labelledby="panel-services-title" hidden>
-          <div class="panel__header panel__header--action"><div><p class="eyebrow">Klangabende</p><h2 id="panel-services-title">Angebotskarten</h2><p>Kurze, leicht erfassbare Punkte. Preise und Buchungslogik sind bewusst nicht Teil dieser einfachen Website.</p></div><button class="button button--primary" type="button" data-action="add-service">Karte hinzufügen</button></div>
-          <label class="field"><span>Titel des Bereichs</span><input type="text" data-bind="copy.servicesTitle"></label>
-          <label class="field"><span>Einleitung</span><textarea data-bind="copy.servicesSubtitle" rows="4"></textarea></label>
-          <div id="serviceList" class="item-list"></div>
+          <div class="panel__header panel__header--action"><div><p class="eyebrow">Klangabende</p><h2 id="panel-services-title">Klangmomente</h2><p>Hier beschreibst du in kurzen Karten, was Menschen bei dir erleben können.</p></div><button class="button button--primary" type="button" data-action="add-offer">Klangmoment hinzufügen</button></div>
+          <label class="field"><span>Titel des Bereichs</span><input type="text" data-bind="copy.offersTitle"></label>
+          <label class="field"><span>Einleitung</span><textarea data-bind="copy.offersIntro" rows="4"></textarea></label>
+          <div id="offerList" class="item-list"></div>
         </section>
 
         <section class="panel" data-panel="structure" aria-labelledby="panel-structure-title" hidden>
@@ -71,21 +70,21 @@
 
         <section class="panel" data-panel="contact" aria-labelledby="panel-contact-title" hidden>
           <div class="panel__header"><p class="eyebrow">Erreichbarkeit</p><h2 id="panel-contact-title">Kontakt und Abschluss</h2><p>Diese Angaben erzeugen direkt anklickbare E-Mail- und Telefon-Knöpfe.</p></div>
-          <label class="field"><span>Abschluss-Titel</span><input type="text" data-bind="copy.bookingTitle"></label>
-          <label class="field"><span>Abschluss-Text</span><textarea data-bind="copy.bookingSubtitle" rows="4"></textarea></label>
-          <div class="field-grid"><label class="field"><span>Telefon</span><input type="tel" data-bind="salon.phone" autocomplete="tel"></label><label class="field"><span>E-Mail</span><input type="email" data-bind="salon.email" autocomplete="email"></label></div>
-          <label class="field"><span>Adresse</span><input type="text" data-bind="salon.address" autocomplete="street-address"></label>
-          <div class="field-grid"><label class="field"><span>PLZ</span><input type="text" data-bind="salon.postalCode" inputmode="numeric" autocomplete="postal-code"></label><label class="field"><span>Ort</span><input type="text" data-bind="salon.city" autocomplete="address-level2"></label></div>
-          <label class="field"><span>Instagram (optional)</span><input type="url" data-bind="salon.instagram" placeholder="https://instagram.com/..."></label>
+          <label class="field"><span>Abschluss-Titel</span><input type="text" data-bind="copy.contactTitle"></label>
+          <label class="field"><span>Abschluss-Text</span><textarea data-bind="copy.contactText" rows="4"></textarea></label>
+          <div class="field-grid"><label class="field"><span>Telefon</span><input type="tel" data-bind="site.phone" autocomplete="tel"></label><label class="field"><span>E-Mail</span><input type="email" data-bind="site.email" autocomplete="email"></label></div>
+          <label class="field"><span>Adresse</span><input type="text" data-bind="site.address" autocomplete="street-address"></label>
+          <div class="field-grid"><label class="field"><span>PLZ</span><input type="text" data-bind="site.postalCode" inputmode="numeric" autocomplete="postal-code"></label><label class="field"><span>Ort</span><input type="text" data-bind="site.city" autocomplete="address-level2"></label></div>
+          <label class="field"><span>Instagram (optional)</span><input type="url" data-bind="site.instagram" placeholder="https://instagram.com/..."></label>
         </section>
 
         <section class="panel" data-panel="design" aria-labelledby="panel-design-title" hidden>
           <div class="panel__header"><p class="eyebrow">Atmosphäre</p><h2 id="panel-design-title">Farbwelt wählen</h2><p>Vier ruhige Varianten auf derselben Musikraum-Gestaltung.</p></div>
           <div class="preset-grid" role="radiogroup" aria-label="Farbwelt">
-            <button type="button" class="preset-card preset-card--music" data-preset="elegant"><strong>Musikraum</strong><span>Warm, ruhig und vertraut</span></button>
-            <button type="button" class="preset-card preset-card--forest" data-preset="modern"><strong>Waldton</strong><span>Gedämpftes Grün</span></button>
-            <button type="button" class="preset-card preset-card--wood" data-preset="natural"><strong>Holzklang</strong><span>Erde und Wärme</span></button>
-            <button type="button" class="preset-card preset-card--night" data-preset="bold"><strong>Nachtklang</strong><span>Dunkler und konzentriert</span></button>
+            <button type="button" class="preset-card preset-card--music" data-preset="musikraum"><strong>Musikraum</strong><span>Warm, ruhig und vertraut</span></button>
+            <button type="button" class="preset-card preset-card--forest" data-preset="waldton"><strong>Waldton</strong><span>Gedämpftes Grün</span></button>
+            <button type="button" class="preset-card preset-card--wood" data-preset="holzklang"><strong>Holzklang</strong><span>Erde und Wärme</span></button>
+            <button type="button" class="preset-card preset-card--night" data-preset="nachtklang"><strong>Nachtklang</strong><span>Dunkler und konzentriert</span></button>
           </div>
           <div class="field-grid"><label class="field"><span>Dunkle Hauptfarbe</span><input type="color" data-bind="theme.primary"></label><label class="field"><span>Akzentfarbe</span><input type="color" data-bind="theme.accent"></label></div>
         </section>
@@ -93,7 +92,7 @@
         <section class="panel" data-panel="publish" aria-labelledby="panel-publish-title" hidden>
           <div class="panel__header"><p class="eyebrow">Mitnehmen</p><h2 id="panel-publish-title">Die Website ist bereit</h2><p>Das Werkzeug prüft die wichtigsten Inhalte. Danach erhältst du eine einzelne HTML-Datei, die direkt gehostet werden kann.</p></div>
           <div id="readinessList" class="readiness-list"></div>
-          <div class="publish-actions"><button class="button button--primary button--large" type="button" data-action="export">Website als HTML exportieren</button><button class="button button--quiet" type="button" data-action="copy-json">Entwurf als Sicherung kopieren</button></div>
+          <div class="publish-actions"><button class="button button--primary button--large" type="button" data-action="export">Website als HTML exportieren</button><button class="button button--quiet" type="button" data-action="copy-draft">Entwurf als Sicherung kopieren</button></div>
           <p class="privacy-note">Texte und Reihenfolge werden lokal in diesem Browser gespeichert. Das Titelbild ist vorgegeben, bis die Bildverwaltung ergänzt wird.</p>
         </section>
       </div></div>
@@ -105,11 +104,11 @@
     </section>
   </main>
 
-  <template id="serviceTemplate">
-    <article class="item-card" data-service-card>
-      <div class="item-card__topline"><strong data-service-number>Angebot</strong><button class="icon-button" type="button" data-action="remove-service" aria-label="Angebotskarte entfernen">×</button></div>
-      <label class="field"><span>Titel</span><input type="text" data-service-field="name" placeholder="Viele Instrumente"></label>
-      <label class="field"><span>Beschreibung</span><textarea rows="4" data-service-field="description" placeholder="Was erwartet die Besucherinnen und Besucher?"></textarea></label>
+  <template id="offerTemplate">
+    <article class="item-card" data-offer-card>
+      <div class="item-card__topline"><strong data-offer-number>Klangmoment</strong><button class="icon-button" type="button" data-action="remove-offer" aria-label="Klangmoment entfernen">×</button></div>
+      <label class="field"><span>Titel</span><input type="text" data-offer-field="title" placeholder="Viele Instrumente"></label>
+      <label class="field"><span>Beschreibung</span><textarea rows="4" data-offer-field="text" placeholder="Was können Menschen bei dir erleben?"></textarea></label>
     </article>
   </template>
 

@@ -4,7 +4,7 @@ import {
   escapeHtml,
   isSafeHttpUrl,
   safeJson,
-  type BuilderDraftV2,
+  type MusicraumDraft,
   type SectionKey,
 } from "./domain.js";
 
@@ -21,11 +21,11 @@ const SECTION_META: Record<SectionKey, { id: string; nav: string }> = {
 
 type BuildOptions = { preview?: boolean; heroImageUrl?: string };
 
-export function buildWebsiteHtml(draft: BuilderDraftV2, options: BuildOptions = {}): string {
-  const preset = PRESETS[draft.theme.preset] ?? PRESETS.elegant;
+export function buildWebsiteHtml(draft: MusicraumDraft, options: BuildOptions = {}): string {
+  const preset = PRESETS[draft.theme.preset] ?? PRESETS.musikraum;
   const theme = { ...preset, primary: draft.theme.primary, accent: draft.theme.accent };
   const heroImageUrl = options.heroImageUrl || MUSICRAUM_HERO_URL;
-  const address = [draft.salon.address, [draft.salon.postalCode, draft.salon.city].filter(Boolean).join(" ")].filter(Boolean).join(", ");
+  const address = [draft.site.address, [draft.site.postalCode, draft.site.city].filter(Boolean).join(" ")].filter(Boolean).join(", ");
   const visibleOrder = draft.layout.order.filter((key) => draft.layout.visibility[key]);
   const firstContentId = SECTION_META[visibleOrder.find((key) => key !== "contact") ?? "contact"].id;
   const nav = visibleOrder.map((key) => `<a href="#${SECTION_META[key].id}">${escapeHtml(SECTION_META[key].nav)}</a>`).join("");
@@ -33,14 +33,14 @@ export function buildWebsiteHtml(draft: BuilderDraftV2, options: BuildOptions = 
   const schema = {
     "@context": "https://schema.org",
     "@type": "ProfessionalService",
-    name: draft.salon.name,
+    name: draft.site.name,
     description: draft.copy.heroSubtitle,
-    telephone: draft.salon.phone || undefined,
-    email: draft.salon.email || undefined,
-    address: address ? { "@type": "PostalAddress", streetAddress: draft.salon.address || undefined, postalCode: draft.salon.postalCode || undefined, addressLocality: draft.salon.city || undefined, addressCountry: "CH" } : undefined,
-    makesOffer: draft.services.filter((offer) => offer.name.trim()).map((offer) => ({ "@type": "Offer", itemOffered: { "@type": "Service", name: offer.name, description: offer.description || undefined } })),
+    telephone: draft.site.phone || undefined,
+    email: draft.site.email || undefined,
+    address: address ? { "@type": "PostalAddress", streetAddress: draft.site.address || undefined, postalCode: draft.site.postalCode || undefined, addressLocality: draft.site.city || undefined, addressCountry: "CH" } : undefined,
+    makesOffer: draft.offers.filter((offer) => offer.title.trim()).map((offer) => ({ "@type": "Offer", itemOffered: { "@type": "Service", name: offer.title, description: offer.text || undefined } })),
   };
-  const title = `${draft.salon.name}${draft.salon.tagline ? ` – ${draft.salon.tagline}` : ""}`;
+  const title = `${draft.site.name}${draft.site.tagline ? ` – ${draft.site.tagline}` : ""}`;
 
   return `<!doctype html>
 <html lang="de-CH">
@@ -58,7 +58,7 @@ export function buildWebsiteHtml(draft: BuilderDraftV2, options: BuildOptions = 
   <a class="skip-link" href="#main">Zum Inhalt springen</a>
   <header class="site-header">
     <div class="container header-inner">
-      <a class="brand" href="#top"><span class="brand-mark" aria-hidden="true"><i></i></span><span><strong>${escapeHtml(draft.salon.name)}</strong><small>${escapeHtml(draft.salon.tagline)}</small></span></a>
+      <a class="brand" href="#top"><span class="brand-mark" aria-hidden="true"><i></i></span><span><strong>${escapeHtml(draft.site.name)}</strong><small>${escapeHtml(draft.site.tagline)}</small></span></a>
       <button class="menu-button" type="button" aria-label="Navigation anzeigen" aria-expanded="false"><span></span><span></span><span></span></button>
       <nav class="main-nav" aria-label="Hauptnavigation">${nav}</nav>
     </div>
@@ -75,27 +75,27 @@ export function buildWebsiteHtml(draft: BuilderDraftV2, options: BuildOptions = 
     </section>
     ${sections}
   </main>
-  <footer class="site-footer"><div class="container footer-grid"><div><strong>${escapeHtml(draft.salon.name)}</strong><p>${escapeHtml(draft.salon.tagline)}</p></div><div>${address ? `<p>${escapeHtml(address)}</p>` : ""}${draft.salon.email ? `<a href="mailto:${escapeAttr(draft.salon.email)}">${escapeHtml(draft.salon.email)}</a>` : ""}</div><p>© ${new Date().getFullYear()} ${escapeHtml(draft.salon.name)}</p></div></footer>
+  <footer class="site-footer"><div class="container footer-grid"><div><strong>${escapeHtml(draft.site.name)}</strong><p>${escapeHtml(draft.site.tagline)}</p></div><div>${address ? `<p>${escapeHtml(address)}</p>` : ""}${draft.site.email ? `<a href="mailto:${escapeAttr(draft.site.email)}">${escapeHtml(draft.site.email)}</a>` : ""}</div><p>© ${new Date().getFullYear()} ${escapeHtml(draft.site.name)}</p></div></footer>
   <script>(()=>{const b=document.querySelector('.menu-button'),n=document.querySelector('.main-nav');if(!b||!n)return;b.addEventListener('click',()=>{const o=b.getAttribute('aria-expanded')==='true';b.setAttribute('aria-expanded',String(!o));n.classList.toggle('is-open',!o)});n.addEventListener('click',()=>{b.setAttribute('aria-expanded','false');n.classList.remove('is-open')})})();</script>
 </body>
 </html>`;
 }
 
-function renderSection(key: SectionKey, draft: BuilderDraftV2, address: string): string {
+function renderSection(key: SectionKey, draft: MusicraumDraft, address: string): string {
   const copy = draft.copy;
   if (key === "intro") return `<section class="section intro" id="franz"><div class="container split"><div><p class="eyebrow">${escapeHtml(copy.introLabel)}</p><h2>${escapeHtml(copy.introTitle)}</h2><blockquote>„${escapeHtml(copy.introQuote)}“</blockquote></div><div><p class="lead">${escapeHtml(copy.introText)}</p><ul class="plain-list"><li>gemeinsam spielen und aufeinander hören</li><li>Instrumente aus aller Welt ausprobieren</li><li>ohne Noten und ohne Leistungsdruck</li></ul></div></div></section>`;
   if (key === "why") return `<section class="section dark-band" id="frei-spielen"><div class="container narrow"><p class="eyebrow">${escapeHtml(copy.whyLabel)}</p><h2>${escapeHtml(copy.whyTitle)}</h2><p class="lead">${escapeHtml(copy.whyText)}</p><div class="resonance" aria-hidden="true"><span></span><span></span><span></span></div></div></section>`;
   if (key === "offers") {
-    const cards = draft.services.filter((offer) => offer.name.trim()).map((offer, index) => `<article class="card"><span class="card-number">0${index + 1}</span><h3>${escapeHtml(offer.name)}</h3>${offer.description ? `<p>${escapeHtml(offer.description)}</p>` : ""}</article>`).join("");
-    return `<section class="section offers" id="angebote"><div class="container"><div class="section-head"><p class="eyebrow">Die Klangabende</p><h2>${escapeHtml(copy.servicesTitle)}</h2><p class="lead">${escapeHtml(copy.servicesSubtitle)}</p></div><div class="card-grid">${cards || '<p class="empty">Weitere Angaben folgen.</p>'}</div></div></section>`;
+    const cards = draft.offers.filter((offer) => offer.title.trim()).map((offer, index) => `<article class="card"><span class="card-number">0${index + 1}</span><h3>${escapeHtml(offer.title)}</h3>${offer.text ? `<p>${escapeHtml(offer.text)}</p>` : ""}</article>`).join("");
+    return `<section class="section offers" id="angebote"><div class="container"><div class="section-head"><p class="eyebrow">Die Klangabende</p><h2>${escapeHtml(copy.offersTitle)}</h2><p class="lead">${escapeHtml(copy.offersIntro)}</p></div><div class="card-grid">${cards || '<p class="empty">Weitere Angaben folgen.</p>'}</div></div></section>`;
   }
   if (key === "story") return `<section class="section story" id="geschichte"><div class="container split"><div><p class="eyebrow">${escapeHtml(copy.storyLabel)}</p><h2>${escapeHtml(copy.storyTitle)}</h2></div><p class="lead">${escapeHtml(copy.storyText)}</p></div></section>`;
   const contactLinks = [
-    draft.salon.email ? `<a class="button button-light" href="mailto:${escapeAttr(draft.salon.email)}?subject=Anfrage%20${escapeAttr(draft.salon.name)}">Jetzt unverbindlich anfragen</a>` : "",
-    draft.salon.phone ? `<a class="button button-ghost" href="tel:${escapeAttr(draft.salon.phone.replace(/\s+/g, ""))}">${escapeHtml(draft.salon.phone)} anrufen</a>` : "",
-    isSafeHttpUrl(draft.salon.instagram) ? `<a class="button button-ghost" href="${escapeAttr(draft.salon.instagram)}" target="_blank" rel="noopener">Instagram</a>` : "",
+    draft.site.email ? `<a class="button button-light" href="mailto:${escapeAttr(draft.site.email)}?subject=Anfrage%20${escapeAttr(draft.site.name)}">Jetzt unverbindlich anfragen</a>` : "",
+    draft.site.phone ? `<a class="button button-ghost" href="tel:${escapeAttr(draft.site.phone.replace(/\s+/g, ""))}">${escapeHtml(draft.site.phone)} anrufen</a>` : "",
+    isSafeHttpUrl(draft.site.instagram) ? `<a class="button button-ghost" href="${escapeAttr(draft.site.instagram)}" target="_blank" rel="noopener">Instagram</a>` : "",
   ].filter(Boolean).join("");
-  return `<section class="section contact" id="kontakt"><div class="container narrow"><p class="eyebrow">Kontakt</p><h2>${escapeHtml(copy.bookingTitle)}</h2><p class="lead">${escapeHtml(copy.bookingSubtitle)}</p>${address ? `<p class="address">${escapeHtml(address)}</p>` : ""}<div class="actions centered">${contactLinks}</div></div></section>`;
+  return `<section class="section contact" id="kontakt"><div class="container narrow"><p class="eyebrow">Kontakt</p><h2>${escapeHtml(copy.contactTitle)}</h2><p class="lead">${escapeHtml(copy.contactText)}</p>${address ? `<p class="address">${escapeHtml(address)}</p>` : ""}<div class="actions centered">${contactLinks}</div></div></section>`;
 }
 
 function websiteCss(theme: (typeof PRESETS)[keyof typeof PRESETS], heroImageUrl: string): string {

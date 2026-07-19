@@ -1,114 +1,40 @@
-import {
-  MAX_TESTIMONIALS, PRESETS, SCHEMA_VERSION, createClosedSchedule, createDefaultDraft, createDefaultSchedule, dayName,
-  type AssetKind, type BuilderAssetRef, type BuilderDraftV2, type BuilderService, type BuilderStaff,
-  type DayOfWeek, type PriceType, type PublicationState,
-  type SectionKey, type ThemePresetName, type WeeklySchedule,
-} from "./domain-model.js";
-import { normalizeHttpUrl, slugify } from "./domain-helpers.js";
-import { asBoolean, asNumber, asRecord, asString, safeColor, safeFocalPoint, safeIso } from "./domain-coerce.js";
+import { PRESETS, SCHEMA_VERSION, createDefaultDraft, type MusicraumDraft, type MusicraumOffer, type SectionKey, type ThemePresetName } from "./domain-model.js";
+import { normalizeHttpUrl } from "./domain-helpers.js";
+import { asBoolean, asRecord, asString, safeColor, safeIso } from "./domain-coerce.js";
 
-export function normalizeSchedule(value: unknown, fallback = createDefaultSchedule()): WeeklySchedule {
-  if (!Array.isArray(value)) return structuredClone(fallback);
-  const byDay = new Map<number, Record<string, unknown>>();
-  value.forEach((item) => { const row = asRecord(item); const day = Number(row.dayOfWeek); if (Number.isInteger(day) && day >= 0 && day <= 6) byDay.set(day, row); });
-  return ([0, 1, 2, 3, 4, 5, 6] as DayOfWeek[]).map((dayOfWeek) => {
-    const row = byDay.get(dayOfWeek);
-    if (!row) return structuredClone(fallback.find((item) => item.dayOfWeek === dayOfWeek) ?? { dayOfWeek, closed: true, ranges: [] });
-    const ranges = Array.isArray(row.ranges) ? row.ranges.slice(0, 4).map((range) => asRecord(range)).map((range) => ({ from: normalizeTime(range.from, "09:00"), to: normalizeTime(range.to, "18:00") })) : [];
-    const closed = asBoolean(row.closed, ranges.length === 0);
-    return { dayOfWeek, closed, ranges: closed ? [] : ranges.length ? ranges : [{ from: "09:00", to: "18:00" }] };
-  });
-}
+const SECTION_KEYS: SectionKey[] = ["intro", "why", "offers", "story", "contact"];
+const PRESET_KEYS: ThemePresetName[] = ["musikraum", "waldton", "holzklang", "nachtklang"];
 
-export function normalizeTime(value: unknown, fallback: string): string { const text = asString(value); return /^([01]\d|2[0-3]):[0-5]\d$/.test(text) ? text : fallback; }
-
-export function validateWeeklySchedule(schedule: WeeklySchedule): string[] {
-  const errors: string[] = [];
-  for (const day of schedule) {
-    if (day.closed) continue;
-    if (!day.ranges.length) errors.push(`${dayName(day.dayOfWeek)} hat keine Zeitspanne.`);
-    const sorted = [...day.ranges].sort((a, b) => a.from.localeCompare(b.from));
-    sorted.forEach((range, index) => {
-      if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(range.from) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(range.to)) errors.push(`${dayName(day.dayOfWeek)} enthält eine ungültige Uhrzeit.`);
-      else if (range.from >= range.to) errors.push(`${dayName(day.dayOfWeek)}: Beginn muss vor Ende liegen.`);
-      const previous = index > 0 ? sorted[index - 1] : undefined;
-      if (previous && previous.to > range.from) errors.push(`${dayName(day.dayOfWeek)} enthält überlappende Zeitspannen.`);
-    });
-  }
-  return [...new Set(errors)];
-}
-
-export function normalizeDraftV2(input: unknown): BuilderDraftV2 {
+export function normalizeDraft(input: unknown): MusicraumDraft {
   const source = asRecord(input);
   if (source.schemaVersion !== SCHEMA_VERSION) throw new Error(`UNSUPPORTED_DRAFT_SCHEMA:${String(source.schemaVersion)}`);
   const fallback = createDefaultDraft();
-  const salon = asRecord(source.salon);
+  const site = asRecord(source.site);
   const copy = asRecord(source.copy);
   const layout = asRecord(source.layout);
   const visibility = asRecord(layout.visibility);
   const theme = asRecord(source.theme);
-  const testimonials = asRecord(source.testimonials);
-  const publication = asRecord(source.publication);
-  const migration = asRecord(source.migration);
-  const preset = (["elegant", "modern", "natural", "bold"] as const).includes(theme.preset as ThemePresetName) ? theme.preset as ThemePresetName : fallback.theme.preset;
-  const rawServices = Array.isArray(source.services) ? source.services : [];
-  const services: BuilderService[] = [];
-  const usedClientIds = new Set<string>();
-  const usedSlugs = new Set<string>();
-  rawServices.forEach((value, index) => {
+  const requestedOrder = Array.isArray(layout.order) ? layout.order.map((value) => asString(value)).filter((value): value is SectionKey => SECTION_KEYS.includes(value as SectionKey)) : [];
+  const order = [...new Set(requestedOrder), ...SECTION_KEYS.filter((key) => !requestedOrder.includes(key))];
+  const preset = PRESET_KEYS.includes(theme.preset as ThemePresetName) ? theme.preset as ThemePresetName : fallback.theme.preset;
+  const offers: MusicraumOffer[] = Array.isArray(source.offers) ? source.offers.slice(0, 12).map((value, index) => {
     const row = asRecord(value);
-    let clientId = asString(row.clientId, `service-${index + 1}`) || `service-${index + 1}`;
-    while (usedClientIds.has(clientId)) clientId = `${clientId}-${index + 1}`;
-    usedClientIds.add(clientId);
-    let slug = slugify(asString(row.slug, asString(row.name, `service-${index + 1}`)));
-    let suffix = 2; const baseSlug = slug; while (usedSlugs.has(slug)) slug = `${baseSlug}-${suffix++}`; usedSlugs.add(slug);
-    services.push({ clientId, slug, category: asString(row.category, "Leistungen"), name: asString(row.name, "Neue Leistung"), description: asString(row.description), durationMinutes: asNumber(row.durationMinutes, 30, 5, 600), price: asNumber(row.price, 0, 0, 10000), priceType: (["fixed", "from", "on-request"] as const).includes(row.priceType as PriceType) ? row.priceType as PriceType : "fixed", bookable: asBoolean(row.bookable, true) });
-  });
-  const serviceIds = new Set(services.map((service) => service.clientId));
-  const staff = Array.isArray(source.staff) ? source.staff.map((value, index): BuilderStaff => {
-    const row = asRecord(value);
-    return { clientId: asString(row.clientId, `staff-${index + 1}`), name: asString(row.name, "Neue Person"), email: asString(row.email), role: asString(row.role, "Coiffeur/in"), bio: asString(row.bio), specialties: Array.isArray(row.specialties) ? row.specialties.map((item) => asString(item)).filter(Boolean).slice(0, 20) : [], active: asBoolean(row.active, true), serviceClientIds: Array.isArray(row.serviceClientIds) ? [...new Set(row.serviceClientIds.map((item) => asString(item)).filter((id) => serviceIds.has(id)))] : [], workingHours: normalizeSchedule(row.workingHours, createClosedSchedule()), portraitAssetLocalId: asString(row.portraitAssetLocalId) || null };
-  }) : [];
-  const assets = Array.isArray(source.assets) ? source.assets.map((value): BuilderAssetRef | null => { const row = asRecord(value); const kind = row.kind as AssetKind; if (!["HERO", "PORTRAIT", "GALLERY", "LOGO"].includes(kind)) return null; return { localId: asString(row.localId), kind, ownerClientId: asString(row.ownerClientId) || null, fileName: asString(row.fileName), mimeType: asString(row.mimeType), bytes: asNumber(row.bytes, 0, 0, Number.MAX_SAFE_INTEGER), width: row.width == null ? null : asNumber(row.width, 0, 0, 100000), height: row.height == null ? null : asNumber(row.height, 0, 0, 100000), alt: asString(row.alt), focalPoint: safeFocalPoint(row.focalPoint), uploadedAssetId: asString(row.uploadedAssetId) || null }; }).filter((item): item is BuilderAssetRef => Boolean(item?.localId)) : [];
+    return { id: asString(row.id, `offer-${index + 1}`), title: asString(row.title, "Neuer Klangmoment"), text: asString(row.text) };
+  }) : fallback.offers;
   const now = new Date().toISOString();
-  const sectionKeys: SectionKey[] = ["intro", "why", "offers", "story", "contact"];
-  const requestedOrder = Array.isArray(layout.order)
-    ? layout.order.map((value) => asString(value)).filter((value): value is SectionKey => sectionKeys.includes(value as SectionKey))
-    : [];
-  const order = [...new Set(requestedOrder), ...sectionKeys.filter((key) => !requestedOrder.includes(key))];
   return {
     schemaVersion: SCHEMA_VERSION,
-    draftId: asString(source.draftId, fallback.draftId), createdAt: safeIso(source.createdAt, now), updatedAt: safeIso(source.updatedAt, now),
-    salon: { name: asString(salon.name, fallback.salon.name), tagline: asString(salon.tagline, fallback.salon.tagline), phone: asString(salon.phone, fallback.salon.phone), email: asString(salon.email, fallback.salon.email), address: asString(salon.address, fallback.salon.address), postalCode: asString(salon.postalCode, fallback.salon.postalCode), city: asString(salon.city, fallback.salon.city), instagram: normalizeHttpUrl(salon.instagram) ?? "" },
-    copy: {
-      heroLabel: asString(copy.heroLabel, fallback.copy.heroLabel),
-      heroTitle: asString(copy.heroTitle, fallback.copy.heroTitle),
-      heroSubtitle: asString(copy.heroSubtitle, fallback.copy.heroSubtitle),
-      heroPrimaryAction: asString(copy.heroPrimaryAction, fallback.copy.heroPrimaryAction),
-      heroSecondaryAction: asString(copy.heroSecondaryAction, fallback.copy.heroSecondaryAction),
-      introLabel: asString(copy.introLabel, fallback.copy.introLabel),
-      introTitle: asString(copy.introTitle, fallback.copy.introTitle),
-      introQuote: asString(copy.introQuote, fallback.copy.introQuote),
-      introText: asString(copy.introText, fallback.copy.introText),
-      whyLabel: asString(copy.whyLabel, fallback.copy.whyLabel),
-      whyTitle: asString(copy.whyTitle, fallback.copy.whyTitle),
-      whyText: asString(copy.whyText, fallback.copy.whyText),
-      servicesTitle: asString(copy.servicesTitle, fallback.copy.servicesTitle),
-      servicesSubtitle: asString(copy.servicesSubtitle, fallback.copy.servicesSubtitle),
-      storyLabel: asString(copy.storyLabel, fallback.copy.storyLabel),
-      storyTitle: asString(copy.storyTitle, fallback.copy.storyTitle),
-      storyText: asString(copy.storyText, fallback.copy.storyText),
-      bookingTitle: asString(copy.bookingTitle, fallback.copy.bookingTitle),
-      bookingSubtitle: asString(copy.bookingSubtitle, fallback.copy.bookingSubtitle),
+    draftId: asString(source.draftId, fallback.draftId),
+    createdAt: safeIso(source.createdAt, now),
+    updatedAt: safeIso(source.updatedAt, now),
+    site: {
+      name: asString(site.name, fallback.site.name), tagline: asString(site.tagline, fallback.site.tagline), phone: asString(site.phone, fallback.site.phone), email: asString(site.email, fallback.site.email), address: asString(site.address, fallback.site.address), postalCode: asString(site.postalCode, fallback.site.postalCode), city: asString(site.city, fallback.site.city), instagram: normalizeHttpUrl(site.instagram) ?? "",
     },
-    layout: {
-      order,
-      visibility: Object.fromEntries(sectionKeys.map((key) => [key, asBoolean(visibility[key], fallback.layout.visibility[key])])) as Record<SectionKey, boolean>,
-    },
-    services, staff, businessHours: normalizeSchedule(source.businessHours), assets,
-    testimonials: { enabled: asBoolean(testimonials.enabled), items: Array.isArray(testimonials.items) ? testimonials.items.slice(0, MAX_TESTIMONIALS).map((value, index) => { const row = asRecord(value); return { clientId: asString(row.clientId, asString(row.id, `voice-${index + 1}`)), quote: asString(row.quote), name: asString(row.name), detail: asString(row.detail) }; }) : [] },
+    copy: Object.fromEntries(Object.keys(fallback.copy).map((key) => [key, asString(copy[key], fallback.copy[key as keyof typeof fallback.copy])])) as MusicraumDraft["copy"],
+    offers,
+    layout: { order, visibility: Object.fromEntries(SECTION_KEYS.map((key) => [key, asBoolean(visibility[key], fallback.layout.visibility[key])])) as Record<SectionKey, boolean> },
     theme: { preset, primary: safeColor(theme.primary, PRESETS[preset].primary), accent: safeColor(theme.accent, PRESETS[preset].accent) },
-    publication: { intentId: asString(publication.intentId) || null, state: (["LOCAL", "EMAIL_SENT", "VERIFIED", "ACTIVATING", "PUBLISHED", "FAILED"] as const).includes(publication.state as PublicationState) ? publication.state as PublicationState : "LOCAL", lastErrorCode: asString(publication.lastErrorCode) || null },
-    migration: { sourceVersion: migration.sourceVersion === 1 ? 1 : null, legacyHeroImageUrl: normalizeHttpUrl(migration.legacyHeroImageUrl), migratedAt: migration.migratedAt ? safeIso(migration.migratedAt, now) : null },
   };
 }
+
+export function cloneDraft(draft: MusicraumDraft): MusicraumDraft { return structuredClone(draft); }
