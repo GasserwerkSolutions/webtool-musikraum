@@ -65,9 +65,13 @@ export class MemoryDraftRepository implements DraftRepository {
   async clearAll(): Promise<void> { this.drafts.clear(); this.meta.clear(); }
 }
 
+function pointerValue(value: unknown): string { return typeof value === "string" ? value.trim() : ""; }
+
 export async function loadOrCreateDraft(repository: DraftRepository, storage: Storage = localStorage): Promise<DraftLoadResult> {
-  const pointer = storage.getItem(ACTIVE_DRAFT_POINTER_KEY) || String(await repository.getMeta("activeDraftId") ?? "");
-  if (pointer) {
+  const repositoryPointer = pointerValue(await repository.getMeta("activeDraftId"));
+  const storagePointer = pointerValue(storage.getItem(ACTIVE_DRAFT_POINTER_KEY));
+  const pointers = [...new Set([repositoryPointer, storagePointer].filter(Boolean))];
+  for (const pointer of pointers) {
     try {
       const existing = await repository.getDraft(pointer);
       if (existing) { storage.setItem(ACTIVE_DRAFT_POINTER_KEY, existing.draftId); return { draft: existing, recovered: false }; }
@@ -78,7 +82,7 @@ export async function loadOrCreateDraft(repository: DraftRepository, storage: St
   const draft = createDefaultDraft();
   await repository.putDraft(draft);
   storage.setItem(ACTIVE_DRAFT_POINTER_KEY, draft.draftId);
-  return { draft, recovered: Boolean(pointer) };
+  return { draft, recovered: pointers.length > 0 };
 }
 
 export async function replaceWithFreshDraft(repository: DraftRepository, current: MusicraumDraft, storage: Storage = localStorage): Promise<MusicraumDraft> {
@@ -89,7 +93,7 @@ export async function replaceWithFreshDraft(repository: DraftRepository, current
 }
 
 export async function replaceWithImportedDraft(repository: DraftRepository, current: MusicraumDraft, imported: MusicraumDraft, storage: Storage = localStorage): Promise<MusicraumDraft> {
-  const restored = normalizeDraft(imported);
+  const restored = normalizeDraft({ ...imported, draftId: current.draftId, createdAt: current.createdAt, updatedAt: new Date().toISOString() });
   await repository.replaceDraft(current.draftId, restored);
   storage.setItem(ACTIVE_DRAFT_POINTER_KEY, restored.draftId);
   return restored;
