@@ -13,7 +13,8 @@ export class BuilderUi {
         renderPreview(this.context);
         updateReadiness(this.context);
         this.context.store.subscribe(() => {
-            schedulePreview(this.context);
+            if (!this.context.suppressPreview)
+                schedulePreview(this.context);
             updateReadiness(this.context);
         });
         this.context.store.subscribeSave((state, error) => renderSaveState(this.context, state, error));
