@@ -6,6 +6,7 @@ test("static entry loads the compiled Musikraum tool", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   assert.match(html, /type="module" src="assets\/main\.js"/);
   assert.match(html, /rel="icon" type="image\/svg\+xml" href="favicon\.svg"/);
+  assert.match(html, /src="logo\.svg"/);
   assert.match(html, /data-bind="site\.name"/);
 });
 

@@ -1,6 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="14" fill="#403b34"/>
-  <path d="M19 49c8-9 11-21 10-35 8 3 15 8 20 14" fill="none" stroke="#d8c17d" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M19 49h31c-2-7-2-14-1-21" fill="none" stroke="#f6e4c2" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M29 19l17 10M28 25l18 7M26 32l20 3M24 39h23" fill="none" stroke="#9eb2aa" stroke-width="1.5" stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Harfe">
+  <rect width="64" height="64" rx="15" fill="#343b39"/>
+  <path d="M17 50.5h33" fill="none" stroke="#f3dfae" stroke-width="4.5" stroke-linecap="round"/>
+  <path d="M19.5 49.5c7-8.5 10-21.5 8.8-36 8.7 2.8 15.8 7.7 21.2 14.2" fill="none" stroke="#d9ba70" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M49.5 27.7c-1.2 7.8-.9 15.3.5 22.8" fill="none" stroke="#f3dfae" stroke-width="5" stroke-linecap="round"/>
+  <g fill="none" stroke="#9fb9b3" stroke-width="1.35" stroke-linecap="round"><path d="M29 19.5 47.7 29"/><path d="M28.7 25.7 48 32.5"/><path d="M27.8 32 48.1 36"/><path d="M26 38.5 48.6 40"/><path d="M23.4 44.6h26"/></g>
 </svg>

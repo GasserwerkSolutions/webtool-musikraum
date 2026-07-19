@@ -1,6 +1,6 @@
 import { PRESETS, escapeAttr, escapeHtml, isSafeHttpUrl, safeJson, } from "./domain.js";
 export const MUSICRAUM_HERO_URL = "https://raw.githubusercontent.com/GasserwerkSolutions/musikraum/main/assets/photos/hero-klangraum-wood-1200w.webp";
-const HARFE_FAVICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23403b34'/%3E%3Cpath d='M19 49c8-9 11-21 10-35 8 3 15 8 20 14' fill='none' stroke='%23d8c17d' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M19 49h31c-2-7-2-14-1-21' fill='none' stroke='%23f6e4c2' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M29 19l17 10M28 25l18 7M26 32l20 3M24 39h23' fill='none' stroke='%239eb2aa' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E";
+const HARFE_FAVICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='15' fill='%23343b39'/%3E%3Cpath d='M17 50.5h33' fill='none' stroke='%23f3dfae' stroke-width='4.5' stroke-linecap='round'/%3E%3Cpath d='M19.5 49.5c7-8.5 10-21.5 8.8-36 8.7 2.8 15.8 7.7 21.2 14.2' fill='none' stroke='%23d9ba70' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M49.5 27.7c-1.2 7.8-.9 15.3.5 22.8' fill='none' stroke='%23f3dfae' stroke-width='5' stroke-linecap='round'/%3E%3Cg fill='none' stroke='%239fb9b3' stroke-width='1.35' stroke-linecap='round'%3E%3Cpath d='M29 19.5 47.7 29'/%3E%3Cpath d='M28.7 25.7 48 32.5'/%3E%3Cpath d='M27.8 32 48.1 36'/%3E%3Cpath d='M26 38.5 48.6 40'/%3E%3Cpath d='M23.4 44.6h26'/%3E%3C/g%3E%3C/svg%3E";
 const SECTION_META = {
     intro: { id: "franz", nav: "Über Franz" },
     why: { id: "frei-spielen", nav: "Frei spielen" },
@@ -44,7 +44,7 @@ export function buildWebsiteHtml(draft, options = {}) {
   <a class="skip-link" href="#main">Zum Inhalt springen</a>
   <header class="site-header">
     <div class="container header-inner">
-      <a class="brand" href="#top"><span class="brand-mark" aria-hidden="true"><i></i></span><span><strong>${escapeHtml(draft.site.name)}</strong><small>${escapeHtml(draft.site.tagline)}</small></span></a>
+      <a class="brand" href="#top"><span class="brand-mark" aria-hidden="true"><img src="${HARFE_FAVICON}" alt="" style="display:block;width:100%;height:100%;object-fit:contain;border-radius:inherit"></span><span><strong>${escapeHtml(draft.site.name)}</strong><small>${escapeHtml(draft.site.tagline)}</small></span></a>
       <button class="menu-button" type="button" aria-label="Navigation anzeigen" aria-expanded="false"><span></span><span></span><span></span></button>
       <nav class="main-nav" aria-label="Hauptnavigation">${nav}</nav>
     </div>
