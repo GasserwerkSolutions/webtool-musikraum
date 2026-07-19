@@ -66,29 +66,45 @@ export function handleInput(context, event) {
         renderStructure(context);
         return;
     }
+    const deferPreview = isContinuousTextInput(target) && event.type === "input";
     const bind = target.dataset.bind;
     if (bind) {
         try {
+            context.suppressPreview = deferPreview;
             context.store.mutate((draft) => setAtPath(draft, bind, inputValue(target)), `field:${bind}`);
         }
         catch (error) {
             console.error(error);
         }
+        finally {
+            context.suppressPreview = false;
+        }
+        if (isContinuousTextInput(target) && event.type === "change")
+            renderPreview(context);
         return;
     }
     const field = target.dataset.offerField;
     const card = target.closest("[data-offer-card]");
     if (field && card?.dataset.offerId) {
-        context.store.mutate((draft) => { const offer = draft.offers.find((item) => item.id === card.dataset.offerId); if (offer)
-            offer[field] = target.value; }, `offer:${card.dataset.offerId}:${field}`);
+        try {
+            context.suppressPreview = deferPreview;
+            context.store.mutate((draft) => { const offer = draft.offers.find((item) => item.id === card.dataset.offerId); if (offer)
+                offer[field] = target.value; }, `offer:${card.dataset.offerId}:${field}`);
+        }
+        finally {
+            context.suppressPreview = false;
+        }
         if (field === "title") {
             const number = card.querySelector("[data-offer-number]");
             const index = context.store.snapshot.offers.findIndex((offer) => offer.id === card.dataset.offerId);
             if (number)
                 number.textContent = `${index + 1}. ${target.value || "Klangmoment"}`;
         }
+        if (event.type === "change")
+            renderPreview(context);
     }
 }
+function isContinuousTextInput(target) { return target instanceof HTMLTextAreaElement || target instanceof HTMLInputElement && ["text", "email", "tel", "url"].includes(target.type); }
 function moveSection(context, button) {
     const key = button.closest("[data-section-key]")?.dataset.sectionKey;
     const direction = button.dataset.layoutAction;

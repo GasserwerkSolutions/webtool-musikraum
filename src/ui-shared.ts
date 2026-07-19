@@ -17,6 +17,7 @@ export type UiContext = {
   readinessList: HTMLElement;
   offerTemplate: HTMLTemplateElement;
   previewTimer: ReturnType<typeof setTimeout> | null;
+  suppressPreview: boolean;
   volatileStorage: boolean;
 };
 
@@ -27,7 +28,7 @@ function requiredElement<T extends Element>(id: string): T {
 }
 
 export function createUiContext(store: BuilderStore, repository: DraftRepository): UiContext {
-  return { store, repository, surfaceCard: requiredElement("surfaceCard"), previewFrame: requiredElement("previewFrame"), previewHint: requiredElement("previewHint"), saveStatus: requiredElement("saveStatus"), panelStatus: requiredElement("panelStatus"), undoButton: requiredElement("undoButton"), redoButton: requiredElement("redoButton"), backupInput: requiredElement("backupInput"), offerList: requiredElement("offerList"), structureList: requiredElement("structureList"), readinessList: requiredElement("readinessList"), offerTemplate: requiredElement("offerTemplate"), previewTimer: null, volatileStorage: false };
+  return { store, repository, surfaceCard: requiredElement("surfaceCard"), previewFrame: requiredElement("previewFrame"), previewHint: requiredElement("previewHint"), saveStatus: requiredElement("saveStatus"), panelStatus: requiredElement("panelStatus"), undoButton: requiredElement("undoButton"), redoButton: requiredElement("redoButton"), backupInput: requiredElement("backupInput"), offerList: requiredElement("offerList"), structureList: requiredElement("structureList"), readinessList: requiredElement("readinessList"), offerTemplate: requiredElement("offerTemplate"), previewTimer: null, suppressPreview: false, volatileStorage: false };
 }
 
 export function getAtPath(object: unknown, path: string): unknown { return path.split(".").reduce<unknown>((value, key) => value && typeof value === "object" ? (value as Record<string, unknown>)[key] : undefined, object); }

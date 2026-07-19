@@ -12,6 +12,7 @@ Ein bewusst einfaches, persönliches Website-Werkzeug für Franz Gasser. Datenmo
 - Kontaktangaben und Abschluss
 - vier kuratierte Farbwelten
 - responsive Live-Vorschau für Desktop, Tablet und Mobiltelefon
+- ruhige Vorschau-Aktualisierung nach abgeschlossener Texteingabe, damit das feste Titelbild beim Schreiben stabil bleibt
 - Rückgängig/Wiederholen per Knopf oder Tastatur
 - herunterladbare und wieder einlesbare Entwurfssicherung
 - Export als einzelne HTML-Datei

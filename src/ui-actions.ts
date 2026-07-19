@@ -30,14 +30,18 @@ export function handleInput(context: UiContext, event: Event): void {
     if (!(target instanceof HTMLInputElement)) return;
     context.store.mutate((draft) => { draft.layout.visibility[key] = target.checked; }); renderStructure(context); return;
   }
-  const bind = target.dataset.bind; if (bind) { try { context.store.mutate((draft) => setAtPath(draft, bind, inputValue(target)), `field:${bind}`); } catch (error) { console.error(error); } return; }
+  const deferPreview = isContinuousTextInput(target) && event.type === "input";
+  const bind = target.dataset.bind; if (bind) { try { context.suppressPreview = deferPreview; context.store.mutate((draft) => setAtPath(draft, bind, inputValue(target)), `field:${bind}`); } catch (error) { console.error(error); } finally { context.suppressPreview = false; } if (isContinuousTextInput(target) && event.type === "change") renderPreview(context); return; }
   const field = target.dataset.offerField as "title" | "text" | undefined;
   const card = target.closest<HTMLElement>("[data-offer-card]");
   if (field && card?.dataset.offerId) {
-    context.store.mutate((draft) => { const offer = draft.offers.find((item) => item.id === card.dataset.offerId); if (offer) offer[field] = target.value; }, `offer:${card.dataset.offerId}:${field}`);
+    try { context.suppressPreview = deferPreview; context.store.mutate((draft) => { const offer = draft.offers.find((item) => item.id === card.dataset.offerId); if (offer) offer[field] = target.value; }, `offer:${card.dataset.offerId}:${field}`); } finally { context.suppressPreview = false; }
     if (field === "title") { const number = card.querySelector<HTMLElement>("[data-offer-number]"); const index = context.store.snapshot.offers.findIndex((offer) => offer.id === card.dataset.offerId); if (number) number.textContent = `${index + 1}. ${target.value || "Klangmoment"}`; }
+    if (event.type === "change") renderPreview(context);
   }
 }
+
+function isContinuousTextInput(target: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement): boolean { return target instanceof HTMLTextAreaElement || target instanceof HTMLInputElement && ["text", "email", "tel", "url"].includes(target.type); }
 
 function moveSection(context: UiContext, button: HTMLElement): void {
   const key = button.closest<HTMLElement>("[data-section-key]")?.dataset.sectionKey as SectionKey | undefined; const direction = button.dataset.layoutAction; if (!key || (direction !== "up" && direction !== "down")) return;
