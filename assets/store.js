@@ -7,6 +7,7 @@ export class BuilderStore {
     listeners = new Set();
     saveListeners = new Set();
     saveChain = Promise.resolve();
+    saveGeneration = 0;
     undoStack = [];
     redoStack = [];
     historyListeners = new Set();
@@ -51,8 +52,18 @@ export class BuilderStore {
         this.undoStack.push(cloneDraft(this.draft));
         if (this.undoStack.length > this.historyLimit)
             this.undoStack.shift();
-    } this.redoStack = []; this.lastHistoryKey = ""; this.draft = normalizeDraft(next); this.emit(); this.emitHistory(); if (persist)
-        this.scheduleSave(0); }
+    }
+    else {
+        this.undoStack = [];
+        this.saveGeneration += 1;
+        if (this.saveTimer) {
+            clearTimeout(this.saveTimer);
+            this.saveTimer = null;
+        }
+    } this.redoStack = []; this.lastHistoryKey = ""; this.lastHistoryAt = 0; this.draft = normalizeDraft(next); this.emit(); this.emitHistory(); if (persist)
+        this.scheduleSave(0);
+    else
+        this.emitSave("saved"); }
     undo() { const previous = this.undoStack.pop(); if (!previous)
         return false; this.redoStack.push(cloneDraft(this.draft)); this.draft = normalizeDraft(previous); this.lastHistoryKey = ""; this.emit(); this.emitHistory(); this.scheduleSave(0); return true; }
     redo() { const next = this.redoStack.pop(); if (!next)
@@ -68,7 +79,9 @@ export class BuilderStore {
         clearTimeout(this.saveTimer); this.saveTimer = setTimeout(() => { this.saveTimer = null; void this.enqueueSave().catch((error) => console.error("Draft save failed.", error)); }, delay); }
     enqueueSave() {
         const snapshot = cloneDraft(this.draft);
-        const operation = this.saveChain.then(async () => { this.emitSave("saving"); try {
+        const generation = this.saveGeneration;
+        const operation = this.saveChain.then(async () => { if (generation !== this.saveGeneration)
+            return; this.emitSave("saving"); try {
             await this.repository.putDraft(snapshot);
             this.emitSave("saved");
         }
