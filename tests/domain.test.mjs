@@ -20,6 +20,24 @@ test("normalizes section order, visibility and safe values", () => {
   assert.equal(normalized.theme.primary, "#403b34");
 });
 
+test("repairs blank draft ids and duplicate offer ids", () => {
+  const draft = createDefaultDraft();
+  const normalized = normalizeDraft({
+    ...draft,
+    draftId: "   ",
+    offers: [
+      { id: "same", title: "Eins", text: "" },
+      { id: "same", title: "Zwei", text: "" },
+      { id: "", title: "Drei", text: "" },
+    ],
+  });
+  const ids = normalized.offers.map((offer) => offer.id);
+  assert.ok(normalized.draftId.trim());
+  assert.equal(ids[0], "same");
+  assert.equal(new Set(ids).size, ids.length);
+  assert.ok(ids.every((id) => id.trim().length > 0));
+});
+
 test("rejects unknown schemas instead of silently rewriting them", () => {
   assert.throws(() => normalizeDraft({ schemaVersion: 99 }), /UNSUPPORTED_DRAFT_SCHEMA/);
 });
