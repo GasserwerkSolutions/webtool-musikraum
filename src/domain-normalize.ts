@@ -1,4 +1,4 @@
-import { PRESETS, SCHEMA_VERSION, createDefaultDraft, type MusicraumDraft, type MusicraumOffer, type SectionKey, type ThemePresetName } from "./domain-model.js";
+import { PRESETS, SCHEMA_VERSION, createDefaultDraft, createId, type MusicraumDraft, type MusicraumOffer, type SectionKey, type ThemePresetName } from "./domain-model.js";
 import { normalizeHttpUrl } from "./domain-helpers.js";
 import { asBoolean, asRecord, asString, safeColor, safeIso } from "./domain-coerce.js";
 
@@ -17,14 +17,18 @@ export function normalizeDraft(input: unknown): MusicraumDraft {
   const requestedOrder = Array.isArray(layout.order) ? layout.order.map((value) => asString(value)).filter((value): value is SectionKey => SECTION_KEYS.includes(value as SectionKey)) : [];
   const order = [...new Set(requestedOrder), ...SECTION_KEYS.filter((key) => !requestedOrder.includes(key))];
   const preset = PRESET_KEYS.includes(theme.preset as ThemePresetName) ? theme.preset as ThemePresetName : fallback.theme.preset;
-  const offers: MusicraumOffer[] = Array.isArray(source.offers) ? source.offers.slice(0, 12).map((value, index) => {
+  const usedOfferIds = new Set<string>();
+  const offers: MusicraumOffer[] = Array.isArray(source.offers) ? source.offers.slice(0, 12).map((value) => {
     const row = asRecord(value);
-    return { id: asString(row.id, `offer-${index + 1}`), title: asString(row.title, "Neuer Klangmoment"), text: asString(row.text) };
+    let id = asString(row.id).trim();
+    while (!id || usedOfferIds.has(id)) id = createId("offer");
+    usedOfferIds.add(id);
+    return { id, title: asString(row.title, "Neuer Klangmoment"), text: asString(row.text) };
   }) : fallback.offers;
   const now = new Date().toISOString();
   return {
     schemaVersion: SCHEMA_VERSION,
-    draftId: asString(source.draftId, fallback.draftId),
+    draftId: asString(source.draftId).trim() || fallback.draftId,
     createdAt: safeIso(source.createdAt, now),
     updatedAt: safeIso(source.updatedAt, now),
     site: {
