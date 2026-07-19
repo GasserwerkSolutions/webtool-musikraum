@@ -4,6 +4,9 @@ import { buildWebsiteHtml, MUSICRAUM_HERO_URL } from "./website.js";
 import { inputValue, setAtPath } from "./ui-shared.js";
 import { bindStaticInputs, renderDynamicControls, renderOffers, renderPreview, renderStructure, setViewport, showPanel, showToast, syncPresetInputs, updateReadiness } from "./ui-render.js";
 import { ensureEditorOpen } from "./sidebar.js";
+export const MAX_OFFERS = 12;
+export const MAX_BACKUP_BYTES = 1_000_000;
+export function isBackupFileSizeAllowed(file) { return file.size <= MAX_BACKUP_BYTES; }
 export function handleClick(context, event) {
     const target = event.target;
     if (!(target instanceof Element))
@@ -116,7 +119,10 @@ function moveSection(context, button) {
         return; draft.layout.order.splice(index, 1); draft.layout.order.splice(nextIndex, 0, key); });
     renderStructure(context);
 }
-function addOffer(context) { context.store.mutate((draft) => { draft.offers.push({ id: createId("offer"), title: "Neuer Klangmoment", text: "" }); }); renderOffers(context); }
+function addOffer(context) { if (context.store.snapshot.offers.length >= MAX_OFFERS) {
+    showToast(`Du kannst höchstens ${MAX_OFFERS} Klangmomente anlegen.`);
+    return;
+} context.store.mutate((draft) => { draft.offers.push({ id: createId("offer"), title: "Neuer Klangmoment", text: "" }); }); renderOffers(context); }
 function removeOffer(context, id) { if (!id)
     return; const offer = context.store.snapshot.offers.find((item) => item.id === id); if (!offer)
     return; const meaningful = offer.title.trim() || offer.text.trim(); if (meaningful && !window.confirm(`„${offer.title.trim() || "Dieser Klangmoment"}“ wirklich entfernen? Du kannst den Schritt danach rückgängig machen.`))
@@ -150,6 +156,10 @@ async function fetchAsDataUrl(url) { const response = await fetch(url); if (!res
 function downloadBlob(blob, filename) { const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.href = url; link.download = filename; document.body.appendChild(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 0); }
 function downloadBackup(context) { const name = slugify(context.store.snapshot.site.name || "musikraum"); downloadBlob(new Blob([JSON.stringify(context.store.snapshot, null, 2)], { type: "application/json;charset=utf-8" }), `${name}-sicherung.json`); showToast("Sicherung heruntergeladen. Bewahre die JSON-Datei gut auf."); }
 async function restoreBackup(context, file) { try {
+    if (!isBackupFileSizeAllowed(file)) {
+        showToast("Diese Sicherung ist zu gross. Bitte verwende eine Musikraum-Sicherung unter 1 MB.");
+        return;
+    }
     const parsed = JSON.parse(await file.text());
     const imported = normalizeDraft(parsed);
     await context.store.flush();
