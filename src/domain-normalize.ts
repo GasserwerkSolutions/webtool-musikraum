@@ -1,9 +1,10 @@
-import { PRESETS, SCHEMA_VERSION, createDefaultDraft, createId, type MusicraumDraft, type MusicraumOffer, type SectionKey, type ThemePresetName } from "./domain-model.js";
+import { PRESETS, SCHEMA_VERSION, createDefaultDraft, createId, type MusicraumDraft, type MusicraumOffer, type MusicraumTextItem, type SectionKey, type ThemePresetName } from "./domain-model.js";
 import { normalizeHttpUrl } from "./domain-helpers.js";
 import { asBoolean, asRecord, asString, safeColor, safeIso } from "./domain-coerce.js";
 
 const SECTION_KEYS: SectionKey[] = ["intro", "why", "offers", "story", "contact"];
 const PRESET_KEYS: ThemePresetName[] = ["musikraum", "waldton", "holzklang", "nachtklang"];
+const MAX_TEXT_ITEMS = 6;
 
 export function normalizeDraft(input: unknown): MusicraumDraft {
   const source = asRecord(input);
@@ -35,10 +36,24 @@ export function normalizeDraft(input: unknown): MusicraumDraft {
       name: asString(site.name, fallback.site.name), tagline: asString(site.tagline, fallback.site.tagline), phone: asString(site.phone, fallback.site.phone), email: asString(site.email, fallback.site.email), address: asString(site.address, fallback.site.address), postalCode: asString(site.postalCode, fallback.site.postalCode), city: asString(site.city, fallback.site.city), instagram: normalizeHttpUrl(site.instagram) ?? "",
     },
     copy: Object.fromEntries(Object.keys(fallback.copy).map((key) => [key, asString(copy[key], fallback.copy[key as keyof typeof fallback.copy])])) as MusicraumDraft["copy"],
+    heroPoints: normalizeTextItems(source.heroPoints, fallback.heroPoints, "hero-point"),
+    introPoints: normalizeTextItems(source.introPoints, fallback.introPoints, "intro-point"),
     offers,
     layout: { order, visibility: Object.fromEntries(SECTION_KEYS.map((key) => [key, asBoolean(visibility[key], fallback.layout.visibility[key])])) as Record<SectionKey, boolean> },
     theme: { preset, primary: safeColor(theme.primary, PRESETS[preset].primary), accent: safeColor(theme.accent, PRESETS[preset].accent) },
   };
+}
+
+function normalizeTextItems(value: unknown, fallback: MusicraumTextItem[], prefix: string): MusicraumTextItem[] {
+  if (!Array.isArray(value)) return fallback;
+  const usedIds = new Set<string>();
+  return value.slice(0, MAX_TEXT_ITEMS).map((item) => {
+    const row = asRecord(item);
+    let id = asString(row.id).trim();
+    while (!id || usedIds.has(id)) id = createId(prefix);
+    usedIds.add(id);
+    return { id, text: asString(row.text) };
+  });
 }
 
 export function cloneDraft(draft: MusicraumDraft): MusicraumDraft { return structuredClone(draft); }
