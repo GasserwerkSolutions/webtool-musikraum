@@ -41,6 +41,11 @@ export function handleInput(context: UiContext, event: Event): void {
     renderStructure(context); return;
   }
   const bind = target.dataset.bind;
+  if (bind === "theme.primary" || bind === "theme.accent") {
+    context.store.flushHistoryGroup();
+    context.store.mutate((draft) => setAtPath(draft, bind, inputValue(target)), { intent: { type: "set-theme" }, history: { label: bind === "theme.primary" ? "Primärfarbe geändert" : "Akzentfarbe geändert", target: { kind: "panel", panel: "design" } } });
+    return;
+  }
   if (bind && bind in EDITOR_FIELD_REGISTRY) {
     const field = bind as StaticEditableField;
     try { context.store.mutate((draft) => setAtPath(draft, field, inputValue(target)), { intent: { type: "set-field", field }, history: { key: `field:${field}`, label: EDITOR_FIELD_REGISTRY[field].historyLabel, target: { kind: "field", field } } }); } catch (error) { console.error(error); }
