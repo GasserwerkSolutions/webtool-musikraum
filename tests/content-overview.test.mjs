@@ -14,10 +14,10 @@ test("content overview exposes deterministic completeness and editor targets", (
 });
 
 test("overview reflects required, optional and hidden content", () => {
-  const draft = createDefaultDraft(); draft.copy.heroTitle = ""; draft.copy.heroLabel = ""; draft.layout.visibility.contact = false;
+  const draft = createDefaultDraft(); draft.copy.heroTitle = ""; draft.site.tagline = ""; draft.layout.visibility.contact = false;
   const overview = entries(draft); const byId = new Map(overview.map((entry) => [entry.id, entry]));
   assert.equal(byId.get("field:copy.heroTitle")?.status, "incomplete");
-  assert.equal(byId.get("field:copy.heroLabel")?.status, "optional-empty");
+  assert.equal(byId.get("field:site.tagline")?.status, "optional-empty");
   assert.equal(byId.get("field:copy.contactTitle")?.status, "hidden");
 });
 
