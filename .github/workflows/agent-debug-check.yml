@@ -1,0 +1,40 @@
+name: Agent Debug Check
+
+on:
+  push:
+    branches: [agent/editable-hero-notes]
+
+permissions:
+  contents: write
+
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/editable-hero-notes
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Capture check output
+        run: |
+          set +e
+          npm run check > /tmp/check-output.txt 2>&1
+          status=$?
+          tail -n 220 /tmp/check-output.txt > ci-debug.txt
+          echo "exit_status=$status" >> ci-debug.txt
+          exit 0
+      - name: Commit debug output
+        run: |
+          if git diff --quiet -- ci-debug.txt; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ci-debug.txt
+          git commit -m "Capture CI debug output"
+          git push
