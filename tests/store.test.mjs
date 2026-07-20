@@ -64,10 +64,29 @@ test("undo inverts collection insertion into removal", () => {
   assert.equal(store.snapshot.heroPoints.some((item) => item.id === itemId), false);
 });
 
+test("undo verifies theme effects from the actual snapshots", () => {
+  const draft = createDefaultDraft(); const original = structuredClone(draft.theme); const store = new BuilderStore(draft, new MemoryDraftRepository(), 1000);
+  store.mutate((next) => { next.theme.preset = "waldton"; next.theme.primary = "#3f514e"; next.theme.accent = "#748b81"; }, { intent: { type: "set-theme" }, history: { label: "Farbwelt geändert" } });
+  const mutation = store.undo();
+  assert.deepEqual(mutation.effect, { type: "theme-set", changed: ["preset", "primary", "accent"] });
+  assert.deepEqual(store.snapshot.theme, original);
+});
+
 test("groups consecutive edits to the same field into one undo step", () => {
   const draft = createDefaultDraft(); const original = draft.site.tagline; const store = new BuilderStore(draft, new MemoryDraftRepository(), 1000); const descriptor = fieldDescriptor("site.tagline", "Leitsatz geändert");
   store.mutate((next) => { next.site.tagline = "A"; }, descriptor); store.mutate((next) => { next.site.tagline = "Ab"; }, descriptor); store.mutate((next) => { next.site.tagline = "Abc"; }, descriptor);
   store.undo(); assert.equal(store.snapshot.site.tagline, original); assert.equal(store.canUndo, false);
+});
+
+test("returning a grouped edit to its origin closes the group safely", () => {
+  const draft = createDefaultDraft(); const original = draft.site.tagline; const store = new BuilderStore(draft, new MemoryDraftRepository(), 1000); const descriptor = fieldDescriptor("site.tagline", "Leitsatz geändert");
+  store.mutate((next) => { next.site.tagline = "Zwischenstand"; }, descriptor);
+  store.mutate((next) => { next.site.tagline = original; }, descriptor);
+  assert.equal(store.canUndo, false);
+  assert.doesNotThrow(() => store.mutate((next) => { next.site.tagline = "Neuer Anfang"; }, descriptor));
+  assert.equal(store.canUndo, true);
+  store.undo();
+  assert.equal(store.snapshot.site.tagline, original);
 });
 
 test("flushHistoryGroup separates later edits in the same field", () => {
