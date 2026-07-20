@@ -1,0 +1,98 @@
+name: PR3 Development Build
+
+on:
+  push:
+    branches:
+      - feature/revision-safe-incremental-preview
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/revision-safe-incremental-preview
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Integrate preview protocol with website renderer
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          path = Path('src/website.ts')
+          source = path.read_text()
+          source = source.replace(
+            'import type { EditorPanel, PreviewScrollState, PreviewTarget, StaticEditableField, TextListKey } from "./preview-contract.js";',
+            'import { PREVIEW_CHANNEL, PREVIEW_PROTOCOL_VERSION, type EditorPanel, type PreviewScrollState, type PreviewTarget, type StaticEditableField, type TextListKey } from "./preview-contract.js";\nimport { buildPreviewBridgeScript } from "./preview-bridge.js";'
+          )
+          source = source.replace(
+            'type BuildOptions = { preview?: boolean; heroImageUrl?: string; previewInstanceId?: string; parentOrigin?: string; previewScroll?: PreviewScrollState | null };',
+            'export type BuildOptions = { preview?: boolean; heroImageUrl?: string; previewInstanceId?: string; parentOrigin?: string; previewScroll?: PreviewScrollState | null; previewRevision?: number; renderGeneration?: number };'
+          )
+          replacements = {
+            '<header class="site-header">': '<header class="site-header"${previewRegionAttr(options, "header")}>',
+            '<section class="hero" id="top"${previewSectionAttr(options, "top", "hero")}>': '<section class="hero" id="top"${previewSectionAttr(options, "top", "hero")}${previewRegionAttr(options, "hero")}>',
+            '<footer class="site-footer"${previewSectionAttr(options, "footer", "site")}>': '<footer class="site-footer"${previewSectionAttr(options, "footer", "site")}${previewRegionAttr(options, "footer")}>',
+            '<section class="section intro" id="franz"${previewSectionAttr(options, "franz", "content")}>': '<section class="section intro" id="franz"${previewSectionAttr(options, "franz", "content")}${previewRegionAttr(options, "intro")}>',
+            '<section class="section dark-band" id="frei-spielen"${previewSectionAttr(options, "frei-spielen", "content")}>': '<section class="section dark-band" id="frei-spielen"${previewSectionAttr(options, "frei-spielen", "content")}${previewRegionAttr(options, "why")}>',
+            '<section class="section offers" id="angebote"${previewSectionAttr(options, "angebote", "services")}>': '<section class="section offers" id="angebote"${previewSectionAttr(options, "angebote", "services")}${previewRegionAttr(options, "offers")}>',
+            '<section class="section story" id="geschichte"${previewSectionAttr(options, "geschichte", "content")}>': '<section class="section story" id="geschichte"${previewSectionAttr(options, "geschichte", "content")}${previewRegionAttr(options, "story")}>',
+            '<section class="section contact" id="kontakt"${previewSectionAttr(options, "kontakt", "contact")}>': '<section class="section contact" id="kontakt"${previewSectionAttr(options, "kontakt", "contact")}${previewRegionAttr(options, "contact")}>',
+          }
+          for old, new in replacements.items():
+            source = source.replace(old, new)
+
+          old_menu = "<script>(()=>{const b=document.querySelector('.menu-button'),n=document.querySelector('.main-nav');if(!b||!n)return;b.addEventListener('click',()=>{const o=b.getAttribute('aria-expanded')==='true';b.setAttribute('aria-expanded',String(!o));n.classList.toggle('is-open',!o)});n.addEventListener('click',()=>{b.setAttribute('aria-expanded','false');n.classList.remove('is-open')})})();</script>"
+          new_menu = "<script>(()=>{document.addEventListener('click',e=>{const t=e.target instanceof Element?e.target:null,n=document.querySelector('.main-nav');if(!t||!n)return;const b=t.closest('.menu-button');if(b){const o=b.getAttribute('aria-expanded')==='true';b.setAttribute('aria-expanded',String(!o));n.classList.toggle('is-open',!o);return}if(t.closest('.main-nav a')){const m=document.querySelector('.menu-button');if(m){m.setAttribute('aria-expanded','false');n.classList.remove('is-open')}}})})();</script>"
+          source = source.replace(old_menu, new_menu)
+
+          source = source.replace(
+            'function previewSectionAttr(options: BuildOptions, section: string, panel: EditorPanel): string { return options.preview ? ` data-preview-section="${escapeAttr(section)}" data-preview-panel="${panel}"` : ""; }',
+            'function previewSectionAttr(options: BuildOptions, section: string, panel: EditorPanel): string { return options.preview ? ` data-preview-section="${escapeAttr(section)}" data-preview-panel="${panel}"` : ""; }\nfunction previewRegionAttr(options: BuildOptions, region: string): string { return options.preview ? ` data-preview-region="${escapeAttr(region)}"` : ""; }'
+          )
+
+          bridge = '''function previewBridge(options: BuildOptions): string {
+            return buildPreviewBridgeScript({
+              channel: PREVIEW_CHANNEL,
+              version: PREVIEW_PROTOCOL_VERSION,
+              instanceId: options.previewInstanceId ?? "",
+              renderGeneration: options.renderGeneration ?? 0,
+              revision: options.previewRevision ?? 0,
+              parentOrigin: options.parentOrigin ?? "*",
+              restore: options.previewScroll ?? null,
+            });
+          }
+
+          function websiteCss'''
+          source, count = re.subn(r'function previewBridge\(options: BuildOptions\): string \{.*?\n\}\n\nfunction websiteCss', bridge, source, count=1, flags=re.S)
+          if count != 1:
+            raise SystemExit('previewBridge replacement failed')
+          path.write_text(source)
+
+          bridge_path = Path('src/preview-bridge.ts')
+          bridge_source = bridge_path.read_text().replace(
+            "send('update-result',{requestId:request.requestId,success:false,reason})",
+            "send('update-result',{requestId:request.requestId,revision:request.revision,success:false,reason})"
+          )
+          bridge_path.write_text(bridge_source)
+          PY
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Build browser assets
+        run: npm run build
+      - name: Commit renderer integration and assets
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/website.ts src/preview-bridge.ts assets
+          if ! git diff --cached --quiet; then
+            git commit -m "Integrate incremental preview renderer and assets"
+            git push origin HEAD:feature/revision-safe-incremental-preview
+          fi
