@@ -67,12 +67,12 @@ export class BuilderUi {
         if (!runtime)
             return;
         const scroll = parseScrollMessage(event.data, runtime.instanceId, runtime.renderGeneration);
-        if (scroll) {
+        if (scroll && scroll.revision === runtime.appliedRevision) {
             this.context.previewScroll = scroll.position;
             return;
         }
         const navigate = parseNavigateMessage(event.data, runtime.instanceId, this.context.store.snapshot, runtime.renderGeneration);
-        if (navigate)
+        if (navigate && navigate.revision === runtime.appliedRevision)
             navigateToPreviewTarget(this.context, navigate.target);
     }
 }
