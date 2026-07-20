@@ -1,9 +1,7 @@
 import { safeJson } from "./domain.js";
-import type { PreviewBridgeConfig } from "./preview-contract.js";
-
-export function buildPreviewBridgeScript(config: PreviewBridgeConfig): string {
-  const serialized = safeJson(config);
-  return `<script>(()=>{
+export function buildPreviewBridgeScript(config) {
+    const serialized = safeJson(config);
+    return `<script>(()=>{
 const c=${serialized};let currentRevision=c.revision;
 const send=(action,payload={})=>parent.postMessage({channel:c.channel,version:c.version,instanceId:c.instanceId,renderGeneration:c.renderGeneration,revision:currentRevision,action,...payload},c.parentOrigin);
 const fail=(reason)=>{const error=new Error(reason);error.previewReason=reason;throw error};

@@ -103,12 +103,21 @@ export function renderPresets(context) { document.querySelectorAll("[data-preset
 export function syncPresetInputs(context, name) { const preset = PRESETS[name]; const primary = document.querySelector('[data-bind="theme.primary"]'); const accent = document.querySelector('[data-bind="theme.accent"]'); if (primary)
     primary.value = preset.primary; if (accent)
     accent.value = preset.accent; renderPresets(context); }
-export function renderPreview(context) { if (context.previewTimer) {
-    clearTimeout(context.previewTimer);
-    context.previewTimer = null;
-} const instanceId = crypto.randomUUID(); context.previewInstanceId = instanceId; context.previewFrame.srcdoc = buildWebsiteHtml(context.store.snapshot, { preview: true, previewInstanceId: instanceId, parentOrigin: location.origin === "null" ? "*" : location.origin, previewScroll: context.previewScroll }); }
+export function renderPreview(context) {
+    if (context.previewTimer) {
+        clearTimeout(context.previewTimer);
+        context.previewTimer = null;
+    }
+    if (context.previewRuntime) {
+        context.previewRuntime.renderFull();
+        return;
+    }
+    const instanceId = crypto.randomUUID();
+    context.previewInstanceId = instanceId;
+    context.previewFrame.srcdoc = buildWebsiteHtml(context.store.snapshot, { preview: true, previewInstanceId: instanceId, parentOrigin: location.origin === "null" ? "*" : location.origin, previewScroll: context.previewScroll, previewRevision: context.store.revision, renderGeneration: 1 });
+}
 export function schedulePreview(context) { if (context.previewTimer)
-    clearTimeout(context.previewTimer); context.previewTimer = setTimeout(() => renderPreview(context), 80); }
+    clearTimeout(context.previewTimer); context.previewTimer = setTimeout(() => renderPreview(context), 40); }
 export function updateReadiness(context) {
     const draft = context.store.snapshot;
     const checks = [
