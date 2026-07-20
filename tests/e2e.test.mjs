@@ -36,10 +36,16 @@ test("real browser layout, live editing and sidebar contract", { timeout: 90000 
     const previousLocation = preview.url(); const mail = await preview.$('a[href^="mailto:"]'); if (mail) await mail.click(); assert.equal(preview.url(), previousLocation);
 
     await preview.click("h1 .preview-edit-trigger"); await page.waitForFunction(() => document.activeElement?.getAttribute("data-bind") === "copy.heroTitle"); assert.equal(await page.evaluate(() => document.querySelector('[data-panel="hero"]')?.hidden), false);
+    assert.match(await page.$eval('[data-bind="copy.heroTitle"]', (input) => input.closest("label")?.querySelector("[data-policy-help]")?.textContent ?? ""), /vollständigen Einstieg erforderlich/);
     const liveTitle = "Sofort sichtbarer Titel";
     await page.$eval('[data-bind="copy.heroTitle"]', (input, value) => { input.value = value; input.dispatchEvent(new Event("input", { bubbles: true })); }, liveTitle);
     await page.waitForFunction((value) => document.querySelector("#previewFrame")?.getAttribute("srcdoc")?.includes(value), {}, liveTitle);
     preview = await waitForPreview(page); assert.equal(await preview.$eval("h1", (heading) => heading.textContent.trim()), liveTitle);
+    assert.match(await page.$eval('[data-action="undo"]', (button) => button.getAttribute("aria-label") ?? ""), /Rückgängig: Haupttitel geändert/);
+    await page.click('[data-action="undo"]'); await page.waitForFunction((value) => !document.querySelector("#previewFrame")?.getAttribute("srcdoc")?.includes(value), {}, liveTitle);
+    assert.match(await page.$eval('[data-action="redo"]', (button) => button.getAttribute("aria-label") ?? ""), /Wiederholen: Haupttitel geändert/);
+    await page.click('[data-action="redo"]'); await page.waitForFunction((value) => document.querySelector("#previewFrame")?.getAttribute("srcdoc")?.includes(value), {}, liveTitle);
+    preview = await waitForPreview(page);
 
     const heroAdd = '[data-action="add-text-item"][data-list="heroPoints"]';
     assert.equal(await page.$$eval('#heroPointList [data-text-item-card]', (cards) => cards.length), 3);

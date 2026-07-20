@@ -1,5 +1,5 @@
 import type { DraftRepository, DraftLoadResult } from "./persistence.js";
-import type { BuilderStore } from "./store.js";
+import type { BuilderStore, HistoryState } from "./store.js";
 import { handleClick, handleInput } from "./ui-actions.js";
 import {
   bindStaticInputs,
@@ -34,10 +34,11 @@ export class BuilderUi {
       updateReadiness(this.context);
     });
     this.context.store.subscribeSave((state, error) => renderSaveState(this.context, state, error));
-    this.context.store.subscribeHistory((canUndo, canRedo) => { this.context.undoButton.disabled = !canUndo; this.context.redoButton.disabled = !canRedo; });
+    this.context.store.subscribeHistory((state) => renderHistoryState(this.context, state));
     document.addEventListener("click", (event) => handleClick(this.context, event));
     document.addEventListener("input", (event) => handleInput(this.context, event));
-    document.addEventListener("change", (event) => handleInput(this.context, event));
+    document.addEventListener("change", (event) => { handleInput(this.context, event); this.context.store.flushHistoryGroup(); });
+    document.addEventListener("focusin", (event) => { const target = event.target; if (target instanceof Element && target.matches("[data-bind], [data-text-item-field], [data-offer-field]")) this.context.store.flushHistoryGroup(); });
     window.addEventListener("message", (event) => this.handlePreviewMessage(event));
     document.addEventListener("keydown", (event) => { if (!(event.ctrlKey || event.metaKey) || event.altKey || event.key.toLowerCase() !== "z") return; event.preventDefault(); const action = event.shiftKey ? "redo" : "undo"; document.querySelector<HTMLButtonElement>(`[data-action="${action}"]`)?.click(); });
     const flushBeforeLeave = () => { void this.context.store.flush().catch((error) => console.error("Final draft flush failed.", error)); };
@@ -54,4 +55,16 @@ export class BuilderUi {
   }
 }
 
+function renderHistoryState(context: UiContext, state: HistoryState): void {
+  context.undoButton.disabled = !state.canUndo;
+  context.redoButton.disabled = !state.canRedo;
+  describeHistoryButton(context.undoButton, "Rückgängig", state.undoAction?.label ?? null, "Strg oder Cmd + Z");
+  describeHistoryButton(context.redoButton, "Wiederholen", state.redoAction?.label ?? null, "Umschalt + Strg oder Cmd + Z");
+}
+function describeHistoryButton(button: HTMLButtonElement, direction: string, label: string | null, shortcut: string): void {
+  const description = label ? `${direction}: ${label}` : direction;
+  const visible = button.querySelector<HTMLElement>("span"); if (visible) visible.textContent = description;
+  button.setAttribute("aria-label", `${description} (${shortcut})`);
+  button.title = `${description} (${shortcut})`;
+}
 function parseScrollPosition(value: unknown): PreviewScrollState | null { if (!value || typeof value !== "object") return null; const row = value as Record<string, unknown>; return typeof row.section === "string" && Number.isFinite(row.offsetWithinSection) && Number.isFinite(row.fallbackScrollY) ? { section: row.section, offsetWithinSection: Math.max(0, Number(row.offsetWithinSection)), fallbackScrollY: Math.max(0, Number(row.fallbackScrollY)) } : null; }

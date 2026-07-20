@@ -1,16 +1,10 @@
 import type { MusicraumDraft } from "./domain.js";
+import { EDITOR_FIELD_REGISTRY } from "./editor-registry.js";
+import type { EditorPanel, StaticEditableField, TextListKey } from "./editor-registry.js";
 
-export type EditorPanel = "site" | "hero" | "content" | "services" | "structure" | "contact" | "design" | "publish";
-export type TextListKey = "heroPoints" | "introPoints";
-export type StaticEditableField =
-  | "site.name" | "site.tagline" | "site.phone" | "site.email" | "site.address" | "site.postalCode" | "site.city" | "site.instagram"
-  | "copy.heroLabel" | "copy.heroTitle" | "copy.heroSubtitle" | "copy.heroPrimaryAction" | "copy.heroSecondaryAction"
-  | "copy.navIntro" | "copy.navWhy" | "copy.navOffers" | "copy.navStory" | "copy.navContact"
-  | "copy.introLabel" | "copy.introTitle" | "copy.introQuote" | "copy.introText"
-  | "copy.whyLabel" | "copy.whyTitle" | "copy.whyText"
-  | "copy.offersLabel" | "copy.offersTitle" | "copy.offersIntro"
-  | "copy.storyLabel" | "copy.storyTitle" | "copy.storyText"
-  | "copy.contactLabel" | "copy.contactTitle" | "copy.contactText" | "copy.contactEmailAction" | "copy.contactPhoneAction" | "copy.contactInstagramAction";
+export type { EditorPanel, StaticEditableField, TextListKey } from "./editor-registry.js";
+export { EDITOR_FIELD_REGISTRY, STATIC_FIELD_REGISTRY } from "./editor-registry.js";
+
 export type PreviewTarget =
   | { kind: "field"; field: StaticEditableField }
   | { kind: "offer"; offerId: string; field: "title" | "text" }
@@ -20,51 +14,8 @@ export type PreviewScrollState = { section: string; offsetWithinSection: number;
 export type PreviewNavigateMessage = { channel: "musikraum-preview"; version: 1; instanceId: string; action: "navigate-to-editor"; target: PreviewTarget };
 export type PreviewScrollMessage = { channel: "musikraum-preview"; version: 1; instanceId: string; action: "preview-scroll"; position: PreviewScrollState };
 
-type InputKind = "text" | "textarea" | "email" | "tel" | "url";
-type FieldMeta = { panel: EditorPanel; input: InputKind; previewPositions: readonly string[] };
-
-export const STATIC_FIELD_REGISTRY: Record<StaticEditableField, FieldMeta> = {
-  "site.name": { panel: "site", input: "text", previewPositions: ["Kopfzeile", "Fusszeile"] },
-  "site.tagline": { panel: "site", input: "text", previewPositions: ["Kopfzeile", "Fusszeile"] },
-  "site.phone": { panel: "contact", input: "tel", previewPositions: ["Kontaktknopf"] },
-  "site.email": { panel: "contact", input: "email", previewPositions: ["Fusszeile"] },
-  "site.address": { panel: "contact", input: "text", previewPositions: ["Kontakt", "Fusszeile"] },
-  "site.postalCode": { panel: "contact", input: "text", previewPositions: ["Kontakt", "Fusszeile"] },
-  "site.city": { panel: "contact", input: "text", previewPositions: ["Kontakt", "Fusszeile"] },
-  "site.instagram": { panel: "contact", input: "url", previewPositions: [] },
-  "copy.heroLabel": { panel: "hero", input: "text", previewPositions: ["Einstieg"] },
-  "copy.heroTitle": { panel: "hero", input: "textarea", previewPositions: ["Einstieg"] },
-  "copy.heroSubtitle": { panel: "hero", input: "textarea", previewPositions: ["Einstieg"] },
-  "copy.heroPrimaryAction": { panel: "hero", input: "text", previewPositions: ["Erster Einstiegsknopf"] },
-  "copy.heroSecondaryAction": { panel: "hero", input: "text", previewPositions: ["Kontaktknopf im Einstieg"] },
-  "copy.navIntro": { panel: "structure", input: "text", previewPositions: ["Navigation"] },
-  "copy.navWhy": { panel: "structure", input: "text", previewPositions: ["Navigation"] },
-  "copy.navOffers": { panel: "structure", input: "text", previewPositions: ["Navigation"] },
-  "copy.navStory": { panel: "structure", input: "text", previewPositions: ["Navigation"] },
-  "copy.navContact": { panel: "structure", input: "text", previewPositions: ["Navigation"] },
-  "copy.introLabel": { panel: "content", input: "text", previewPositions: ["Über Franz"] },
-  "copy.introTitle": { panel: "content", input: "text", previewPositions: ["Über Franz"] },
-  "copy.introQuote": { panel: "content", input: "textarea", previewPositions: ["Über Franz"] },
-  "copy.introText": { panel: "content", input: "textarea", previewPositions: ["Über Franz"] },
-  "copy.whyLabel": { panel: "content", input: "text", previewPositions: ["Frei spielen"] },
-  "copy.whyTitle": { panel: "content", input: "text", previewPositions: ["Frei spielen"] },
-  "copy.whyText": { panel: "content", input: "textarea", previewPositions: ["Frei spielen"] },
-  "copy.offersLabel": { panel: "services", input: "text", previewPositions: ["Klangmomente"] },
-  "copy.offersTitle": { panel: "services", input: "text", previewPositions: ["Klangmomente"] },
-  "copy.offersIntro": { panel: "services", input: "textarea", previewPositions: ["Klangmomente"] },
-  "copy.storyLabel": { panel: "content", input: "text", previewPositions: ["Geschichte"] },
-  "copy.storyTitle": { panel: "content", input: "text", previewPositions: ["Geschichte"] },
-  "copy.storyText": { panel: "content", input: "textarea", previewPositions: ["Geschichte"] },
-  "copy.contactLabel": { panel: "contact", input: "text", previewPositions: ["Kontakt"] },
-  "copy.contactTitle": { panel: "contact", input: "text", previewPositions: ["Kontakt"] },
-  "copy.contactText": { panel: "contact", input: "textarea", previewPositions: ["Kontakt"] },
-  "copy.contactEmailAction": { panel: "contact", input: "text", previewPositions: ["E-Mail-Knopf"] },
-  "copy.contactPhoneAction": { panel: "contact", input: "text", previewPositions: ["Telefonknopf"] },
-  "copy.contactInstagramAction": { panel: "contact", input: "text", previewPositions: ["Instagram-Knopf"] },
-};
-
 const PANELS = new Set<EditorPanel>(["site", "hero", "content", "services", "structure", "contact", "design", "publish"]);
-const FIELDS = new Set(Object.keys(STATIC_FIELD_REGISTRY));
+const FIELDS = new Set(Object.keys(EDITOR_FIELD_REGISTRY));
 const TEXT_LISTS = new Set<TextListKey>(["heroPoints", "introPoints"]);
 function record(value: unknown): Record<string, unknown> | null { return value !== null && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : null; }
 export function isPreviewTarget(value: unknown, draft: Readonly<MusicraumDraft>): value is PreviewTarget {
@@ -86,7 +37,7 @@ export function parseNavigateMessage(value: unknown, instanceId: string, draft: 
   return message as PreviewNavigateMessage;
 }
 export function panelForTarget(target: PreviewTarget): EditorPanel {
-  if (target.kind === "field") return STATIC_FIELD_REGISTRY[target.field].panel;
+  if (target.kind === "field") return EDITOR_FIELD_REGISTRY[target.field].panel;
   if (target.kind === "offer") return "services";
   if (target.kind === "text-item") return target.list === "heroPoints" ? "hero" : "content";
   return target.panel;
