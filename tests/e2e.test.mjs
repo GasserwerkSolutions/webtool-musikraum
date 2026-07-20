@@ -66,6 +66,8 @@ test("real browser layout, live editing and sidebar contract", { timeout: 90000 
     assert.equal(await page.$eval('#heroPointList [data-text-item-card]:first-child [data-text-item-field]', (input) => input.value), heroOrderBefore[1]);
     assert.equal(await page.evaluate(() => document.activeElement?.hasAttribute("data-reorder-handle")), true);
     assert.match(await page.$eval("#editorAnnouncer", (node) => node.textContent), /Position 1 von 6/);
+    const reorderSizes = await page.$$eval('#heroPointList [data-reorder-handle], #heroPointList [data-reorder-direction]', (controls) => controls.map((control) => { const rect = control.getBoundingClientRect(); return { width: rect.width, height: rect.height }; }));
+    assert.ok(reorderSizes.length > 0); assert.ok(reorderSizes.every(({ width, height }) => width >= 44 && height >= 44));
     await page.focus('#heroPointList [data-text-item-card]:first-child [data-reorder-handle]'); await page.keyboard.down("Alt"); await page.keyboard.press("ArrowDown"); await page.keyboard.up("Alt");
     assert.deepEqual(await page.$$eval('#heroPointList [data-text-item-field]', (inputs) => inputs.map((input) => input.value)), heroOrderBefore);
 
