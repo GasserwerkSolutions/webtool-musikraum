@@ -3,6 +3,7 @@ import { replaceWithFreshDraft, replaceWithImportedDraft } from "./persistence.j
 import { buildWebsiteHtml, MUSICRAUM_HERO_URL } from "./website.js";
 import { inputValue, setAtPath, type UiContext } from "./ui-shared.js";
 import { bindStaticInputs, renderDynamicControls, renderOffers, renderPreview, renderStructure, setViewport, showPanel, showToast, syncPresetInputs, updateReadiness } from "./ui-render.js";
+import { handleTextListAction, handleTextListInput } from "./text-list-actions.js";
 import { ensureEditorOpen } from "./sidebar.js";
 
 export const MAX_OFFERS = 12;
@@ -16,6 +17,7 @@ export function handleClick(context: UiContext, event: Event): void {
   const presetButton = target.closest<HTMLElement>("[data-preset]"); if (presetButton) { applyPreset(context, presetButton.dataset.preset as ThemePresetName); return; }
   const layoutButton = target.closest<HTMLElement>("[data-layout-action]"); if (layoutButton) { moveSection(context, layoutButton); return; }
   const actionButton = target.closest<HTMLElement>("[data-action]"); if (!actionButton) return;
+  if (handleTextListAction(context, actionButton)) return;
   const action = actionButton.dataset.action;
   if (action === "add-offer") addOffer(context);
   if (action === "remove-offer") removeOffer(context, actionButton.closest<HTMLElement>("[data-offer-card]")?.dataset.offerId ?? "");
@@ -35,18 +37,16 @@ export function handleInput(context: UiContext, event: Event): void {
     if (!(target instanceof HTMLInputElement)) return;
     context.store.mutate((draft) => { draft.layout.visibility[key] = target.checked; }); renderStructure(context); return;
   }
-  const deferPreview = isContinuousInput(target) && event.type === "input";
-  const bind = target.dataset.bind; if (bind) { try { context.suppressPreview = deferPreview; context.store.mutate((draft) => setAtPath(draft, bind, inputValue(target)), `field:${bind}`); } catch (error) { console.error(error); } finally { context.suppressPreview = false; } if (isContinuousInput(target) && event.type === "change") renderPreview(context); return; }
+  const bind = target.dataset.bind;
+  if (bind) { try { context.store.mutate((draft) => setAtPath(draft, bind, inputValue(target)), `field:${bind}`); } catch (error) { console.error(error); } return; }
+  if (handleTextListInput(context, target)) return;
   const field = target.dataset.offerField as "title" | "text" | undefined;
   const card = target.closest<HTMLElement>("[data-offer-card]");
   if (field && card?.dataset.offerId) {
-    try { context.suppressPreview = deferPreview; context.store.mutate((draft) => { const offer = draft.offers.find((item) => item.id === card.dataset.offerId); if (offer) offer[field] = target.value; }, `offer:${card.dataset.offerId}:${field}`); } finally { context.suppressPreview = false; }
+    context.store.mutate((draft) => { const offer = draft.offers.find((item) => item.id === card.dataset.offerId); if (offer) offer[field] = target.value; }, `offer:${card.dataset.offerId}:${field}`);
     if (field === "title") { const number = card.querySelector<HTMLElement>("[data-offer-number]"); const index = context.store.snapshot.offers.findIndex((offer) => offer.id === card.dataset.offerId); if (number) number.textContent = `${index + 1}. ${target.value || "Klangmoment"}`; }
-    if (event.type === "change") renderPreview(context);
   }
 }
-
-function isContinuousInput(target: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement): boolean { return target instanceof HTMLTextAreaElement || target instanceof HTMLInputElement && ["text", "email", "tel", "url", "color"].includes(target.type); }
 
 function moveSection(context: UiContext, button: HTMLElement): void {
   const key = button.closest<HTMLElement>("[data-section-key]")?.dataset.sectionKey as SectionKey | undefined; const direction = button.dataset.layoutAction; if (!key || (direction !== "up" && direction !== "down")) return;
