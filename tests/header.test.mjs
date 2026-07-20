@@ -39,11 +39,13 @@ test("header remains compact, unwrapped and width-stable while saving", { timeou
     const page = await browser.newPage();
     await page.goto(url, { waitUntil: "domcontentloaded" });
     await page.waitForSelector("#previewFrame");
+    await page.waitForFunction(() => (document.querySelector("#previewFrame")?.getAttribute("srcdoc")?.length ?? 0) > 100);
     await page.click('[data-panel-target="hero"]');
 
     const before = await headerSnapshot(page);
     assert.equal(before.statusWidth, 30);
     assert.equal(before.wrapViolations.length, 0);
+    assert.ok(before.topbarOverflow <= 1);
     assert.ok(before.topbarHeight <= 57);
     assert.equal(before.undoText, "Rückgängig");
     assert.equal(before.redoText, "Wiederholen");
@@ -56,6 +58,7 @@ test("header remains compact, unwrapped and width-stable while saving", { timeou
     const saving = await headerSnapshot(page);
     assert.equal(saving.statusLabel, "Speichert auf diesem Gerät");
     assert.equal(saving.wrapViolations.length, 0);
+    assert.ok(saving.topbarOverflow <= 1);
     assert.equal(saving.undoText, "Rückgängig");
     assert.match(saving.undoAria, /Rückgängig: Haupttitel geändert/);
 
@@ -63,6 +66,7 @@ test("header remains compact, unwrapped and width-stable while saving", { timeou
     const saved = await headerSnapshot(page);
     assert.equal(saved.statusLabel, "Auf diesem Gerät gespeichert");
     assert.equal(saved.wrapViolations.length, 0);
+    assert.ok(saved.topbarOverflow <= 1);
 
     for (const snapshot of [saving, saved]) {
       closeEnough(snapshot.topbarHeight, before.topbarHeight);
