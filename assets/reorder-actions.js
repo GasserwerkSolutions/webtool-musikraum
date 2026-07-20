@@ -59,7 +59,7 @@ export function handleReorderPointerDown(context, event) {
     try {
         handle.setPointerCapture(event.pointerId);
     }
-    catch { }
+    catch { /* unsupported capture is harmless */ }
     context.announcer.textContent = `${targetLabel(context.store.snapshot, target)} wird verschoben. Ziehe an die neue Position oder drücke Escape.`;
     event.preventDefault();
     return true;
@@ -89,7 +89,7 @@ export function handleReorderPointerEnd(context, event, cancelled = false) {
     try {
         handle.releasePointerCapture(event.pointerId);
     }
-    catch { }
+    catch { /* unsupported capture is harmless */ }
     cleanupDrag(context, drag);
     if (cancelled)
         context.announcer.textContent = "Verschieben abgebrochen.";
