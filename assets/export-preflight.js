@@ -51,7 +51,7 @@ export class ExportPreflightController {
             }
             return;
         }
-        if (this.stateValue.status === "ready" && this.stateValue.revision === this.options.readRevision())
+        if ((this.stateValue.status === "ready" || this.stateValue.status === "preparing") && this.stateValue.revision === this.options.readRevision())
             return;
         this.schedulePreparation(0);
     }
@@ -70,52 +70,54 @@ export class ExportPreflightController {
         const controller = new AbortController();
         this.activeController = controller;
         this.setState({ status: "preparing", generation, revision });
-        const draft = cloneDraft(this.options.readDraft());
-        const readiness = evaluateReadiness(draft);
-        if (!readiness.ready) {
-            if (this.isCurrent(generation, revision, controller.signal))
-                this.setState({ status: "failed", generation, revision, message: `${readiness.errorCount} ${readiness.errorCount === 1 ? "Blocker verhindert" : "Blocker verhindern"} den Export.` });
-            return this.stateValue;
-        }
-        let heroImageUrl = MUSICRAUM_HERO_URL;
-        let imageEmbedded = true;
         try {
-            heroImageUrl = await fetchPinnedHeroImage(this.fetchAsset, controller.signal, { timeoutMs: this.assetTimeoutMs });
-        }
-        catch (error) {
-            if (isAbortError(error) || !this.isCurrent(generation, revision, controller.signal))
+            const draft = cloneDraft(this.options.readDraft());
+            const readiness = evaluateReadiness(draft);
+            if (!readiness.ready) {
+                if (this.isCurrent(generation, revision, controller.signal))
+                    this.setState({ status: "failed", generation, revision, message: `${readiness.errorCount} ${readiness.errorCount === 1 ? "Blocker verhindert" : "Blocker verhindern"} den Export.` });
                 return this.stateValue;
-            if (!(error instanceof ExportAssetError))
-                console.warn("Unexpected export asset failure.", error);
-            imageEmbedded = false;
-        }
-        if (!this.isCurrent(generation, revision, controller.signal))
+            }
+            let heroImageUrl = MUSICRAUM_HERO_URL;
+            let imageEmbedded = true;
+            try {
+                heroImageUrl = await fetchPinnedHeroImage(this.fetchAsset, controller.signal, { timeoutMs: this.assetTimeoutMs });
+            }
+            catch (error) {
+                if (isAbortError(error) || !this.isCurrent(generation, revision, controller.signal))
+                    return this.stateValue;
+                if (!(error instanceof ExportAssetError))
+                    console.warn("Unexpected export asset failure.", error);
+                imageEmbedded = false;
+            }
+            if (!this.isCurrent(generation, revision, controller.signal))
+                return this.stateValue;
+            try {
+                const html = this.buildHtml(draft, { heroImageUrl });
+                const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+                const result = {
+                    filename: `${slugify(draft.site.name || "musikraum")}.html`,
+                    blob,
+                    byteSize: blob.size,
+                    imageEmbedded,
+                    readiness,
+                    visibleSectionCount: draft.layout.order.filter((section) => draft.layout.visibility[section]).length,
+                    validOfferCount: draft.offers.filter((offer) => offer.title.trim()).length,
+                    contactMethodCount: Number(Boolean(normalizeEmail(draft.site.email))) + Number(Boolean(normalizePhone(draft.site.phone))),
+                };
+                if (this.isCurrent(generation, revision, controller.signal))
+                    this.setState({ status: "ready", generation, revision, result });
+            }
+            catch (error) {
+                if (this.isCurrent(generation, revision, controller.signal))
+                    this.setState({ status: "failed", generation, revision, message: error instanceof Error ? error.message : "Die Exportdatei konnte nicht erzeugt werden." });
+            }
             return this.stateValue;
-        try {
-            const html = this.buildHtml(draft, { heroImageUrl });
-            const blob = new Blob([html], { type: "text/html;charset=utf-8" });
-            const result = {
-                filename: `${slugify(draft.site.name || "musikraum")}.html`,
-                blob,
-                byteSize: blob.size,
-                imageEmbedded,
-                readiness,
-                visibleSectionCount: draft.layout.order.filter((section) => draft.layout.visibility[section]).length,
-                validOfferCount: draft.offers.filter((offer) => offer.title.trim()).length,
-                contactMethodCount: Number(Boolean(normalizeEmail(draft.site.email))) + Number(Boolean(normalizePhone(draft.site.phone))),
-            };
-            if (this.isCurrent(generation, revision, controller.signal))
-                this.setState({ status: "ready", generation, revision, result });
-        }
-        catch (error) {
-            if (this.isCurrent(generation, revision, controller.signal))
-                this.setState({ status: "failed", generation, revision, message: error instanceof Error ? error.message : "Die Exportdatei konnte nicht erzeugt werden." });
         }
         finally {
             if (this.activeController === controller)
                 this.activeController = null;
         }
-        return this.stateValue;
     }
     download() {
         const state = this.stateValue;
@@ -168,8 +170,12 @@ export async function fetchPinnedHeroImage(fetchAsset, signal, options = {}) {
         abortFromParent = () => { controller.abort(); reject(abortError()); };
         signal.addEventListener("abort", abortFromParent, { once: true });
     });
-    const request = fetchAsset(MUSICRAUM_HERO_URL, { signal: controller.signal });
     try {
+        const request = Promise.resolve().then(() => {
+            if (signal.aborted)
+                throw abortError();
+            return fetchAsset(MUSICRAUM_HERO_URL, { signal: controller.signal });
+        });
         let response;
         try {
             response = await Promise.race([request, timeout, parentAbort]);
@@ -196,11 +202,20 @@ export async function fetchPinnedHeroImage(fetchAsset, signal, options = {}) {
             blob = await response.blob();
         }
         catch (error) {
+            if (signal.aborted)
+                throw abortError();
+            if (timedOut)
+                throw new ExportAssetError("timeout", "Das Titelbild hat nicht innerhalb von 8 Sekunden geantwortet.");
             throw new ExportAssetError("read", error instanceof Error ? error.message : "Das Titelbild konnte nicht gelesen werden.");
         }
         if (blob.size > maxBytes)
             throw new ExportAssetError("size", "Das Titelbild überschreitet die Grenze von 5 MiB.");
-        return await blobToDataUrl(blob, mime);
+        const dataUrl = await blobToDataUrl(blob, mime);
+        if (signal.aborted)
+            throw abortError();
+        if (timedOut)
+            throw new ExportAssetError("timeout", "Das Titelbild hat nicht innerhalb von 8 Sekunden geantwortet.");
+        return dataUrl;
     }
     finally {
         if (timer)
