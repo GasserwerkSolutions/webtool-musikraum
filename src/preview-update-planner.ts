@@ -51,7 +51,11 @@ export function planPreviewUpdate(mutations: readonly DraftMutation[], draft: Re
     const effect = mutation.effect;
     if (effect.type === "draft-replace") return { kind: "full", revision, reason: "draft-replace" };
     if (effect.type === "section-move" || effect.type === "section-visibility") return { kind: "full", revision, reason: "layout" };
-    if (effect.type === "theme-set") { patchTheme = true; continue; }
+    if (effect.type === "theme-set") {
+      if (effect.changed.includes("preset")) return { kind: "full", revision, reason: "metadata" };
+      patchTheme = true;
+      continue;
+    }
     if (effect.type === "field-set") {
       if (effect.field.startsWith("site.") || effect.field === "copy.heroSubtitle") return { kind: "full", revision, reason: "metadata" };
       const regional = REGION_FIELDS[effect.field];
