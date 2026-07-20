@@ -131,7 +131,7 @@ export function renderContentOverview(context) {
 }
 export function updateReadiness(context) {
     const summary = evaluateReadiness(context.store.snapshot);
-    const summaryTitle = summary.ready ? summary.clean ? "Bereit und ohne Hinweise" : "Bereit mit Hinweisen" : `${summary.errorCount} ${summary.errorCount === 1 ? "Blocker" : "Blocker"} offen`;
+    const summaryTitle = summary.ready ? summary.clean ? "Bereit und ohne Hinweise" : "Bereit mit Hinweisen" : `${summary.errorCount} Blocker offen`;
     const summaryDetail = summary.ready
         ? summary.clean ? "Die Website kann vorbereitet und heruntergeladen werden." : `${summary.warningCount} ${summary.warningCount === 1 ? "Hinweis verhindert" : "Hinweise verhindern"} den Export nicht.`
         : "Behebe die Blocker. Jeder Eintrag führt direkt zum betroffenen Bearbeitungsfeld.";
@@ -141,7 +141,8 @@ export function updateReadiness(context) {
         const target = item.target ? ` data-editor-target="${escapeAttr(JSON.stringify(item.target))}"` : "";
         const tag = item.target ? "button" : "div";
         const type = item.target ? ' type="button"' : "";
-        return `<${tag} class="readiness-result is-${item.severity}"${type}${target} aria-label="${escapeAttr(`${SEVERITY_LABELS[item.severity]}: ${item.title}${item.target ? ", bearbeiten" : ""}`)}"><span class="readiness-result__severity">${escapeHtml(SEVERITY_LABELS[item.severity])}</span><span class="readiness-result__copy"><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.detail)}</small></span>${item.target ? '<span class="readiness-result__arrow" aria-hidden="true">→</span>' : ""}</${tag}>`;
+        const action = item.target ? '<span class="readiness-result__arrow" aria-hidden="true">→</span><span class="visually-hidden"> bearbeiten</span>' : "";
+        return `<${tag} class="readiness-result is-${item.severity}"${type}${target}><span class="readiness-result__severity">${escapeHtml(SEVERITY_LABELS[item.severity])}</span><span class="readiness-result__copy"><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.detail)}</small></span>${action}</${tag}>`;
     }).join("") : '<div class="readiness-empty"><strong>Keine offenen Punkte</strong><span>Alle aktiven Regeln sind erfüllt.</span></div>';
     renderExportState(context, context.exportState);
 }
