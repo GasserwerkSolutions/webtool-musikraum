@@ -114,6 +114,34 @@ body {
 .item-card--compact .field { margin-bottom: 0; }
 .copy-group .item-list { margin-bottom: 14px; }
 
+.reorder-actions { display: flex; align-items: center; gap: 5px; }
+.reorder-handle {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px dashed #bdb5ab;
+  border-radius: 10px;
+  background: rgba(255,255,255,.5);
+  color: var(--muted);
+  cursor: grab;
+  touch-action: none;
+  font-size: 18px;
+  line-height: 1;
+}
+.reorder-handle:hover { border-color: var(--accent); background: #f4faf7; color: var(--accent-dark); }
+.reorder-handle:focus-visible { outline: 3px solid rgba(124, 92, 77, .28); outline-offset: 2px; }
+.reorder-handle:active,
+.reorder-handle.is-dragging-handle { cursor: grabbing; }
+.reorder-handle:disabled { opacity: .3; cursor: default; }
+.item-card.is-dragging,
+.structure-row.is-dragging { opacity: .62; transform: scale(.99); box-shadow: 0 14px 32px rgba(40,32,24,.14); }
+.item-card.is-drop-target-before,
+.structure-row.is-drop-target-before { box-shadow: inset 0 3px 0 var(--accent), 0 8px 22px rgba(40,32,24,.05); }
+.item-card.is-drop-target-after,
+.structure-row.is-drop-target-after { box-shadow: inset 0 -3px 0 var(--accent), 0 8px 22px rgba(40,32,24,.05); }
+
 @media (max-width: 1180px) {
   .status-pill { display: none; }
   .brand__copy span { display: none; }
