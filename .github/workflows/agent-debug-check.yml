@@ -1,6 +1,7 @@
 name: Agent Debug Check
 
 on:
+  workflow_dispatch:
   push:
     branches: [agent/editable-hero-notes]
 
