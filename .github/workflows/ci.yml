@@ -23,8 +23,12 @@ jobs:
         run: npm run typecheck
       - name: Build browser assets
         run: npm run build
-      - name: Content overview tests
-        run: node --test tests/content-overview.test.mjs
+      - name: Overview deterministic model
+        run: node --test --test-name-pattern="deterministic completeness" tests/content-overview.test.mjs
+      - name: Overview completeness states
+        run: node --test --test-name-pattern="required, optional and hidden" tests/content-overview.test.mjs
+      - name: Overview stable dynamic targets
+        run: node --test --test-name-pattern="dynamic targets remain stable" tests/content-overview.test.mjs
       - name: Preview target tests
         run: node --test tests/preview-targets.test.mjs
       - name: Existing unit and DOM tests
