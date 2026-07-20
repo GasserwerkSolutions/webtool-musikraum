@@ -2,6 +2,7 @@ import { isPreviewTarget, panelForTarget, type PreviewTarget } from "./preview-c
 import type { UiContext } from "./ui-shared.js";
 import { showPanel } from "./ui-render.js";
 import { ensureEditorOpen } from "./sidebar.js";
+import { correctMobileEditorFocus, enterMobileEditMode } from "./mobile-modes.js";
 
 const highlightTimers = new WeakMap<HTMLElement, number>();
 
@@ -9,6 +10,7 @@ export function navigateToEditorTarget(context: UiContext, target: PreviewTarget
   const valid = isPreviewTarget(target, context.store.snapshot);
   const panel = target.kind === "offer" || target.kind === "text-item" ? panelForTarget(target) : valid ? panelForTarget(target) : null;
   if (!panel) return;
+  enterMobileEditMode(context);
   ensureEditorOpen(context);
   showPanel(context, panel);
   requestAnimationFrame(() => requestAnimationFrame(() => {
@@ -37,6 +39,7 @@ export function resolveEditorTarget(target: PreviewTarget): HTMLElement | null {
 }
 
 function revealTarget(context: UiContext, target: HTMLElement): void {
+  if (correctMobileEditorFocus(context, target)) return;
   const control = document.querySelector<HTMLElement>(".control-surface"); const preview = document.querySelector<HTMLElement>(".preview-area"); const stage = document.querySelector<HTMLElement>(".surface-stage");
   if (!control || !preview || !stage) { target.scrollIntoView({ block: "center", behavior: reducedMotion() ? "auto" : "smooth" }); return; }
   const controlRect = control.getBoundingClientRect(); const previewRect = preview.getBoundingClientRect(); const sideBySide = Math.abs(controlRect.top - previewRect.top) < 80 && controlRect.right <= previewRect.left + 2;
