@@ -53,6 +53,15 @@ jobs:
       - name: Existing unit and DOM tests
         run: node --test $(find tests -maxdepth 1 -name '*.test.mjs' ! -name 'e2e.test.mjs' ! -name 'preview-update-planner.test.mjs' ! -name 'preview-runtime.test.mjs' ! -name 'preview-targets.test.mjs' -print | sort)
       - name: Chromium acceptance
-        run: node --test tests/e2e.test.mjs
+        run: |
+          set -o pipefail
+          node --test tests/e2e.test.mjs 2>&1 | tee e2e.log
+      - name: Upload Chromium diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: preview-stability-e2e
+          path: e2e.log
       - name: Compiled assets are current
+        if: success()
         run: git diff --exit-code -- assets
