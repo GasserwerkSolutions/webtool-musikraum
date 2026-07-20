@@ -44,6 +44,8 @@ export function planPreviewUpdate(mutations, draft, renderOptions) {
         if (effect.type === "section-move" || effect.type === "section-visibility")
             return { kind: "full", revision, reason: "layout" };
         if (effect.type === "theme-set") {
+            if (effect.changed.includes("preset"))
+                return { kind: "full", revision, reason: "metadata" };
             patchTheme = true;
             continue;
         }
