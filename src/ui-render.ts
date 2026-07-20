@@ -91,7 +91,7 @@ export function renderSaveState(context: UiContext, state: SaveState, error?: un
   const sessionOnly = context.volatileStorage;
   const label = sessionOnly ? "Nur für diese Sitzung gespeichert" : state === "saving" ? "Speichert auf diesem Gerät" : state === "error" ? "Speichern fehlgeschlagen" : "Auf diesem Gerät gespeichert";
   const visualState = sessionOnly ? "session" : state;
-  context.saveStatus.textContent = "";
+  context.saveStatus.textContent = label;
   context.saveStatus.dataset.state = visualState;
   context.saveStatus.className = `status-pill is-${visualState}`;
   context.saveStatus.setAttribute("aria-label", label);
