@@ -4,7 +4,14 @@ const GROUP_ORDER = ["identity", "hero", "navigation", "intro", "why", "offers",
 const GROUP_LABELS = {
     identity: "Grundlage",
     hero: "Einstieg",
-    navigation: "Navigation",
+    navigation: "Navigation und Bereiche",
+    intro: "Über Franz",
+    why: "Frei spielen",
+    offers: "Klangmomente",
+    story: "Geschichte",
+    contact: "Kontakt",
+};
+const SECTION_LABELS = {
     intro: "Über Franz",
     why: "Frei spielen",
     offers: "Klangmomente",
@@ -20,6 +27,15 @@ export function buildContentOverview(draft) {
             detail: summarize(fieldValue(definition.field, draft)),
             status: evaluateContentCompleteness({ kind: "field", field: definition.field }, draft),
             target: { kind: "field", field: definition.field },
+        });
+    }
+    for (const section of draft.layout.order) {
+        add(groups, "navigation", {
+            id: `section:${section}`,
+            label: `Bereich: ${SECTION_LABELS[section]}`,
+            detail: draft.layout.visibility[section] ? "Auf der Website sichtbar" : "Auf der Website ausgeblendet",
+            status: evaluateContentCompleteness({ kind: "section", section }, draft),
+            target: { kind: "section", section },
         });
     }
     addCollection(groups, draft, "hero", "heroPoints", "Punkte im Titelbild", { kind: "panel", panel: "hero" });
