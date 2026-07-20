@@ -15,9 +15,35 @@ export function bindStaticInputs(context) {
     else
         input.value = String(value ?? ""); });
 }
-export function renderDynamicControls(context) { renderOffers(context); renderPresets(context); renderStructure(context); }
+export function renderDynamicControls(context) { renderTextItems(context, "heroPoints"); renderTextItems(context, "introPoints"); renderOffers(context); renderPresets(context); renderStructure(context); }
+export function renderTextItems(context, list) {
+    const listElement = list === "heroPoints" ? context.heroPointList : context.introPointList;
+    const items = context.store.snapshot[list];
+    listElement.innerHTML = "";
+    document.querySelectorAll(`[data-action="add-text-item"][data-list="${list}"]`).forEach((button) => { button.disabled = items.length >= 6; });
+    if (!items.length) {
+        listElement.innerHTML = '<div class="empty-state">Noch kein Punkt. Du kannst die Liste leer lassen oder einen Punkt hinzufügen.</div>';
+        return;
+    }
+    items.forEach((item, index) => {
+        const fragment = context.textItemTemplate.content.cloneNode(true);
+        const card = fragment.querySelector("[data-text-item-card]");
+        if (!card)
+            return;
+        card.dataset.textList = list;
+        card.dataset.textItemId = item.id;
+        const number = fragment.querySelector("[data-text-item-number]");
+        if (number)
+            number.textContent = `${index + 1}. ${item.text || "Punkt"}`;
+        const input = fragment.querySelector("[data-text-item-field]");
+        if (input)
+            input.value = String(item.text ?? "");
+        listElement.appendChild(fragment);
+    });
+}
 export function renderOffers(context) {
     context.offerList.innerHTML = "";
+    document.querySelectorAll('[data-action="add-offer"]').forEach((button) => { button.disabled = context.store.snapshot.offers.length >= 12; });
     if (!context.store.snapshot.offers.length) {
         context.offerList.innerHTML = '<div class="empty-state">Noch kein Klangmoment. Füge den ersten hinzu.</div>';
         return;
