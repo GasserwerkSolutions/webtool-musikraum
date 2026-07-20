@@ -44,5 +44,5 @@ test("pins the hero asset and escapes style raw text", () => {
   assert.match(MUSICRAUM_HERO_URL, /musikraum\/[0-9a-f]{40}\//);
   const html = buildWebsiteHtml(createDefaultDraft(), { heroImageUrl: "x</style><script>alert(1)</script>" });
   assert.doesNotMatch(html, /x<\/style><script>/);
-  assert.match(html, /x\\3c \\/style\\3e \\3c script\\3e alert/);
+  assert.ok(html.includes("x\\3c /style\\3e \\3c script\\3e alert\\(1\\)"));
 });
