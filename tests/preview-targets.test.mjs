@@ -54,3 +54,15 @@ test("space activates non-interactive preview targets while export stays clean",
   const exported = buildWebsiteHtml(completeDraft());
   assert.doesNotMatch(exported, /data-preview-target|data-preview-occurrence|preview-edit-trigger|navigate-to-editor/);
 });
+
+
+test("text-list editor targets are the visible list wrappers", () => {
+  const html = buildWebsiteHtml(completeDraft(), { preview: true, previewInstanceId: "lists", parentOrigin: "*", previewRevision: 0, renderGeneration: 1 });
+  const dom = new JSDOM(html);
+  const heroItems = [...dom.window.document.querySelectorAll(".hero-notes > span")];
+  const introItems = [...dom.window.document.querySelectorAll(".plain-list > li")];
+  assert.ok(heroItems.length > 0); assert.ok(introItems.length > 0);
+  assert.ok([...heroItems, ...introItems].every((element) => element.hasAttribute("data-preview-target")));
+  assert.equal(dom.window.document.querySelector(".hero-notes > span > .preview-edit-trigger, .plain-list > li > .preview-edit-trigger"), null);
+  dom.window.close();
+});

@@ -142,6 +142,12 @@ export class PreviewRuntime {
       this.startFullRender(1);
       return;
     }
+    if (plan.kind === "noop") {
+      this.pendingMutations = this.pendingMutations.filter((mutation) => mutation.revision > plan.revision);
+      this.appliedRevisionValue = plan.revision;
+      if (this.desiredRevisionValue > this.appliedRevisionValue || this.pendingMutations.length) this.scheduleFlush(0);
+      return;
+    }
     this.pendingMutations = this.pendingMutations.filter((mutation) => mutation.revision > plan.revision);
     const requestId = this.createId();
     const request: PreviewUpdateRequest = {
