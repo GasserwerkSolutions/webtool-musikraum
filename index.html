@@ -7,6 +7,7 @@
   <title>Musikraum Website-Werkzeug</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="layout-overrides.css">
 </head>
 <body>
   <a class="skip-link" href="#builder-main">Zum Werkzeug springen</a>
@@ -16,6 +17,7 @@
     <div class="topbar__actions">
       <span id="saveStatus" class="status-pill" aria-live="polite">Auf diesem Gerät gespeichert</span>
       <div class="history-actions" role="group" aria-label="Änderungen"><button id="undoButton" class="button button--quiet button--compact" type="button" data-action="undo" disabled title="Rückgängig (Strg oder Cmd + Z)">↶ <span>Rückgängig</span></button><button id="redoButton" class="button button--quiet button--compact" type="button" data-action="redo" disabled title="Wiederholen (Umschalt + Strg oder Cmd + Z)">↷ <span>Wiederholen</span></button></div>
+      <div class="viewport-switch viewport-switch--topbar" role="group" aria-label="Vorschaugrösse"><span id="previewHint" class="visually-hidden">Desktop</span><button class="viewport-switch__button is-active" type="button" data-viewport="desktop" aria-pressed="true">Desktop</button><button class="viewport-switch__button" type="button" data-viewport="tablet" aria-pressed="false">Tablet</button><button class="viewport-switch__button" type="button" data-viewport="mobile" aria-pressed="false">Mobile</button></div>
       <button class="button button--quiet" type="button" data-action="reset">Zurücksetzen</button>
       <button class="button button--primary" type="button" data-action="export">HTML exportieren</button>
     </div>
@@ -105,7 +107,6 @@
     </aside>
 
     <section class="preview-area" aria-label="Live-Vorschau">
-      <div class="preview-toolbar"><div><strong>Live-Vorschau</strong><span class="preview-meta"><span id="previewHint">Desktop</span> · Text anklicken zum Bearbeiten</span></div><div class="viewport-switch" role="group" aria-label="Vorschaugrösse"><button class="viewport-switch__button is-active" type="button" data-viewport="desktop" aria-pressed="true">Desktop</button><button class="viewport-switch__button" type="button" data-viewport="tablet" aria-pressed="false">Tablet</button><button class="viewport-switch__button" type="button" data-viewport="mobile" aria-pressed="false">Mobile</button></div></div>
       <div class="preview-desk"><iframe id="previewFrame" title="Vorschau der Musikraum-Website" sandbox="allow-scripts" data-viewport="desktop"></iframe></div>
     </section>
   </main>
