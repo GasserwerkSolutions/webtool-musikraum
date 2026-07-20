@@ -25,10 +25,12 @@ jobs:
         run: npm run build
       - name: Content overview tests
         run: node --test tests/content-overview.test.mjs
-      - name: Preview target tests
-        run: node --test tests/preview-targets.test.mjs
-      - name: Existing unit and DOM tests
-        run: npm test -- --test-name-pattern="^(?!real browser layout)"
+      - name: Target occurrence and nesting
+        run: node --test --test-name-pattern="unique occurrences" tests/preview-targets.test.mjs
+      - name: Static field target coverage
+        run: node --test --test-name-pattern="every registered field" tests/preview-targets.test.mjs
+      - name: Preview keyboard and export
+        run: node --test --test-name-pattern="space activates" tests/preview-targets.test.mjs
       - name: Chromium acceptance
         run: node --test tests/e2e.test.mjs
       - name: Compiled assets are current
