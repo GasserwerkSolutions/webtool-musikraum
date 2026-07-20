@@ -47,12 +47,15 @@ export class BuilderStore {
             && this.lastHistoryIntent
             && sameIntentTarget(descriptor.intent, this.lastHistoryIntent)
             && now - this.lastHistoryAt < 900);
+        let historyGroupCollapsed = false;
         if (mergesWithPrevious) {
             const record = this.undoStack.at(-1);
             if (!record)
                 throw new Error("MISSING_GROUPED_HISTORY_RECORD");
-            if (draftsEqualIgnoringUpdatedAt(record.before, normalized))
+            if (draftsEqualIgnoringUpdatedAt(record.before, normalized)) {
                 this.undoStack.pop();
+                historyGroupCollapsed = true;
+            }
             else {
                 record.effect = createDraftEffect(record.before, normalized, record.intent);
                 record.history = descriptor.history;
@@ -65,9 +68,13 @@ export class BuilderStore {
                 this.undoStack.shift();
         }
         this.redoStack = [];
-        this.lastHistoryKey = descriptor.history.key ?? "";
-        this.lastHistoryIntent = descriptor.intent;
-        this.lastHistoryAt = now;
+        if (historyGroupCollapsed)
+            this.flushHistoryGroup();
+        else {
+            this.lastHistoryKey = descriptor.history.key ?? "";
+            this.lastHistoryIntent = descriptor.intent;
+            this.lastHistoryAt = now;
+        }
         this.draft = normalized;
         const mutation = this.createMutation("user", eventEffect, descriptor.history, now);
         this.emit(mutation);
@@ -110,10 +117,11 @@ export class BuilderStore {
         const current = cloneDraft(this.draft);
         this.redoStack.push({ after: current, intent: record.intent, history: record.history, createdAt: Date.now() });
         const next = normalizeDraft(record.before);
+        const inverseEffect = record.effect.type === "theme-set" ? createDraftEffect(current, next, record.intent) : invertDraftEffect(record.effect);
         const now = Date.now();
         next.updatedAt = new Date(now).toISOString();
         this.draft = next;
-        const mutation = this.createMutation("undo", invertDraftEffect(record.effect), record.history, now);
+        const mutation = this.createMutation("undo", inverseEffect, record.history, now);
         this.emit(mutation);
         this.emitHistory();
         this.scheduleSave(0);
