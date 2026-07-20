@@ -37,6 +37,15 @@ test("Alt plus arrow uses the same kernel for sections", () => {
   assert.equal(handled, true); assert.equal(prevented, true); assert.equal(store.snapshot.layout.order[2], section); assert.equal(mutations[0].effect.type, "section-move"); assert.equal(mutations[0].effect.previousIndex, 1); assert.equal(mutations[0].effect.nextIndex, 2); dom.window.close();
 });
 
+test("Escape releases pointer capture without creating a revision", () => {
+  const { dom, store, context, mutations } = fixture(); renderOffers(context); const handle = document.querySelector('#offerList [data-offer-card]:nth-child(2) [data-reorder-handle]'); let captured = 0; let released = 0;
+  handle.setPointerCapture = () => { captured += 1; }; handle.releasePointerCapture = () => { released += 1; };
+  const pointer = { button: 0, pointerId: 4, clientY: 10, target: handle, preventDefault() {} };
+  assert.equal(handleReorderPointerDown(context, pointer), true); assert.equal(captured, 1);
+  let prevented = false; assert.equal(handleReorderKeydown(context, { key: "Escape", altKey: false, target: handle, preventDefault() { prevented = true; } }), true);
+  assert.equal(prevented, true); assert.equal(released, 1); assert.equal(store.revision, 0); assert.equal(mutations.length, 0); assert.match(context.announcer.textContent, /abgebrochen/); dom.window.close();
+});
+
 test("pointer cancellation creates no revision and drop commits exactly once", () => {
   const { dom, store, context, mutations } = fixture(); renderOffers(context); let cards = [...document.querySelectorAll('#offerList [data-offer-card]')]; cards.forEach((card, index) => { card.getBoundingClientRect = () => ({ top: index * 100, height: 80, left: 0, right: 300, bottom: index * 100 + 80, width: 300, x: 0, y: index * 100, toJSON() {} }); });
   const secondId = store.snapshot.offers[1].id; let handle = cards[1].querySelector('[data-reorder-handle]'); const pointer = (target, extra = {}) => ({ button: 0, pointerId: 7, clientY: 10, target, preventDefault() {}, ...extra });
