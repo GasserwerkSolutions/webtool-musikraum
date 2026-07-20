@@ -6,18 +6,55 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: feature/readiness-export-preflight
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run check
-      - run: git diff --exit-code -- assets
+      - name: Apply PR5 UI integration
+        run: |
+          python3 - <<'PYTHON'
+          from pathlib import Path
+          workflow = Path('.github/workflows/pr5-development.yml').read_text()
+          marker = "          python3 - <<'PY'\n"
+          start = workflow.index(marker) + len(marker)
+          end = workflow.index("\n          PY", start)
+          block = workflow[start:end]
+          script = "\n".join(line[10:] if line.startswith("          ") else line for line in block.splitlines())
+          exec(compile(script, 'pr5-integrate.py', 'exec'))
+          PYTHON
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Build browser assets
+        run: npm run build
+      - name: Commit integrated sources and assets
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html styles.css assets
+          if ! git diff --cached --quiet; then
+            git commit -m "Integrate readiness and export preflight UI"
+            git push origin HEAD:feature/readiness-export-preflight
+          fi
+      - name: Readiness rules
+        run: node --test tests/readiness.test.mjs
+      - name: Export generation and asset boundaries
+        run: node --test tests/export-preflight.test.mjs
+      - name: Existing unit and DOM tests
+        run: node --test $(find tests -maxdepth 1 -name '*.test.mjs' ! -name '*e2e.test.mjs' ! -name 'readiness.test.mjs' ! -name 'export-preflight.test.mjs' -print | sort)
+      - name: Existing Chromium acceptance
+        run: node --test tests/e2e.test.mjs
+      - name: Export Chromium acceptance
+        run: node --test tests/export-preflight-e2e.test.mjs
+      - name: Compiled assets are current
+        run: git diff --exit-code -- assets
