@@ -95,11 +95,16 @@ test("real browser layout, live editing and sidebar contract", { timeout: 90000 
 
     await page.setViewport({ width: 1051, height: 520 }); await page.waitForFunction(() => document.querySelector(".surface-nav").scrollHeight > document.querySelector(".surface-nav").clientHeight); const compactLayout = await page.evaluate(() => ({ bodyVertical: document.documentElement.scrollHeight - document.documentElement.clientHeight, bodyHorizontal: document.documentElement.scrollWidth - document.documentElement.clientWidth, previewContained: document.querySelector("#previewFrame").getBoundingClientRect().right <= innerWidth, navContained: (() => { const button = document.querySelector('[data-panel-target="services"]'); const span = button.querySelector("span"); const buttonRect = button.getBoundingClientRect(); const textRect = span.getBoundingClientRect(); return textRect.left >= buttonRect.left && textRect.right <= buttonRect.right + .5; })() })); assert.ok(compactLayout.bodyVertical <= 1); assert.ok(compactLayout.bodyHorizontal <= 1); assert.equal(compactLayout.previewContained, true); assert.equal(compactLayout.navContained, true);
 
-    await page.click('[data-panel-target="publish"]');
-    assert.ok(await page.$$eval('#contentOverviewList [data-editor-target]', (entries) => entries.length > 40));
+    assert.equal(await page.$eval('[data-panel-target="site"]', (button) => button.textContent.trim()), "Übersicht");
+    assert.equal(await page.$eval('[data-panel-target="publish"]', (button) => button.textContent.trim()), "Fertig");
+    await page.click('[data-panel-target="site"]');
+    assert.ok(await page.$$eval('#contentOverviewList [data-editor-target]', (entries) => entries.length > 45));
     await page.click('#contentOverviewList [data-editor-target*="copy.heroTitle"]');
     await page.waitForFunction(() => document.activeElement?.getAttribute('data-bind') === 'copy.heroTitle');
-    await page.click('[data-panel-target="site"]'); preview = await waitForPreview(page); await preview.focus('h1 [data-preview-target]'); await page.keyboard.press('Space');
+    await page.click('[data-panel-target="site"]');
+    await page.evaluate(() => { const entry = [...document.querySelectorAll('#contentOverviewList [data-editor-target]')].find((element) => { try { const target = JSON.parse(element.getAttribute('data-editor-target') ?? ''); return target.kind === 'section' && target.section === 'contact'; } catch { return false; } }); if (!(entry instanceof HTMLElement)) throw new Error('section target missing'); entry.click(); });
+    await page.waitForFunction(() => document.activeElement?.matches('[data-section-key="contact"] [data-layout-visible]'));
+    preview = await waitForPreview(page); await preview.focus('h1 [data-preview-target]'); await page.keyboard.press('Space');
     await page.waitForFunction(() => document.activeElement?.getAttribute('data-bind') === 'copy.heroTitle');
 
     const exportedPage = await browser.newPage(); await exportedPage.setViewport({ width: 1200, height: 700 }); await exportedPage.setContent(buildWebsiteHtml(createDefaultDraft()), { waitUntil: "domcontentloaded" }); assert.equal(await exportedPage.$("[data-preview-target], [data-preview-region], .sidebar-resizer, .sidebar-toggle"), null); await exportedPage.click('.main-nav a[href="#franz"]'); await exportedPage.waitForFunction(() => location.hash === "#franz" && scrollY > 0);
