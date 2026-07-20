@@ -55,7 +55,7 @@ export class PreviewRuntime {
             return false;
         const ready = parseReadyMessage(event.data, this.instanceIdValue, this.renderGenerationValue);
         if (ready) {
-            if (ready.revision !== this.fullRenderRevision)
+            if (this.ready || ready.revision !== this.fullRenderRevision || ready.revision < this.appliedRevisionValue)
                 return true;
             this.clearReadyTimer();
             this.ready = true;
