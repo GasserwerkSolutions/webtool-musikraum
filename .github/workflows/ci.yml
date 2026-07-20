@@ -6,72 +6,18 @@ on:
     branches: [main]
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: fix/preview-input-stability
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Apply instant scroll restoration regression fix
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          bridge = Path('src/preview-bridge.ts')
-          source = bridge.read_text()
-          old = "addEventListener('load',()=>{const restore=c.restore;if(restore){const section=document.querySelector('[data-preview-section=\"'+CSS.escape(restore.section)+'\"]');const y=section?section.offsetTop+restore.offsetWithinSection:restore.fallbackScrollY;scrollTo(0,Math.max(0,Math.min(y,document.documentElement.scrollHeight-innerHeight)))}reportScroll();send('ready')})"
-          new = "addEventListener('load',()=>{const restore=c.restore;if(restore){const section=document.querySelector('[data-preview-section=\"'+CSS.escape(restore.section)+'\"]');const y=section?section.offsetTop+restore.offsetWithinSection:restore.fallbackScrollY;restoreViewport({x:0,y:Math.max(0,Math.min(y,document.documentElement.scrollHeight-innerHeight))})}reportScroll();send('ready')})"
-          if old in source:
-              bridge.write_text(source.replace(old, new, 1))
-          elif new not in source:
-              raise SystemExit('preview load restoration block not found')
-
-          e2e = Path('tests/e2e.test.mjs')
-          source = e2e.read_text()
-          old = "    await preview.evaluate(() => scrollTo(0, document.querySelector('#geschichte')?.offsetTop ?? 700));"
-          new = "    await preview.evaluate(() => { const root = document.documentElement; const previous = root.style.scrollBehavior; root.style.scrollBehavior = 'auto'; scrollTo(0, document.querySelector('#angebote')?.offsetTop ?? 700); root.style.scrollBehavior = previous; });"
-          if old in source:
-              e2e.write_text(source.replace(old, new, 1))
-          elif new not in source:
-              raise SystemExit('e2e scroll setup not found')
-          PY
-      - name: Typecheck and build
-        run: |
-          npm run typecheck
-          npm run build
-      - name: Commit stabilized sources and assets
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src tests assets
-          if ! git diff --cached --quiet; then
-            git commit -m "Preserve preview scroll position during input"
-            git push origin HEAD:fix/preview-input-stability
-          fi
-      - name: Planner and runtime regressions
-        run: node --test tests/preview-update-planner.test.mjs tests/preview-runtime.test.mjs
-      - name: Preview target regressions
-        run: node --test tests/preview-targets.test.mjs
-      - name: Existing unit and DOM tests
-        run: node --test $(find tests -maxdepth 1 -name '*.test.mjs' ! -name 'e2e.test.mjs' ! -name 'preview-update-planner.test.mjs' ! -name 'preview-runtime.test.mjs' ! -name 'preview-targets.test.mjs' -print | sort)
-      - name: Chromium acceptance
-        run: |
-          set -o pipefail
-          node --test tests/e2e.test.mjs 2>&1 | tee e2e.log
-      - name: Upload Chromium diagnostics
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: preview-stability-e2e
-          path: e2e.log
-      - name: Compiled assets are current
-        if: success()
-        run: git diff --exit-code -- assets
+      - run: npm run check
+      - run: git diff --exit-code -- assets
