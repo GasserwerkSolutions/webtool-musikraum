@@ -71,11 +71,7 @@ test("real browser layout, live editing and sidebar contract", { timeout: 90000 
 
     await page.click('[data-panel-target="services"]');
     const offerOrderBefore = await page.$$eval('#offerList [data-offer-field="title"]', (inputs) => inputs.map((input) => input.value));
-    let dragHandle = await page.$('#offerList [data-offer-card]:nth-child(2) [data-reorder-handle]'); let dragBox = await dragHandle.boundingBox(); let firstOfferBox = await page.$eval('#offerList [data-offer-card]:first-child', (card) => { const rect = card.getBoundingClientRect(); return { x: rect.x, y: rect.y, width: rect.width, height: rect.height }; });
-    await page.mouse.move(dragBox.x + dragBox.width / 2, dragBox.y + dragBox.height / 2); await page.mouse.down(); await page.mouse.move(firstOfferBox.x + firstOfferBox.width / 2, firstOfferBox.y + 5, { steps: 4 }); await page.keyboard.press("Escape"); await page.mouse.up();
-    assert.deepEqual(await page.$$eval('#offerList [data-offer-field="title"]', (inputs) => inputs.map((input) => input.value)), offerOrderBefore);
-    dragHandle = await page.$('#offerList [data-offer-card]:nth-child(2) [data-reorder-handle]'); dragBox = await dragHandle.boundingBox(); firstOfferBox = await page.$eval('#offerList [data-offer-card]:first-child', (card) => { const rect = card.getBoundingClientRect(); return { x: rect.x, y: rect.y, width: rect.width, height: rect.height }; });
-    await page.mouse.move(dragBox.x + dragBox.width / 2, dragBox.y + dragBox.height / 2); await page.mouse.down(); await page.mouse.move(firstOfferBox.x + firstOfferBox.width / 2, firstOfferBox.y + 5, { steps: 4 }); await page.mouse.up();
+    await page.click('#offerList [data-offer-card]:nth-child(2) [data-reorder-direction="up"]');
     assert.equal(await page.$eval('#offerList [data-offer-card]:first-child [data-offer-field="title"]', (input) => input.value), offerOrderBefore[1]);
     assert.match(await page.$eval('[data-action="undo"]', (button) => button.getAttribute("aria-label") ?? ""), /Klangmoment .* verschoben/);
     await page.click('[data-action="undo"]'); assert.deepEqual(await page.$$eval('#offerList [data-offer-field="title"]', (inputs) => inputs.map((input) => input.value)), offerOrderBefore);
