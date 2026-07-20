@@ -21,29 +21,17 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Apply preview stability integration
-        run: |
-          python3 - <<'PYTHON'
-          from pathlib import Path
-          workflow = Path('.github/workflows/preview-stability-fix.yml').read_text()
-          marker = "          python3 - <<'PY'\n"
-          start = workflow.index(marker) + len(marker)
-          end = workflow.index("\n          PY", start)
-          block = workflow[start:end]
-          script = "\n".join(line[10:] if line.startswith("          ") else line for line in block.splitlines())
-          exec(compile(script, 'preview-stability-integrate.py', 'exec'))
-          PYTHON
       - name: Typecheck and build
         run: |
           npm run typecheck
           npm run build
-      - name: Commit integrated sources and assets
+      - name: Commit synchronized browser assets
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src tests assets
+          git add assets
           if ! git diff --cached --quiet; then
-            git commit -m "Stabilize incremental preview input updates"
+            git commit -m "Synchronize preview stability browser modules"
             git push origin HEAD:fix/preview-input-stability
           fi
       - name: Planner and runtime regressions
