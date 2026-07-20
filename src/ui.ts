@@ -6,12 +6,12 @@ import {
   renderDynamicControls,
   renderPreview,
   renderSaveState,
-  schedulePreview,
   showToast,
   updateReadiness,
 } from "./ui-render.js";
 import { createUiContext, type UiContext } from "./ui-shared.js";
-import { parseNavigateMessage, type PreviewScrollState } from "./preview-contract.js";
+import { parseNavigateMessage, parseScrollMessage } from "./preview-contract.js";
+import { PreviewRuntime } from "./preview-runtime.js";
 import { navigateToPreviewTarget } from "./preview-navigation.js";
 import { initSidebar } from "./sidebar.js";
 import { handleReorderKeydown, handleReorderPointerDown, handleReorderPointerEnd, handleReorderPointerMove } from "./reorder-actions.js";
@@ -21,6 +21,13 @@ export class BuilderUi {
 
   constructor(store: BuilderStore, repository: DraftRepository) {
     this.context = createUiContext(store, repository);
+    this.context.previewRuntime = new PreviewRuntime({
+      frame: this.context.previewFrame,
+      readDraft: () => this.context.store.snapshot,
+      readRevision: () => this.context.store.revision,
+      readScroll: () => this.context.previewScroll,
+      writeInstanceId: (instanceId) => { this.context.previewInstanceId = instanceId; },
+    });
   }
 
   init(options: DraftLoadResult & { volatileStorage?: boolean }): void {
@@ -30,8 +37,8 @@ export class BuilderUi {
     renderDynamicControls(this.context);
     renderPreview(this.context);
     updateReadiness(this.context);
-    this.context.store.subscribe(() => {
-      if (!this.context.suppressPreview) schedulePreview(this.context);
+    this.context.store.subscribe((event) => {
+      if (!this.context.suppressPreview) this.context.previewRuntime?.enqueue(event);
       updateReadiness(this.context);
     });
     this.context.store.subscribeSave((state, error) => renderSaveState(this.context, state, error));
@@ -57,10 +64,13 @@ export class BuilderUi {
   }
 
   private handlePreviewMessage(event: MessageEvent): void {
+    if (this.context.previewRuntime?.handleMessage(event)) return;
     if (event.source !== this.context.previewFrame.contentWindow || event.origin !== "null") return;
-    const message = event.data as Record<string, unknown> | null; if (!message || message.channel !== "musikraum-preview" || message.version !== 1 || message.instanceId !== this.context.previewInstanceId) return;
-    if (message.action === "preview-scroll") { const position = parseScrollPosition(message.position); if (position) this.context.previewScroll = position; return; }
-    const parsed = parseNavigateMessage(message, this.context.previewInstanceId, this.context.store.snapshot); if (parsed) navigateToPreviewTarget(this.context, parsed.target);
+    const runtime = this.context.previewRuntime; if (!runtime) return;
+    const scroll = parseScrollMessage(event.data, runtime.instanceId, runtime.renderGeneration);
+    if (scroll) { this.context.previewScroll = scroll.position; return; }
+    const navigate = parseNavigateMessage(event.data, runtime.instanceId, this.context.store.snapshot, runtime.renderGeneration);
+    if (navigate) navigateToPreviewTarget(this.context, navigate.target);
   }
 }
 
@@ -76,4 +86,3 @@ function describeHistoryButton(button: HTMLButtonElement, direction: string, lab
   button.setAttribute("aria-label", `${description} (${shortcut})`);
   button.title = `${description} (${shortcut})`;
 }
-function parseScrollPosition(value: unknown): PreviewScrollState | null { if (!value || typeof value !== "object") return null; const row = value as Record<string, unknown>; return typeof row.section === "string" && Number.isFinite(row.offsetWithinSection) && Number.isFinite(row.fallbackScrollY) ? { section: row.section, offsetWithinSection: Math.max(0, Number(row.offsetWithinSection)), fallbackScrollY: Math.max(0, Number(row.fallbackScrollY)) } : null; }
