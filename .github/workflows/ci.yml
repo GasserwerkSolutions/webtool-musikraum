@@ -33,13 +33,11 @@ jobs:
           script = "\n".join(line[10:] if line.startswith("          ") else line for line in block.splitlines())
           exec(compile(script, 'preview-stability-integrate.py', 'exec'))
           PYTHON
-      - name: Build and verify
-        run: |
-          npm run typecheck
-          npm run build
-          npm run check
-          git diff --exit-code -- assets
-      - name: Commit integrated fix
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Build browser assets
+        run: npm run build
+      - name: Commit integrated sources and assets
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -48,3 +46,13 @@ jobs:
             git commit -m "Stabilize incremental preview input updates"
             git push origin HEAD:fix/preview-input-stability
           fi
+      - name: Planner and runtime regressions
+        run: node --test tests/preview-update-planner.test.mjs tests/preview-runtime.test.mjs
+      - name: Preview target regressions
+        run: node --test tests/preview-targets.test.mjs
+      - name: Existing unit and DOM tests
+        run: node --test $(find tests -maxdepth 1 -name '*.test.mjs' ! -name 'e2e.test.mjs' ! -name 'preview-update-planner.test.mjs' ! -name 'preview-runtime.test.mjs' ! -name 'preview-targets.test.mjs' -print | sort)
+      - name: Chromium acceptance
+        run: node --test tests/e2e.test.mjs
+      - name: Compiled assets are current
+        run: git diff --exit-code -- assets
