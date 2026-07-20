@@ -73,14 +73,17 @@ test("patch timeout rebuilds the newest draft and ignores the expired response",
   assert.equal(ready(), true); assert.equal(runtime.appliedRevision, 1); close();
 });
 
-
-
-test("hidden-field no-op advances the applied revision without rebuilding", async () => {
+test("hidden-field no-op keeps the iframe revision and the next visible patch skips the processed gap", async () => {
   const draft = createDefaultDraft(); draft.layout.visibility.contact = false;
-  const { store, runtime, sent, srcdocs, ready, close } = fixture(draft); runtime.start(); ready();
+  const { store, runtime, sent, srcdocs, message, ready, close } = fixture(draft); runtime.start(); ready();
   store.mutate((next) => { next.site.phone = "+41321234567"; }, { intent: { type: "set-field", field: "site.phone" }, history: { label: "Telefonnummer geändert" } });
-  await wait(70); assert.equal(runtime.appliedRevision, 1); assert.equal(sent.length, 0); assert.equal(srcdocs.length, 1); close();
+  await wait(70); assert.equal(runtime.appliedRevision, 0); assert.equal(runtime.desiredRevision, 1); assert.equal(sent.length, 0); assert.equal(srcdocs.length, 1);
+  setHeroTitle(store, "Nach unsichtbarer Änderung");
+  await wait(70); assert.equal(sent.length, 1); const request = sent[0]; assert.equal(request.baseRevision, 0); assert.equal(request.revision, 2); assert.equal(srcdocs.length, 1);
+  runtime.handleMessage(message({ channel: PREVIEW_CHANNEL, version: PREVIEW_PROTOCOL_VERSION, instanceId: runtime.instanceId, renderGeneration: runtime.renderGeneration, revision: 2, action: "update-result", requestId: request.requestId, success: true }));
+  assert.equal(runtime.appliedRevision, 2); assert.equal(srcdocs.length, 1); close();
 });
+
 test("layout effects bypass patches and perform a full render", async () => {
   const { store, runtime, sent, srcdocs, ready, close } = fixture(); runtime.start(); ready();
   store.mutate((draft) => { const [section] = draft.layout.order.splice(1, 1); draft.layout.order.splice(0, 0, section); }, { intent: { type: "move-section", section: "why" }, history: { label: "Bereich verschoben" } });
