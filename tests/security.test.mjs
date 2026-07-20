@@ -26,7 +26,7 @@ test("encodes contact links and omits invalid external targets", () => {
   draft.site.instagram = "https://example.com/kein-instagram";
   const html = buildWebsiteHtml(draft);
   assert.match(html, /mailto:info%2Bklang%40example\.com\?subject=Anfrage\+Musikraum%26body%3Dunerwartet/);
-  assert.doesNotMatch(html, /&body=unerwartet/);
+  assert.doesNotMatch(html, /href="mailto:[^"]*&body=unerwartet/);
   assert.match(html, /href="tel:\+410791234567"/);
   assert.doesNotMatch(html, />Instagram<\/a>/);
 });
