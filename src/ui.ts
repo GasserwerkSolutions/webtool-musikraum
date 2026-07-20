@@ -68,9 +68,9 @@ export class BuilderUi {
     if (event.source !== this.context.previewFrame.contentWindow || event.origin !== "null") return;
     const runtime = this.context.previewRuntime; if (!runtime) return;
     const scroll = parseScrollMessage(event.data, runtime.instanceId, runtime.renderGeneration);
-    if (scroll) { this.context.previewScroll = scroll.position; return; }
+    if (scroll && scroll.revision === runtime.appliedRevision) { this.context.previewScroll = scroll.position; return; }
     const navigate = parseNavigateMessage(event.data, runtime.instanceId, this.context.store.snapshot, runtime.renderGeneration);
-    if (navigate) navigateToPreviewTarget(this.context, navigate.target);
+    if (navigate && navigate.revision === runtime.appliedRevision) navigateToPreviewTarget(this.context, navigate.target);
   }
 }
 
