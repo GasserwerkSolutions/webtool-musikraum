@@ -15,6 +15,7 @@ export class PreviewRuntime {
     instanceIdValue = "";
     renderGenerationValue = 0;
     appliedRevisionValue = 0;
+    processedRevisionValue = 0;
     desiredRevisionValue = 0;
     fullRenderRevision = 0;
     ready = false;
@@ -60,8 +61,9 @@ export class PreviewRuntime {
             this.clearReadyTimer();
             this.ready = true;
             this.appliedRevisionValue = ready.revision;
+            this.processedRevisionValue = ready.revision;
             this.pendingMutations = this.pendingMutations.filter((mutation) => mutation.revision > ready.revision);
-            if (this.desiredRevisionValue > this.appliedRevisionValue)
+            if (this.desiredRevisionValue > this.processedRevisionValue)
                 this.scheduleFlush(0);
             return true;
         }
@@ -78,7 +80,8 @@ export class PreviewRuntime {
             return true;
         }
         this.appliedRevisionValue = result.revision;
-        if (this.desiredRevisionValue > this.appliedRevisionValue || this.pendingMutations.length)
+        this.processedRevisionValue = result.revision;
+        if (this.desiredRevisionValue > this.processedRevisionValue || this.pendingMutations.length)
             this.scheduleFlush(0);
         return true;
     }
@@ -98,9 +101,9 @@ export class PreviewRuntime {
     flushPending() {
         if (this.destroyed || !this.ready || this.inFlight)
             return;
-        const mutations = this.pendingMutations.filter((mutation) => mutation.revision > this.appliedRevisionValue);
+        const mutations = this.pendingMutations.filter((mutation) => mutation.revision > this.processedRevisionValue);
         if (!mutations.length) {
-            if (this.desiredRevisionValue > this.appliedRevisionValue)
+            if (this.desiredRevisionValue > this.processedRevisionValue)
                 this.startFullRender(1);
             return;
         }
@@ -126,8 +129,8 @@ export class PreviewRuntime {
         }
         if (plan.kind === "noop") {
             this.pendingMutations = this.pendingMutations.filter((mutation) => mutation.revision > plan.revision);
-            this.appliedRevisionValue = plan.revision;
-            if (this.desiredRevisionValue > this.appliedRevisionValue || this.pendingMutations.length)
+            this.processedRevisionValue = plan.revision;
+            if (this.desiredRevisionValue > this.processedRevisionValue || this.pendingMutations.length)
                 this.scheduleFlush(0);
             return;
         }
