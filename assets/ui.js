@@ -88,7 +88,7 @@ function describeHistoryButton(button, direction, label, shortcut) {
     const description = label ? `${direction}: ${label}` : direction;
     const visible = button.querySelector("span");
     if (visible)
-        visible.textContent = description;
+        visible.textContent = direction;
     button.setAttribute("aria-label", `${description} (${shortcut})`);
     button.title = `${description} (${shortcut})`;
 }
