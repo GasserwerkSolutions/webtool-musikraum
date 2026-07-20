@@ -35,3 +35,15 @@ jobs:
             git commit -m "Build browser assets"
             git push origin HEAD:agent/harden-export-and-inputs
           fi
+      - name: Capture failing check output
+        run: |
+          set +e
+          npm run check > /tmp/check.log 2>&1
+          status=$?
+          if [ "$status" -ne 0 ]; then
+            tail -n 180 /tmp/check.log > ci-debug.txt
+            git add ci-debug.txt
+            git commit -m "Capture CI failure details" || true
+            git push origin HEAD:agent/harden-export-and-inputs
+          fi
+          exit "$status"
