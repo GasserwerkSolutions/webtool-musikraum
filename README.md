@@ -48,4 +48,19 @@ Die TypeScript-Quellen liegen unter `src/`; die kompilierten, statisch ausliefer
 
 Editorvorschau und HTML-Export entstehen aus demselben Renderer. Nur `preview: true` ergänzt kurzlebige Zielkennungen, das versionierte Nachrichtenprotokoll und Bedienhilfen. Der Export enthält diese Editorbestandteile nicht.
 
+### Editor-Architektur und Roadmap
+
+Die verbindlichen Laufzeitverträge für die nächste Ausbauphase liegen unter [`docs/architecture/`](docs/architecture/). Der Einstieg ist die [Editor-Roadmap](docs/architecture/editor-roadmap.md). Sie definiert die Abfolge von Registry und Verlauf über das revisionssichere Preview-Protokoll bis zu Readiness, Export-Preflight und mobiler Bedienung.
+
+Die Architecture Decision Records legen insbesondere fest:
+
+- ein kanonisches, nach Normalisierung verifiziertes Mutations- und Revisionsmodell,
+- inverse Effekte für Undo und Redo,
+- ein atomares Single-Flight-Preview-Protokoll für das opaque-origin-iframe,
+- gemeinsame Policies für statische und dynamische Inhalte,
+- getrennte Vollständigkeits- und Readiness-Modelle,
+- revisions- und generationssichere Exportvorbereitung,
+- eindeutige Preview-Ziele ohne verschachtelte fokussierbare Elemente,
+- Differential-, Sequenz-, Race- und manuelle iOS-Safari-Tests.
+
 Nach dem Zusammenführen kann das Werkzeug direkt über GitHub Pages ausgeliefert werden.
