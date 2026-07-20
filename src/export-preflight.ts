@@ -172,15 +172,24 @@ export class ExportPreflightController {
 export async function fetchPinnedHeroImage(fetchAsset: typeof fetch, signal: AbortSignal, options: { timeoutMs?: number; maxBytes?: number } = {}): Promise<string> {
   const timeoutMs = options.timeoutMs ?? EXPORT_ASSET_TIMEOUT_MS;
   const maxBytes = options.maxBytes ?? EXPORT_ASSET_MAX_BYTES;
+  if (signal.aborted) throw abortError();
   const controller = new AbortController();
   let timedOut = false;
-  const abortFromParent = () => controller.abort();
-  signal.addEventListener("abort", abortFromParent, { once: true });
-  const timer = setTimeout(() => { timedOut = true; controller.abort(); }, timeoutMs);
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  let abortFromParent: (() => void) | null = null;
+  const timeout = new Promise<never>((_resolve, reject) => {
+    timer = setTimeout(() => { timedOut = true; controller.abort(); reject(new ExportAssetError("timeout", "Das Titelbild hat nicht innerhalb von 8 Sekunden geantwortet.")); }, timeoutMs);
+  });
+  const parentAbort = new Promise<never>((_resolve, reject) => {
+    abortFromParent = () => { controller.abort(); reject(abortError()); };
+    signal.addEventListener("abort", abortFromParent, { once: true });
+  });
+  const request = fetchAsset(MUSICRAUM_HERO_URL, { signal: controller.signal });
   try {
     let response: Response;
-    try { response = await fetchAsset(MUSICRAUM_HERO_URL, { signal: controller.signal }); }
+    try { response = await Promise.race([request, timeout, parentAbort]); }
     catch (error) {
+      if (error instanceof ExportAssetError) throw error;
       if (signal.aborted) throw abortError();
       if (timedOut) throw new ExportAssetError("timeout", "Das Titelbild hat nicht innerhalb von 8 Sekunden geantwortet.");
       throw new ExportAssetError("network", error instanceof Error ? error.message : "Das Titelbild konnte nicht geladen werden.");
@@ -195,8 +204,8 @@ export async function fetchPinnedHeroImage(fetchAsset: typeof fetch, signal: Abo
     if (blob.size > maxBytes) throw new ExportAssetError("size", "Das Titelbild überschreitet die Grenze von 5 MiB.");
     return await blobToDataUrl(blob, mime);
   } finally {
-    clearTimeout(timer);
-    signal.removeEventListener("abort", abortFromParent);
+    if (timer) clearTimeout(timer);
+    if (abortFromParent) signal.removeEventListener("abort", abortFromParent);
   }
 }
 
