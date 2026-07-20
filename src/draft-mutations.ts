@@ -90,7 +90,7 @@ export function invertDraftEffect(effect: DraftEffect): DraftEffect {
   if (effect.type === "collection-move") return { ...effect, previousIndex: effect.nextIndex, nextIndex: effect.previousIndex };
   if (effect.type === "section-visibility") return { ...effect, previousVisible: effect.nextVisible, nextVisible: effect.previousVisible };
   if (effect.type === "section-move") return { ...effect, previousIndex: effect.nextIndex, nextIndex: effect.previousIndex };
-  if (effect.type === "theme-set") return { ...effect, changed: [...effect.changed] };
+  if (effect.type === "theme-set") throw new Error("THEME_EFFECT_REQUIRES_SNAPSHOT_VERIFICATION");
   throw new Error("DRAFT_REPLACE_EFFECT_IS_NOT_INVERTIBLE");
 }
 
