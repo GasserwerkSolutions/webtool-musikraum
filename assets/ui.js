@@ -1,8 +1,9 @@
 import { handleClick, handleInput } from "./ui-actions.js";
-import { bindStaticInputs, renderContentOverview, renderDynamicControls, renderPreview, renderSaveState, showToast, updateReadiness, } from "./ui-render.js";
+import { bindStaticInputs, renderContentOverview, renderDynamicControls, renderExportState, renderPreview, renderSaveState, showToast, updateReadiness, } from "./ui-render.js";
 import { createUiContext } from "./ui-shared.js";
 import { parseNavigateMessage, parseScrollMessage } from "./preview-contract.js";
 import { PreviewRuntime } from "./preview-runtime.js";
+import { ExportPreflightController } from "./export-preflight.js";
 import { navigateToEditorTarget } from "./preview-navigation.js";
 import { initSidebar } from "./sidebar.js";
 import { handleReorderKeydown, handleReorderPointerDown, handleReorderPointerEnd, handleReorderPointerMove } from "./reorder-actions.js";
@@ -17,6 +18,11 @@ export class BuilderUi {
             readScroll: () => this.context.previewScroll,
             writeInstanceId: (instanceId) => { this.context.previewInstanceId = instanceId; },
         });
+        this.context.exportController = new ExportPreflightController({
+            readDraft: () => this.context.store.snapshot,
+            readRevision: () => this.context.store.revision,
+            onState: (state) => renderExportState(this.context, state),
+        });
     }
     init(options) {
         this.context.volatileStorage = Boolean(options.volatileStorage);
@@ -29,6 +35,7 @@ export class BuilderUi {
         this.context.store.subscribe((event) => {
             if (!this.context.suppressPreview)
                 this.context.previewRuntime?.enqueue(event);
+            this.context.exportController?.notifyMutation(event.mutation.revision);
             renderContentOverview(this.context);
             updateReadiness(this.context);
         });
@@ -56,7 +63,7 @@ export class BuilderUi {
         const flushBeforeLeave = () => { void this.context.store.flush().catch((error) => console.error("Final draft flush failed.", error)); };
         document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden")
             flushBeforeLeave(); });
-        window.addEventListener("pagehide", flushBeforeLeave);
+        window.addEventListener("pagehide", () => { flushBeforeLeave(); this.context.exportController?.destroy(); });
         if (options.recovered)
             showToast("Der frühere Entwurf passte nicht mehr zum Musikraum-Werkzeug. Ein frischer Entwurf wurde angelegt.");
     }

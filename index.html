@@ -19,7 +19,7 @@
       <span id="saveStatus" class="status-pill" aria-live="polite">Auf diesem Gerät gespeichert</span>
       <div class="history-actions" role="group" aria-label="Änderungen"><button id="undoButton" class="button button--quiet button--compact" type="button" data-action="undo" disabled title="Rückgängig (Strg oder Cmd + Z)">↶ <span>Rückgängig</span></button><button id="redoButton" class="button button--quiet button--compact" type="button" data-action="redo" disabled title="Wiederholen (Umschalt + Strg oder Cmd + Z)">↷ <span>Wiederholen</span></button></div>
       <button class="button button--quiet" type="button" data-action="reset">Zurücksetzen</button>
-      <button class="button button--primary" type="button" data-action="export">HTML exportieren</button>
+      <button class="button button--primary" type="button" data-action="export"><span data-export-label>HTML exportieren</span></button>
     </div>
   </header>
 
@@ -107,10 +107,12 @@
         </section>
 
         <section class="panel" data-panel="publish" aria-labelledby="panel-publish-title" hidden>
-          <div class="panel__header"><p class="eyebrow">Prüfen und mitnehmen</p><h2 id="panel-publish-title">Deine Website ist bereit</h2><p>Prüfe die wichtigsten Inhalte. Danach kannst du die Website als einzelne HTML-Datei herunterladen oder deinen Entwurf sichern.</p></div>
-          <div id="readinessList" class="readiness-list"></div>
-          <div class="publish-actions"><button class="button button--primary button--large" type="button" data-action="export">Website als HTML exportieren</button><button class="button button--quiet" type="button" data-action="download-backup">Sicherung herunterladen</button><button class="button button--quiet" type="button" data-action="restore-backup">Sicherung wiederherstellen</button><input id="backupInput" class="visually-hidden" type="file" accept="application/json,.json" aria-label="Musikraum-Sicherung auswählen"></div>
-          <p class="privacy-note">Deine Texte, Farben und die Reihenfolge bleiben in diesem Browser gespeichert. Das Titelbild ist vorgegeben, bis die Bildverwaltung ergänzt wird.</p>
+          <div class="panel__header"><p class="eyebrow">Prüfen und mitnehmen</p><h2 id="panel-publish-title">Website prüfen und exportieren</h2><p>Blocker müssen gelöst sein. Hinweise dürfen bewusst bestehen bleiben. Erst nach der sicheren Vorbereitung wird die HTML-Datei heruntergeladen.</p></div>
+          <div id="readinessSummary" class="readiness-summary" role="status" aria-live="polite"></div>
+          <div id="readinessList" class="readiness-list" aria-label="Readiness-Ergebnisse"></div>
+          <div id="exportStatus" class="export-status" role="status" aria-live="polite">Der Export ist noch nicht vorbereitet.</div>
+          <div class="publish-actions"><button class="button button--primary button--large" type="button" data-action="export"><span data-export-label>Export vorbereiten</span></button><button class="button button--quiet" type="button" data-action="download-backup">Sicherung herunterladen</button><button class="button button--quiet" type="button" data-action="restore-backup">Sicherung wiederherstellen</button><input id="backupInput" class="visually-hidden" type="file" accept="application/json,.json" aria-label="Musikraum-Sicherung auswählen"></div>
+          <p class="privacy-note">Die Vorbereitung ist immer an die aktuelle Entwurfsrevision gebunden. Das Titelbild wird nur aus der fest hinterlegten Musikraum-Quelle geladen und nach Möglichkeit eingebettet.</p>
         </section>
       </div></div>
     </aside>

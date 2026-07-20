@@ -5,7 +5,42 @@ function requiredElement(id) {
     return element;
 }
 export function createUiContext(store, repository) {
-    return { store, repository, surfaceCard: requiredElement("surfaceCard"), workspace: document.querySelector(".workspace"), controlSurface: document.querySelector(".control-surface"), surfaceStage: requiredElement("surfaceStage"), sidebarToggle: requiredElement("sidebarToggle"), sidebarResizer: requiredElement("sidebarResizer"), previewFrame: requiredElement("previewFrame"), previewHint: requiredElement("previewHint"), saveStatus: requiredElement("saveStatus"), panelStatus: requiredElement("panelStatus"), undoButton: requiredElement("undoButton"), redoButton: requiredElement("redoButton"), backupInput: requiredElement("backupInput"), announcer: requiredElement("editorAnnouncer"), heroPointList: requiredElement("heroPointList"), introPointList: requiredElement("introPointList"), offerList: requiredElement("offerList"), structureList: requiredElement("structureList"), contentOverviewList: requiredElement("contentOverviewList"), readinessList: requiredElement("readinessList"), textItemTemplate: requiredElement("textItemTemplate"), offerTemplate: requiredElement("offerTemplate"), previewTimer: null, previewRuntime: null, suppressPreview: false, previewInstanceId: "", previewScroll: null, volatileStorage: false };
+    return {
+        store,
+        repository,
+        surfaceCard: requiredElement("surfaceCard"),
+        workspace: document.querySelector(".workspace"),
+        controlSurface: document.querySelector(".control-surface"),
+        surfaceStage: requiredElement("surfaceStage"),
+        sidebarToggle: requiredElement("sidebarToggle"),
+        sidebarResizer: requiredElement("sidebarResizer"),
+        previewFrame: requiredElement("previewFrame"),
+        previewHint: requiredElement("previewHint"),
+        saveStatus: requiredElement("saveStatus"),
+        panelStatus: requiredElement("panelStatus"),
+        undoButton: requiredElement("undoButton"),
+        redoButton: requiredElement("redoButton"),
+        backupInput: requiredElement("backupInput"),
+        announcer: requiredElement("editorAnnouncer"),
+        heroPointList: requiredElement("heroPointList"),
+        introPointList: requiredElement("introPointList"),
+        offerList: requiredElement("offerList"),
+        structureList: requiredElement("structureList"),
+        contentOverviewList: requiredElement("contentOverviewList"),
+        readinessSummary: requiredElement("readinessSummary"),
+        readinessList: requiredElement("readinessList"),
+        exportStatus: requiredElement("exportStatus"),
+        textItemTemplate: requiredElement("textItemTemplate"),
+        offerTemplate: requiredElement("offerTemplate"),
+        previewTimer: null,
+        previewRuntime: null,
+        exportController: null,
+        exportState: { status: "idle" },
+        suppressPreview: false,
+        previewInstanceId: "",
+        previewScroll: null,
+        volatileStorage: false,
+    };
 }
 export function getAtPath(object, path) { return path.split(".").reduce((value, key) => value && typeof value === "object" ? value[key] : undefined, object); }
 export function setAtPath(object, path, value) {
