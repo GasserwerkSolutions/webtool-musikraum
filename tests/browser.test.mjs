@@ -42,17 +42,16 @@ test("stale dynamic navigation falls back calmly to its heading", () => {
 });
 
 test("preview uses native buttons, permits hash navigation and blocks external actions", () => {
-  const draft = createDefaultDraft(); const html = buildWebsiteHtml(draft, { preview: true, previewInstanceId: "browser", parentOrigin: "*" }); const dom = new JSDOM(html, { url: "https://preview.test", runScripts: "dangerously", pretendToBeVisual: true });
+  const draft = createDefaultDraft(); const html = buildWebsiteHtml(draft, { preview: true, previewInstanceId: "browser", parentOrigin: "*", previewRevision: 0, renderGeneration: 1 }); const dom = new JSDOM(html, { url: "https://preview.test", runScripts: "dangerously", pretendToBeVisual: true });
   const link = dom.window.document.querySelector(".main-nav a"); const event = new dom.window.MouseEvent("click", { bubbles: true, cancelable: true }); link.dispatchEvent(event);
   assert.equal(event.defaultPrevented, true); assert.ok(dom.window.document.querySelector('h1 > button.preview-edit-trigger[type="button"]'));
   assert.equal(dom.window.document.querySelectorAll('.hero-notes [data-preview-target*="text-item"]').length, 3);
   const external = dom.window.document.querySelector('a[href^="mailto:"]'); const blocked = new dom.window.MouseEvent("click", { bubbles: true, cancelable: true }); external?.dispatchEvent(blocked); if (external) assert.equal(blocked.defaultPrevented, true); dom.window.close();
 });
 
-test("typing rebuilds the preview immediately and duplicate change does not rebuild twice", () => {
-  const { dom, store } = editorFixture(); const input = dom.window.document.querySelector('[data-bind="copy.heroTitle"]'); let rebuilds = 0;
-  const context = { store, suppressPreview: false, previewTimer: null, previewScroll: null, previewInstanceId: "", previewFrame: { set srcdoc(_) { rebuilds += 1; } } };
-  store.subscribe(() => { if (!context.suppressPreview) rebuilds += 1; }); input.value = "Ein neuer Titel";
-  const typing = new dom.window.Event("input", { bubbles: true }); Object.defineProperty(typing, "target", { value: input }); handleInput(context, typing); assert.equal(rebuilds, 1);
-  const finished = new dom.window.Event("change", { bubbles: true }); Object.defineProperty(finished, "target", { value: input }); handleInput(context, finished); assert.equal(rebuilds, 1); dom.window.close();
+test("duplicate change input remains a store no-op", () => {
+  const { dom, store } = editorFixture(); const input = dom.window.document.querySelector('[data-bind="copy.heroTitle"]'); const context = { store };
+  input.value = "Ein neuer Titel";
+  const typing = new dom.window.Event("input", { bubbles: true }); Object.defineProperty(typing, "target", { value: input }); handleInput(context, typing); assert.equal(store.revision, 1);
+  const finished = new dom.window.Event("change", { bubbles: true }); Object.defineProperty(finished, "target", { value: input }); handleInput(context, finished); assert.equal(store.revision, 1); dom.window.close();
 });

@@ -10,7 +10,8 @@ import {
   type MusicraumTextItem,
   type SectionKey,
 } from "./domain.js";
-import type { EditorPanel, PreviewScrollState, PreviewTarget, StaticEditableField, TextListKey } from "./preview-contract.js";
+import { PREVIEW_CHANNEL, PREVIEW_PROTOCOL_VERSION, type EditorPanel, type PreviewScrollState, type PreviewTarget, type StaticEditableField, type TextListKey } from "./preview-contract.js";
+import { buildPreviewBridgeScript } from "./preview-bridge.js";
 
 export const MUSICRAUM_HERO_URL = "https://raw.githubusercontent.com/GasserwerkSolutions/musikraum/89f128d86fd2da8f6c827efd654de5b24e5c94f4/assets/photos/hero-klangraum-wood-1200w.webp";
 const HARFE_FAVICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='15' fill='%23343b39'/%3E%3Cpath d='M17 50.5h33' fill='none' stroke='%23f3dfae' stroke-width='4.5' stroke-linecap='round'/%3E%3Cpath d='M19.5 49.5c7-8.5 10-21.5 8.8-36 8.7 2.8 15.8 7.7 21.2 14.2' fill='none' stroke='%23d9ba70' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M49.5 27.7c-1.2 7.8-.9 15.3.5 22.8' fill='none' stroke='%23f3dfae' stroke-width='5' stroke-linecap='round'/%3E%3Cg fill='none' stroke='%239fb9b3' stroke-width='1.35' stroke-linecap='round'%3E%3Cpath d='M30 18.5v26'/%3E%3Cpath d='M34 20.2v24.3'/%3E%3Cpath d='M38 22.2v22.3'/%3E%3Cpath d='M42 24.5v20'/%3E%3Cpath d='M46 27v17.5'/%3E%3C/g%3E%3C/svg%3E";
@@ -24,7 +25,7 @@ const SECTION_META: Record<SectionKey, { id: string; panel: EditorPanel }> = {
 };
 const NAV_COPY_KEYS: Record<SectionKey, keyof MusicraumDraft["copy"]> = { intro: "navIntro", why: "navWhy", offers: "navOffers", story: "navStory", contact: "navContact" };
 
-type BuildOptions = { preview?: boolean; heroImageUrl?: string; previewInstanceId?: string; parentOrigin?: string; previewScroll?: PreviewScrollState | null };
+export type BuildOptions = { preview?: boolean; heroImageUrl?: string; previewInstanceId?: string; parentOrigin?: string; previewScroll?: PreviewScrollState | null; previewRevision?: number; renderGeneration?: number };
 
 export function buildWebsiteHtml(draft: MusicraumDraft, options: BuildOptions = {}): string {
   const preset = PRESETS[draft.theme.preset] ?? PRESETS.musikraum;
@@ -70,7 +71,7 @@ export function buildWebsiteHtml(draft: MusicraumDraft, options: BuildOptions = 
 </head>
 <body>
   <a class="skip-link" href="#main">Zum Inhalt springen</a>
-  <header class="site-header">
+  <header class="site-header"${previewRegionAttr(options, "header")}>
     <div class="container header-inner">
       ${options.preview ? `<div class="brand"${previewTargetAttr(options, { kind: "panel", panel: "site" })}>${brand}</div>` : `<a class="brand" href="#top">${brand}</a>`}
       <button class="menu-button" type="button" aria-label="Navigation anzeigen" aria-expanded="false"><span></span><span></span><span></span></button>
@@ -78,7 +79,7 @@ export function buildWebsiteHtml(draft: MusicraumDraft, options: BuildOptions = 
     </div>
   </header>
   <main id="main">
-    <section class="hero" id="top"${previewSectionAttr(options, "top", "hero")}>
+    <section class="hero" id="top"${previewSectionAttr(options, "top", "hero")}${previewRegionAttr(options, "hero")}>
       <div class="container hero-inner">
         <p class="eyebrow">${editable(draft.copy.heroLabel, "copy.heroLabel", options)}</p>
         <h1>${editable(draft.copy.heroTitle, "copy.heroTitle", options)}</h1>
@@ -89,8 +90,8 @@ export function buildWebsiteHtml(draft: MusicraumDraft, options: BuildOptions = 
     </section>
     ${sections}
   </main>
-  <footer class="site-footer"${previewSectionAttr(options, "footer", "site")}><div class="container footer-grid"><div><strong>${editable(draft.site.name, "site.name", options)}</strong><p>${editable(draft.site.tagline, "site.tagline", options)}</p></div><div class="footer-contact">${address ? `<span class="footer-address">${addressParts(draft, options)}</span>` : ""}${email ? `<span class="footer-email">${previewLink(draft.site.email, "site.email", mailtoHref, options)}</span>` : ""}</div><p data-preview-no-action>© ${new Date().getFullYear()} ${escapeHtml(draft.site.name)}</p></div></footer>
-  <script>(()=>{const b=document.querySelector('.menu-button'),n=document.querySelector('.main-nav');if(!b||!n)return;b.addEventListener('click',()=>{const o=b.getAttribute('aria-expanded')==='true';b.setAttribute('aria-expanded',String(!o));n.classList.toggle('is-open',!o)});n.addEventListener('click',()=>{b.setAttribute('aria-expanded','false');n.classList.remove('is-open')})})();</script>
+  <footer class="site-footer"${previewSectionAttr(options, "footer", "site")}${previewRegionAttr(options, "footer")}><div class="container footer-grid"><div><strong>${editable(draft.site.name, "site.name", options)}</strong><p>${editable(draft.site.tagline, "site.tagline", options)}</p></div><div class="footer-contact">${address ? `<span class="footer-address">${addressParts(draft, options)}</span>` : ""}${email ? `<span class="footer-email">${previewLink(draft.site.email, "site.email", mailtoHref, options)}</span>` : ""}</div><p data-preview-no-action>© ${new Date().getFullYear()} ${escapeHtml(draft.site.name)}</p></div></footer>
+  <script>(()=>{document.addEventListener('click',e=>{const t=e.target instanceof Element?e.target:null,n=document.querySelector('.main-nav');if(!t||!n)return;const b=t.closest('.menu-button');if(b){const o=b.getAttribute('aria-expanded')==='true';b.setAttribute('aria-expanded',String(!o));n.classList.toggle('is-open',!o);return}if(t.closest('.main-nav a')){const m=document.querySelector('.menu-button');if(m){m.setAttribute('aria-expanded','false');n.classList.remove('is-open')}}})})();</script>
   ${options.preview ? previewBridge(options) : ""}
 </body>
 </html>`;
@@ -100,14 +101,14 @@ function renderSection(key: SectionKey, draft: MusicraumDraft, address: string, 
   const copy = draft.copy;
   if (key === "intro") {
     const points = renderTextList(draft.introPoints, "introPoints", "li", options);
-    return `<section class="section intro" id="franz"${previewSectionAttr(options, "franz", "content")}><div class="container split"><div><p class="eyebrow">${editable(copy.introLabel, "copy.introLabel", options)}</p><h2>${editable(copy.introTitle, "copy.introTitle", options)}</h2><blockquote>„${editable(copy.introQuote, "copy.introQuote", options)}“</blockquote></div><div><p class="lead">${editable(copy.introText, "copy.introText", options)}</p>${points ? `<ul class="plain-list">${points}</ul>` : ""}</div></div></section>`;
+    return `<section class="section intro" id="franz"${previewSectionAttr(options, "franz", "content")}${previewRegionAttr(options, "intro")}><div class="container split"><div><p class="eyebrow">${editable(copy.introLabel, "copy.introLabel", options)}</p><h2>${editable(copy.introTitle, "copy.introTitle", options)}</h2><blockquote>„${editable(copy.introQuote, "copy.introQuote", options)}“</blockquote></div><div><p class="lead">${editable(copy.introText, "copy.introText", options)}</p>${points ? `<ul class="plain-list">${points}</ul>` : ""}</div></div></section>`;
   }
-  if (key === "why") return `<section class="section dark-band" id="frei-spielen"${previewSectionAttr(options, "frei-spielen", "content")}><div class="container narrow"><p class="eyebrow">${editable(copy.whyLabel, "copy.whyLabel", options)}</p><h2>${editable(copy.whyTitle, "copy.whyTitle", options)}</h2><p class="lead">${editable(copy.whyText, "copy.whyText", options)}</p><div class="resonance" aria-hidden="true" data-preview-no-action><span></span><span></span><span></span></div></div></section>`;
+  if (key === "why") return `<section class="section dark-band" id="frei-spielen"${previewSectionAttr(options, "frei-spielen", "content")}${previewRegionAttr(options, "why")}><div class="container narrow"><p class="eyebrow">${editable(copy.whyLabel, "copy.whyLabel", options)}</p><h2>${editable(copy.whyTitle, "copy.whyTitle", options)}</h2><p class="lead">${editable(copy.whyText, "copy.whyText", options)}</p><div class="resonance" aria-hidden="true" data-preview-no-action><span></span><span></span><span></span></div></div></section>`;
   if (key === "offers") {
     const cards = draft.offers.filter((offer) => offer.title.trim()).map((offer, index) => `<article class="card"><span class="card-number" data-preview-no-action>0${index + 1}</span><h3>${editableOffer(offer.title, offer.id, "title", options)}</h3>${offer.text ? `<p>${editableOffer(offer.text, offer.id, "text", options)}</p>` : ""}</article>`).join("");
-    return `<section class="section offers" id="angebote"${previewSectionAttr(options, "angebote", "services")}><div class="container"><div class="section-head"><p class="eyebrow">${editable(copy.offersLabel, "copy.offersLabel", options)}</p><h2>${editable(copy.offersTitle, "copy.offersTitle", options)}</h2><p class="lead">${editable(copy.offersIntro, "copy.offersIntro", options)}</p></div>${cards ? `<div class="card-grid">${cards}</div>` : ""}</div></section>`;
+    return `<section class="section offers" id="angebote"${previewSectionAttr(options, "angebote", "services")}${previewRegionAttr(options, "offers")}><div class="container"><div class="section-head"><p class="eyebrow">${editable(copy.offersLabel, "copy.offersLabel", options)}</p><h2>${editable(copy.offersTitle, "copy.offersTitle", options)}</h2><p class="lead">${editable(copy.offersIntro, "copy.offersIntro", options)}</p></div>${cards ? `<div class="card-grid">${cards}</div>` : ""}</div></section>`;
   }
-  if (key === "story") return `<section class="section story" id="geschichte"${previewSectionAttr(options, "geschichte", "content")}><div class="container split"><div><p class="eyebrow">${editable(copy.storyLabel, "copy.storyLabel", options)}</p><h2>${editable(copy.storyTitle, "copy.storyTitle", options)}</h2></div><p class="lead">${editable(copy.storyText, "copy.storyText", options)}</p></div></section>`;
+  if (key === "story") return `<section class="section story" id="geschichte"${previewSectionAttr(options, "geschichte", "content")}${previewRegionAttr(options, "story")}><div class="container split"><div><p class="eyebrow">${editable(copy.storyLabel, "copy.storyLabel", options)}</p><h2>${editable(copy.storyTitle, "copy.storyTitle", options)}</h2></div><p class="lead">${editable(copy.storyText, "copy.storyText", options)}</p></div></section>`;
   const email = normalizeEmail(draft.site.email);
   const phone = normalizePhone(draft.site.phone);
   const instagram = normalizeInstagramUrl(draft.site.instagram);
@@ -121,13 +122,14 @@ function renderSection(key: SectionKey, draft: MusicraumDraft, address: string, 
     instagram && instagramLabel ? `<a class="button button-ghost" href="${escapeAttr(instagram)}" target="_blank" rel="noopener noreferrer">${escapeHtml(instagramLabel)}</a>` : "",
   ].filter(Boolean).join("");
   const previewLinks = options.preview ? `${email && emailLabel ? `<button class="button button-light" type="button"${previewTargetAttr(options, { kind: "field", field: "copy.contactEmailAction" })}>${escapeHtml(emailLabel)}</button>` : ""}${phone && phoneLabel ? `<button class="button button-ghost" type="button"><span${previewTargetAttr(options, { kind: "field", field: "site.phone" })}>${escapeHtml(draft.site.phone)}</span>${phoneAction ? ` <span${previewTargetAttr(options, { kind: "field", field: "copy.contactPhoneAction" })}>${escapeHtml(phoneAction)}</span>` : ""}</button>` : ""}${instagram && instagramLabel ? `<button class="button button-ghost" type="button"${previewTargetAttr(options, { kind: "field", field: "copy.contactInstagramAction" })}>${escapeHtml(instagramLabel)}</button>` : ""}` : contactLinks;
-  return `<section class="section contact" id="kontakt"${previewSectionAttr(options, "kontakt", "contact")}><div class="container narrow"><p class="eyebrow">${editable(copy.contactLabel, "copy.contactLabel", options)}</p><h2>${editable(copy.contactTitle, "copy.contactTitle", options)}</h2><p class="lead">${editable(copy.contactText, "copy.contactText", options)}</p>${address ? `<p class="address">${addressParts(draft, options)}</p>` : ""}${previewLinks ? `<div class="actions centered">${previewLinks}</div>` : ""}</div></section>`;
+  return `<section class="section contact" id="kontakt"${previewSectionAttr(options, "kontakt", "contact")}${previewRegionAttr(options, "contact")}><div class="container narrow"><p class="eyebrow">${editable(copy.contactLabel, "copy.contactLabel", options)}</p><h2>${editable(copy.contactTitle, "copy.contactTitle", options)}</h2><p class="lead">${editable(copy.contactText, "copy.contactText", options)}</p>${address ? `<p class="address">${addressParts(draft, options)}</p>` : ""}${previewLinks ? `<div class="actions centered">${previewLinks}</div>` : ""}</div></section>`;
 }
 
 function renderTextList(items: readonly MusicraumTextItem[], list: TextListKey, tag: "span" | "li", options: BuildOptions): string { return items.filter((item) => item.text.trim()).map((item) => `<${tag}>${editableTextItem(item.text, list, item.id, options)}</${tag}>`).join(""); }
 function buildMailtoHref(email: string, siteName: string): string { return `mailto:${encodeURIComponent(email)}?${new URLSearchParams({ subject: `Anfrage ${siteName}` }).toString()}`; }
 function previewTargetAttr(options: BuildOptions, target: PreviewTarget): string { return options.preview ? ` data-preview-target="${escapeAttr(JSON.stringify(target))}"` : ""; }
 function previewSectionAttr(options: BuildOptions, section: string, panel: EditorPanel): string { return options.preview ? ` data-preview-section="${escapeAttr(section)}" data-preview-panel="${panel}"` : ""; }
+function previewRegionAttr(options: BuildOptions, region: string): string { return options.preview ? ` data-preview-region="${escapeAttr(region)}"` : ""; }
 function editable(value: string, field: StaticEditableField, options: BuildOptions): string { return options.preview ? `<button class="preview-edit-trigger" type="button"${previewTargetAttr(options, { kind: "field", field })}>${escapeHtml(value)}</button>` : escapeHtml(value); }
 function editableOffer(value: string, offerId: string, field: "title" | "text", options: BuildOptions): string { return options.preview ? `<button class="preview-edit-trigger" type="button"${previewTargetAttr(options, { kind: "offer", offerId, field })}>${escapeHtml(value)}</button>` : escapeHtml(value); }
 function editableTextItem(value: string, list: TextListKey, itemId: string, options: BuildOptions): string { return options.preview ? `<button class="preview-edit-trigger" type="button"${previewTargetAttr(options, { kind: "text-item", list, itemId })}>${escapeHtml(value)}</button>` : escapeHtml(value); }
@@ -137,8 +139,15 @@ function addressParts(draft: MusicraumDraft, options: BuildOptions): string { co
 
 const PREVIEW_CSS = `html{scrollbar-width:thin;scrollbar-color:rgba(64,59,52,.32) transparent}html::-webkit-scrollbar{width:8px}html::-webkit-scrollbar-track{background:transparent}html::-webkit-scrollbar-thumb{border:2px solid transparent;border-radius:999px;background:rgba(64,59,52,.32);background-clip:padding-box}html::-webkit-scrollbar-thumb:hover{background-color:rgba(64,59,52,.52)}.preview-edit-trigger{all:unset;display:inline;box-decoration-break:clone;-webkit-box-decoration-break:clone;border-radius:.18em;cursor:pointer;color:inherit;font:inherit;letter-spacing:inherit;line-height:inherit;text-align:inherit}.preview-edit-trigger:hover,.preview-edit-trigger:focus-visible{outline:2px solid #d6b96f;outline-offset:4px;background:rgba(214,185,111,.14)}.preview-inline-link{text-decoration:underline}.preview-action{cursor:pointer}[data-preview-panel]{cursor:default}`;
 function previewBridge(options: BuildOptions): string {
-  const config = safeJson({ channel: "musikraum-preview", version: 1, instanceId: options.previewInstanceId ?? "", parentOrigin: options.parentOrigin ?? "*", restore: options.previewScroll ?? null });
-  return `<script>(()=>{const c=${config};const send=(action,payload)=>parent.postMessage({channel:c.channel,version:c.version,instanceId:c.instanceId,action,...payload},c.parentOrigin);document.addEventListener('click',e=>{const target=e.target instanceof Element?e.target:null;const el=target?.closest('[data-preview-target]');if(el){e.preventDefault();e.stopPropagation();try{send('navigate-to-editor',{target:JSON.parse(el.getAttribute('data-preview-target')||'')})}catch{}return}if(target?.closest('[data-preview-no-action]'))return;const link=target?.closest('a');if(link){const href=link.getAttribute('href')||'';if(href.startsWith('#')){e.preventDefault();const destination=document.querySelector(href);if(destination)requestAnimationFrame(()=>destination.scrollIntoView());return}e.preventDefault();e.stopPropagation();return}if(target?.closest('.menu-button'))return;const button=target?.closest('button');if(button){e.preventDefault();e.stopPropagation();return}const section=target?.closest('[data-preview-panel]');if(section)send('navigate-to-editor',{target:{kind:'panel',panel:section.getAttribute('data-preview-panel')}})},true);let pending=false;const report=()=>{pending=false;const y=scrollY;const sections=[...document.querySelectorAll('[data-preview-section]')];const current=sections.findLast(el=>el.offsetTop<=y+100)||sections[0];if(current)send('preview-scroll',{position:{section:current.getAttribute('data-preview-section')||'',offsetWithinSection:Math.max(0,y-current.offsetTop),fallbackScrollY:y}})};addEventListener('scroll',()=>{if(!pending){pending=true;requestAnimationFrame(report)}},{passive:true});addEventListener('load',()=>{const r=c.restore;if(r){const section=document.querySelector('[data-preview-section="'+CSS.escape(r.section)+'"]');const y=section?section.offsetTop+r.offsetWithinSection:r.fallbackScrollY;scrollTo(0,Math.max(0,Math.min(y,document.documentElement.scrollHeight-innerHeight)))}report()})})();</script>`;
+  return buildPreviewBridgeScript({
+    channel: PREVIEW_CHANNEL,
+    version: PREVIEW_PROTOCOL_VERSION,
+    instanceId: options.previewInstanceId ?? "",
+    renderGeneration: options.renderGeneration ?? 0,
+    revision: options.previewRevision ?? 0,
+    parentOrigin: options.parentOrigin ?? "*",
+    restore: options.previewScroll ?? null,
+  });
 }
 
 function websiteCss(theme: (typeof PRESETS)[keyof typeof PRESETS], heroImageUrl: string): string {

@@ -1,7 +1,8 @@
 import { handleClick, handleInput } from "./ui-actions.js";
-import { bindStaticInputs, renderDynamicControls, renderPreview, renderSaveState, schedulePreview, showToast, updateReadiness, } from "./ui-render.js";
+import { bindStaticInputs, renderDynamicControls, renderPreview, renderSaveState, showToast, updateReadiness, } from "./ui-render.js";
 import { createUiContext } from "./ui-shared.js";
-import { parseNavigateMessage } from "./preview-contract.js";
+import { parseNavigateMessage, parseScrollMessage } from "./preview-contract.js";
+import { PreviewRuntime } from "./preview-runtime.js";
 import { navigateToPreviewTarget } from "./preview-navigation.js";
 import { initSidebar } from "./sidebar.js";
 import { handleReorderKeydown, handleReorderPointerDown, handleReorderPointerEnd, handleReorderPointerMove } from "./reorder-actions.js";
@@ -9,6 +10,13 @@ export class BuilderUi {
     context;
     constructor(store, repository) {
         this.context = createUiContext(store, repository);
+        this.context.previewRuntime = new PreviewRuntime({
+            frame: this.context.previewFrame,
+            readDraft: () => this.context.store.snapshot,
+            readRevision: () => this.context.store.revision,
+            readScroll: () => this.context.previewScroll,
+            writeInstanceId: (instanceId) => { this.context.previewInstanceId = instanceId; },
+        });
     }
     init(options) {
         this.context.volatileStorage = Boolean(options.volatileStorage);
@@ -17,9 +25,9 @@ export class BuilderUi {
         renderDynamicControls(this.context);
         renderPreview(this.context);
         updateReadiness(this.context);
-        this.context.store.subscribe(() => {
+        this.context.store.subscribe((event) => {
             if (!this.context.suppressPreview)
-                schedulePreview(this.context);
+                this.context.previewRuntime?.enqueue(event);
             updateReadiness(this.context);
         });
         this.context.store.subscribeSave((state, error) => renderSaveState(this.context, state, error));
@@ -51,20 +59,21 @@ export class BuilderUi {
             showToast("Der frühere Entwurf passte nicht mehr zum Musikraum-Werkzeug. Ein frischer Entwurf wurde angelegt.");
     }
     handlePreviewMessage(event) {
+        if (this.context.previewRuntime?.handleMessage(event))
+            return;
         if (event.source !== this.context.previewFrame.contentWindow || event.origin !== "null")
             return;
-        const message = event.data;
-        if (!message || message.channel !== "musikraum-preview" || message.version !== 1 || message.instanceId !== this.context.previewInstanceId)
+        const runtime = this.context.previewRuntime;
+        if (!runtime)
             return;
-        if (message.action === "preview-scroll") {
-            const position = parseScrollPosition(message.position);
-            if (position)
-                this.context.previewScroll = position;
+        const scroll = parseScrollMessage(event.data, runtime.instanceId, runtime.renderGeneration);
+        if (scroll && scroll.revision === runtime.appliedRevision) {
+            this.context.previewScroll = scroll.position;
             return;
         }
-        const parsed = parseNavigateMessage(message, this.context.previewInstanceId, this.context.store.snapshot);
-        if (parsed)
-            navigateToPreviewTarget(this.context, parsed.target);
+        const navigate = parseNavigateMessage(event.data, runtime.instanceId, this.context.store.snapshot, runtime.renderGeneration);
+        if (navigate && navigate.revision === runtime.appliedRevision)
+            navigateToPreviewTarget(this.context, navigate.target);
     }
 }
 function renderHistoryState(context, state) {
@@ -81,5 +90,3 @@ function describeHistoryButton(button, direction, label, shortcut) {
     button.setAttribute("aria-label", `${description} (${shortcut})`);
     button.title = `${description} (${shortcut})`;
 }
-function parseScrollPosition(value) { if (!value || typeof value !== "object")
-    return null; const row = value; return typeof row.section === "string" && Number.isFinite(row.offsetWithinSection) && Number.isFinite(row.fallbackScrollY) ? { section: row.section, offsetWithinSection: Math.max(0, Number(row.offsetWithinSection)), fallbackScrollY: Math.max(0, Number(row.fallbackScrollY)) } : null; }
