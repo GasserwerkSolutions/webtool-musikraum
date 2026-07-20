@@ -1,12 +1,14 @@
 import { isPreviewTarget, panelForTarget } from "./preview-contract.js";
 import { showPanel } from "./ui-render.js";
 import { ensureEditorOpen } from "./sidebar.js";
+import { correctMobileEditorFocus, enterMobileEditMode } from "./mobile-modes.js";
 const highlightTimers = new WeakMap();
 export function navigateToEditorTarget(context, target) {
     const valid = isPreviewTarget(target, context.store.snapshot);
     const panel = target.kind === "offer" || target.kind === "text-item" ? panelForTarget(target) : valid ? panelForTarget(target) : null;
     if (!panel)
         return;
+    enterMobileEditMode(context);
     ensureEditorOpen(context);
     showPanel(context, panel);
     requestAnimationFrame(() => requestAnimationFrame(() => {
@@ -42,6 +44,8 @@ export function resolveEditorTarget(target) {
     return document.querySelector(`[data-panel="${target.panel}"] h1, [data-panel="${target.panel}"] h2`);
 }
 function revealTarget(context, target) {
+    if (correctMobileEditorFocus(context, target))
+        return;
     const control = document.querySelector(".control-surface");
     const preview = document.querySelector(".preview-area");
     const stage = document.querySelector(".surface-stage");
