@@ -155,17 +155,28 @@ export class ExportPreflightController {
 export async function fetchPinnedHeroImage(fetchAsset, signal, options = {}) {
     const timeoutMs = options.timeoutMs ?? EXPORT_ASSET_TIMEOUT_MS;
     const maxBytes = options.maxBytes ?? EXPORT_ASSET_MAX_BYTES;
+    if (signal.aborted)
+        throw abortError();
     const controller = new AbortController();
     let timedOut = false;
-    const abortFromParent = () => controller.abort();
-    signal.addEventListener("abort", abortFromParent, { once: true });
-    const timer = setTimeout(() => { timedOut = true; controller.abort(); }, timeoutMs);
+    let timer = null;
+    let abortFromParent = null;
+    const timeout = new Promise((_resolve, reject) => {
+        timer = setTimeout(() => { timedOut = true; controller.abort(); reject(new ExportAssetError("timeout", "Das Titelbild hat nicht innerhalb von 8 Sekunden geantwortet.")); }, timeoutMs);
+    });
+    const parentAbort = new Promise((_resolve, reject) => {
+        abortFromParent = () => { controller.abort(); reject(abortError()); };
+        signal.addEventListener("abort", abortFromParent, { once: true });
+    });
+    const request = fetchAsset(MUSICRAUM_HERO_URL, { signal: controller.signal });
     try {
         let response;
         try {
-            response = await fetchAsset(MUSICRAUM_HERO_URL, { signal: controller.signal });
+            response = await Promise.race([request, timeout, parentAbort]);
         }
         catch (error) {
+            if (error instanceof ExportAssetError)
+                throw error;
             if (signal.aborted)
                 throw abortError();
             if (timedOut)
@@ -192,8 +203,10 @@ export async function fetchPinnedHeroImage(fetchAsset, signal, options = {}) {
         return await blobToDataUrl(blob, mime);
     }
     finally {
-        clearTimeout(timer);
-        signal.removeEventListener("abort", abortFromParent);
+        if (timer)
+            clearTimeout(timer);
+        if (abortFromParent)
+            signal.removeEventListener("abort", abortFromParent);
     }
 }
 async function blobToDataUrl(blob, mime) {
