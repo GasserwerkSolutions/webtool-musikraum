@@ -10,7 +10,7 @@ test("content overview exposes deterministic completeness and editor targets", (
   const draft = createDefaultDraft();
   const first = entries(draft); const second = entries(draft);
   assert.deepEqual(first.map((item) => item.id), second.map((item) => item.id));
-  assert.ok(first.length > 40); assert.ok(first.every((item) => ["complete", "optional-empty", "incomplete", "hidden"].includes(item.status)));
+  assert.ok(first.length > 45); assert.ok(first.every((item) => ["complete", "optional-empty", "incomplete", "hidden"].includes(item.status)));
   assert.ok(first.every((item) => item.target && typeof item.target.kind === "string"));
 });
 
@@ -24,9 +24,12 @@ test("optional empty content is optional-empty", () => {
   assert.equal(entry(draft, "field:copy.heroLabel")?.status, "optional-empty");
 });
 
-test("content in an invisible section is hidden", () => {
+test("content in an invisible section is hidden and exposes its visibility control", () => {
   const draft = createDefaultDraft(); draft.layout.visibility.contact = false;
   assert.equal(entry(draft, "field:copy.contactTitle")?.status, "hidden");
+  assert.deepEqual(entry(draft, "section:contact")?.target, { kind: "section", section: "contact" });
+  assert.equal(entry(draft, "section:contact")?.status, "hidden");
+  assert.equal(entry(draft, "section:contact")?.detail, "Auf der Website ausgeblendet");
 });
 
 test("dynamic targets remain stable when collections move", () => {
