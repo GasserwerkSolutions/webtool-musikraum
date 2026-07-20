@@ -78,7 +78,26 @@ test("hidden section rules do not report inaccessible content", () => {
   draft.site.phone = "1";
   draft.layout.visibility.offers = false;
   draft.offers = [{ id: "hidden-offer", title: "", text: "" }];
+  draft.layout.visibility.intro = false;
+  draft.introPoints = [
+    { id: "hidden-intro-a", text: "Doppelt" },
+    { id: "hidden-intro-b", text: " doppelt " },
+  ];
   const ids = evaluateReadiness(draft).results.map((item) => item.id);
   assert.equal(ids.some((id) => id.startsWith("contact:")), false);
   assert.equal(ids.some((id) => id.startsWith("offers:")), false);
+  assert.equal(ids.some((id) => id.startsWith("introPoints:")), false);
+});
+
+test("multi-field blockers resolve to reachable canonical targets", () => {
+  const layout = createDefaultDraft();
+  for (const section of layout.layout.order) layout.layout.visibility[section] = false;
+  const layoutResult = evaluateReadiness(layout).results.find((item) => item.id === "layout:visible-section:missing");
+  assert.deepEqual(layoutResult?.target, { kind: "section", section: layout.layout.order[0] });
+
+  const contact = createDefaultDraft();
+  contact.site.email = "ungueltig";
+  contact.site.phone = "";
+  const contactResult = evaluateReadiness(contact).results.find((item) => item.id === "contact:methods:missing");
+  assert.deepEqual(contactResult?.target, { kind: "field", field: "site.email" });
 });
