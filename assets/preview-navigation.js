@@ -37,6 +37,8 @@ export function resolveEditorTarget(target) {
         return document.querySelector(`[data-offer-card][data-offer-id="${CSS.escape(target.offerId)}"] [data-offer-field="${target.field}"]`);
     if (target.kind === "text-item")
         return document.querySelector(`[data-text-list="${target.list}"][data-text-item-id="${CSS.escape(target.itemId)}"] [data-text-item-field]`);
+    if (target.kind === "section")
+        return document.querySelector(`[data-section-key="${CSS.escape(target.section)}"] [data-layout-visible]`);
     return document.querySelector(`[data-panel="${target.panel}"] h1, [data-panel="${target.panel}"] h2`);
 }
 function revealTarget(context, target) {
