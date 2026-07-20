@@ -136,7 +136,7 @@ function createMoveEffect(before, after, collection, itemId) {
         throw new Error("UNEXPECTED_COLLECTION_MOVE_CHANGE");
     const expected = copyDraft(before);
     setCollection(expected, collection, expectedItems);
-    assertExpectedDraft(expected, after, "UNEXPECTED_COLLECTION_MOVE_CHANGE");
+    assertExpectedDraft(expected, after, "UNEXPECTED_COLLECTION_MOVE_DRAFT_CHANGE");
     return { type: "collection-move", collection, itemId, previousIndex, nextIndex };
 }
 function assertOnlyFieldChanged(before, after, field) {
