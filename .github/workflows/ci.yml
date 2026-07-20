@@ -6,7 +6,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   check:
@@ -14,46 +14,10 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: feature/content-overview-direct-editing
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Update navigation target acceptance
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          path = Path('tests/e2e.test.mjs')
-          source = path.read_text()
-          old = '''    await preview.click('.main-nav a[href="#franz"]'); await preview.waitForFunction(() => scrollY > 0); assert.equal(await preview.$eval(".main-nav", (nav) => nav.classList.contains("is-open")), false);'''
-          new = '''    await preview.click('.main-nav a[href="#franz"]'); await page.waitForFunction(() => document.activeElement?.getAttribute("data-bind") === "copy.navIntro"); assert.equal(await page.evaluate(() => document.querySelector('[data-panel="structure"]')?.hidden), false); assert.equal(await preview.$eval(".main-nav", (nav) => nav.classList.contains("is-open")), true); await preview.click(".menu-button"); assert.equal(await preview.$eval(".main-nav", (nav) => nav.classList.contains("is-open")), false);'''
-          if old in source:
-              path.write_text(source.replace(old, new, 1))
-          elif new not in source:
-              raise SystemExit('navigation acceptance block not found')
-          PY
-      - name: Commit corrected acceptance
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add tests/e2e.test.mjs
-          if ! git diff --cached --quiet; then
-            git commit -m "Align preview navigation acceptance with target priority"
-            git push origin HEAD:feature/content-overview-direct-editing
-          fi
-      - name: Typecheck and build
-        run: |
-          npm run typecheck
-          npm run build
-      - name: PR4 overview and target contracts
-        run: |
-          node --test tests/content-overview.test.mjs
-          node --test tests/preview-targets.test.mjs
-      - name: Existing unit and DOM regression tests
-        run: node --test $(find tests -maxdepth 1 -name '*.test.mjs' ! -name 'e2e.test.mjs' ! -name 'content-overview.test.mjs' ! -name 'preview-targets.test.mjs' -print | sort)
-      - name: Chromium acceptance
-        run: node --test tests/e2e.test.mjs
-      - name: Compiled assets are current
-        run: git diff --exit-code -- assets
+      - run: npm run check
+      - run: git diff --exit-code -- assets
