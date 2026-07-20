@@ -10,7 +10,7 @@
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "npm run build && node --test --test-concurrency=1 tests/*.test.mjs",
-    "check": "npm run build && node --test tests/readiness.test.mjs"
+    "check": "npm run build && node --test tests/export-preflight.test.mjs"
   },
   "devDependencies": {
     "@sparticuz/chromium": "^149.0.0",
