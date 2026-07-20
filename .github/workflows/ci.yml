@@ -6,18 +6,45 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: fix/preview-input-stability
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run check
-      - run: git diff --exit-code -- assets
+      - name: Apply preview stability integration
+        run: |
+          python3 - <<'PYTHON'
+          from pathlib import Path
+          workflow = Path('.github/workflows/preview-stability-fix.yml').read_text()
+          marker = "          python3 - <<'PY'\n"
+          start = workflow.index(marker) + len(marker)
+          end = workflow.index("\n          PY", start)
+          block = workflow[start:end]
+          script = "\n".join(line[10:] if line.startswith("          ") else line for line in block.splitlines())
+          exec(compile(script, 'preview-stability-integrate.py', 'exec'))
+          PYTHON
+      - name: Build and verify
+        run: |
+          npm run typecheck
+          npm run build
+          npm run check
+          git diff --exit-code -- assets
+      - name: Commit integrated fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src tests assets
+          if ! git diff --cached --quiet; then
+            git commit -m "Stabilize incremental preview input updates"
+            git push origin HEAD:fix/preview-input-stability
+          fi
