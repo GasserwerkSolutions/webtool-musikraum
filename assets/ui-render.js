@@ -1,4 +1,6 @@
 import { PRESETS, escapeHtml } from "./domain.js";
+import { EDITOR_FIELD_REGISTRY } from "./editor-registry.js";
+import { contentHelpText } from "./content-policy.js";
 import { buildWebsiteHtml } from "./website.js";
 import { getAtPath } from "./ui-shared.js";
 const SECTION_LABELS = {
@@ -9,11 +11,18 @@ const SECTION_LABELS = {
     contact: { title: "Kontakt", description: "Anfrage, Telefon und Adresse" },
 };
 export function bindStaticInputs(context) {
-    document.querySelectorAll("[data-bind]").forEach((input) => { const value = getAtPath(context.store.snapshot, input.dataset.bind ?? ""); if (value === undefined)
-        return; if (input instanceof HTMLInputElement && input.type === "checkbox")
-        input.checked = Boolean(value);
-    else
-        input.value = String(value ?? ""); });
+    document.querySelectorAll("[data-bind]").forEach((input) => {
+        const bind = input.dataset.bind ?? "";
+        const value = getAtPath(context.store.snapshot, bind);
+        if (value === undefined)
+            return;
+        if (input instanceof HTMLInputElement && input.type === "checkbox")
+            input.checked = Boolean(value);
+        else
+            input.value = String(value ?? "");
+        if (bind in EDITOR_FIELD_REGISTRY)
+            renderFieldHelp(input, bind, context);
+    });
 }
 export function renderDynamicControls(context) { renderTextItems(context, "heroPoints"); renderTextItems(context, "introPoints"); renderOffers(context); renderPresets(context); renderStructure(context); }
 export function renderTextItems(context, list) {
@@ -118,3 +127,21 @@ export function showPanel(context, panelName) {
 }
 export function setViewport(context, viewport) { const labels = { desktop: "Desktop", tablet: "Tablet", mobile: "Mobile" }; context.previewFrame.dataset.viewport = viewport; context.previewHint.textContent = labels[viewport] ?? "Desktop"; document.querySelectorAll("[data-viewport]").forEach((button) => { const active = button.dataset.viewport === viewport; button.classList.toggle("is-active", active); button.setAttribute("aria-pressed", String(active)); }); }
 export function showToast(message) { document.querySelector(".toast")?.remove(); const toast = document.createElement("div"); toast.className = "toast"; toast.setAttribute("role", "status"); toast.textContent = message; document.body.appendChild(toast); setTimeout(() => toast.remove(), 4200); }
+function renderFieldHelp(input, field, context) {
+    const label = input.closest("label.field");
+    if (!label)
+        return;
+    const existing = label.querySelector("[data-policy-help]");
+    const help = contentHelpText({ kind: "field", field }, context.store.snapshot);
+    if (!help) {
+        existing?.remove();
+        return;
+    }
+    const element = existing ?? document.createElement("small");
+    element.dataset.policyHelp = "";
+    element.className = "field-help";
+    element.textContent = help;
+    if (!existing)
+        label.appendChild(element);
+}
+export function normalizeTextItemForRender(value) { return { id: value.id, text: value.text }; }

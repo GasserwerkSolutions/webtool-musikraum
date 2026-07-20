@@ -11,7 +11,9 @@ export function handleTextListAction(context, button) {
             showToast(`Du kannst höchstens ${MAX_TEXT_ITEMS} Punkte anlegen.`);
             return true;
         }
-        context.store.mutate((draft) => { draft[list].push({ id: createId(list === "heroPoints" ? "hero-point" : "intro-point"), text: "Neuer Punkt" }); });
+        context.store.flushHistoryGroup();
+        const itemId = createId(list === "heroPoints" ? "hero-point" : "intro-point");
+        context.store.mutate((draft) => { draft[list].push({ id: itemId, text: "Neuer Punkt" }); }, { intent: { type: "insert-collection-item", collection: list, itemId }, history: { label: `${listLabel(list)} hinzugefügt`, target: { kind: "text-item", list, itemId } } });
         renderTextItems(context, list);
         requestAnimationFrame(() => listElement(context, list).querySelector("[data-text-item-card]:last-child [data-text-item-field]")?.select());
         return true;
@@ -28,7 +30,8 @@ export function handleTextListAction(context, button) {
         return true;
     if (item.text.trim() && !window.confirm(`„${item.text.trim()}“ wirklich entfernen? Du kannst den Schritt danach rückgängig machen.`))
         return true;
-    context.store.mutate((draft) => { draft[list] = draft[list].filter((entry) => entry.id !== itemId); });
+    context.store.flushHistoryGroup();
+    context.store.mutate((draft) => { draft[list] = draft[list].filter((entry) => entry.id !== itemId); }, { intent: { type: "remove-collection-item", collection: list, itemId }, history: { label: `${listLabel(list)} „${item.text.trim() || "Ohne Text"}“ entfernt`, target: { kind: "panel", panel: list === "heroPoints" ? "hero" : "content" } } });
     renderTextItems(context, list);
     showToast("Punkt entfernt. Rückgängig ist weiterhin möglich.");
     return true;
@@ -42,7 +45,7 @@ export function handleTextListInput(context, target) {
     if (!list || !itemId)
         return true;
     context.store.mutate((draft) => { const item = draft[list].find((entry) => entry.id === itemId); if (item)
-        item.text = target.value; }, `text-item:${list}:${itemId}`);
+        item.text = target.value; }, { intent: { type: "set-text-item", list, itemId }, history: { key: `text-item:${list}:${itemId}`, label: `${listLabel(list)} geändert`, target: { kind: "text-item", list, itemId } } });
     const number = card.querySelector("[data-text-item-number]");
     const index = context.store.snapshot[list].findIndex((item) => item.id === itemId);
     if (number)
@@ -52,3 +55,4 @@ export function handleTextListInput(context, target) {
 export function normalizeTextItem(value) { return { id: value.id, text: value.text }; }
 function parseList(value) { return value === "heroPoints" || value === "introPoints" ? value : null; }
 function listElement(context, list) { return list === "heroPoints" ? context.heroPointList : context.introPointList; }
+function listLabel(list) { return list === "heroPoints" ? "Punkt im Titelbild" : "Punkt über Franz"; }
