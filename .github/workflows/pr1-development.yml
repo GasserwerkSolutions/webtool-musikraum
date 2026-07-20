@@ -1,9 +1,9 @@
 name: PR1 Development Build
 
 on:
-  push:
+  pull_request:
     branches:
-      - feature/editor-registry-history-policies
+      - main
 
 permissions:
   contents: read
