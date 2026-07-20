@@ -61,6 +61,28 @@ test("real browser layout, live editing and sidebar contract", { timeout: 90000 
     await page.waitForFunction((previous) => document.querySelector("#previewFrame")?.getAttribute("srcdoc") !== previous, {}, previewBeforeLimit);
     preview = await waitForPreview(page);
 
+    const heroOrderBefore = await page.$$eval('#heroPointList [data-text-item-field]', (inputs) => inputs.map((input) => input.value));
+    await page.click('#heroPointList [data-text-item-card]:nth-child(2) [data-reorder-direction="up"]');
+    assert.equal(await page.$eval('#heroPointList [data-text-item-card]:first-child [data-text-item-field]', (input) => input.value), heroOrderBefore[1]);
+    assert.equal(await page.evaluate(() => document.activeElement?.hasAttribute("data-reorder-handle")), true);
+    assert.match(await page.$eval("#editorAnnouncer", (node) => node.textContent), /Position 1 von 6/);
+    const reorderSizes = await page.$$eval('#heroPointList [data-reorder-handle], #heroPointList [data-reorder-direction]', (controls) => controls.map((control) => { const rect = control.getBoundingClientRect(); return { width: rect.width, height: rect.height }; }));
+    assert.ok(reorderSizes.length > 0); assert.ok(reorderSizes.every(({ width, height }) => width >= 44 && height >= 44));
+    await page.focus('#heroPointList [data-text-item-card]:first-child [data-reorder-handle]'); await page.keyboard.down("Alt"); await page.keyboard.press("ArrowDown"); await page.keyboard.up("Alt");
+    assert.deepEqual(await page.$$eval('#heroPointList [data-text-item-field]', (inputs) => inputs.map((input) => input.value)), heroOrderBefore);
+
+    await page.click('[data-panel-target="services"]');
+    const offerOrderBefore = await page.$$eval('#offerList [data-offer-field="title"]', (inputs) => inputs.map((input) => input.value));
+    await page.click('#offerList [data-offer-card]:nth-child(2) [data-reorder-direction="up"]');
+    assert.equal(await page.$eval('#offerList [data-offer-card]:first-child [data-offer-field="title"]', (input) => input.value), offerOrderBefore[1]);
+    assert.match(await page.$eval('[data-action="undo"]', (button) => button.getAttribute("aria-label") ?? ""), /Klangmoment .* verschoben/);
+    await page.click('[data-action="undo"]'); assert.deepEqual(await page.$$eval('#offerList [data-offer-field="title"]', (inputs) => inputs.map((input) => input.value)), offerOrderBefore);
+
+    await page.click('[data-panel-target="structure"]'); const sectionOrderBefore = await page.$$eval('#structureList [data-section-key]', (rows) => rows.map((row) => row.getAttribute("data-section-key")));
+    await page.click('#structureList [data-section-key]:nth-child(2) [data-reorder-direction="up"]');
+    assert.equal(await page.$eval('#structureList [data-section-key]:first-child', (row) => row.getAttribute("data-section-key")), sectionOrderBefore[1]);
+    assert.match(await page.$eval("#editorAnnouncer", (node) => node.textContent), /Bereich .* Position 1 von 5/);
+
     await page.click('[data-viewport="desktop"]'); await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 450))); const separator = await page.$("#sidebarResizer"); const separatorBox = await separator.boundingBox(); const beforeDrag = await page.$eval(".control-surface", (surface) => surface.getBoundingClientRect().width); await page.mouse.move(separatorBox.x + separatorBox.width / 2, separatorBox.y + 80); await page.mouse.down(); await page.mouse.move(separatorBox.x + separatorBox.width / 2 + 42, separatorBox.y + 80, { steps: 4 }); await page.mouse.up(); const afterDrag = await page.$eval(".control-surface", (surface) => surface.getBoundingClientRect().width); assert.ok(afterDrag > beforeDrag);
     await page.focus("#sidebarResizer"); await page.keyboard.press("End"); const resized = await page.evaluate(() => { const editor = document.querySelector(".control-surface").getBoundingClientRect().width; const frame = document.querySelector("#previewFrame").getBoundingClientRect(); return { editor, frameWidth: frame.width, frameRight: frame.right, viewportWidth: innerWidth, bodyHorizontal: document.documentElement.scrollWidth - document.documentElement.clientWidth }; }); assert.ok(resized.editor <= 720 && resized.editor >= 420); assert.ok(resized.frameWidth <= 1200); assert.ok(resized.frameRight <= resized.viewportWidth); assert.ok(resized.bodyHorizontal <= 1);
 

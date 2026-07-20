@@ -7,6 +7,7 @@ import { bindStaticInputs, renderDynamicControls, renderOffers, renderPreview, r
 import { handleTextListAction, handleTextListInput } from "./text-list-actions.js";
 import { ensureEditorOpen } from "./sidebar.js";
 import { navigateToPreviewTarget } from "./preview-navigation.js";
+import { handleReorderClick } from "./reorder-actions.js";
 
 export const MAX_OFFERS = 12;
 export const MAX_BACKUP_BYTES = 1_000_000;
@@ -17,7 +18,7 @@ export function handleClick(context: UiContext, event: Event): void {
   const panelButton = target.closest<HTMLElement>("[data-panel-target]"); if (panelButton) { ensureEditorOpen(context); showPanel(context, panelButton.dataset.panelTarget ?? "site"); return; }
   const viewportButton = target.closest<HTMLElement>("[data-viewport]"); if (viewportButton) { setViewport(context, viewportButton.dataset.viewport ?? "desktop"); return; }
   const presetButton = target.closest<HTMLElement>("[data-preset]"); if (presetButton) { applyPreset(context, presetButton.dataset.preset as ThemePresetName); return; }
-  const layoutButton = target.closest<HTMLElement>("[data-layout-action]"); if (layoutButton) { moveSection(context, layoutButton); return; }
+  if (handleReorderClick(context, target)) return;
   const actionButton = target.closest<HTMLElement>("[data-action]"); if (!actionButton) return;
   if (handleTextListAction(context, actionButton)) return;
   const action = actionButton.dataset.action;
@@ -61,12 +62,6 @@ export function handleInput(context: UiContext, event: Event): void {
   }
 }
 
-function moveSection(context: UiContext, button: HTMLElement): void {
-  const key = button.closest<HTMLElement>("[data-section-key]")?.dataset.sectionKey as SectionKey | undefined; const direction = button.dataset.layoutAction; if (!key || (direction !== "up" && direction !== "down")) return;
-  context.store.flushHistoryGroup();
-  context.store.mutate((draft) => { const index = draft.layout.order.indexOf(key); const nextIndex = direction === "up" ? index - 1 : index + 1; if (index < 0 || nextIndex < 0 || nextIndex >= draft.layout.order.length) return; draft.layout.order.splice(index, 1); draft.layout.order.splice(nextIndex, 0, key); }, { intent: { type: "move-section", section: key }, history: { label: `${sectionLabel(key)} verschoben`, target: { kind: "panel", panel: "structure" } } });
-  renderStructure(context);
-}
 function addOffer(context: UiContext): void {
   if (context.store.snapshot.offers.length >= MAX_OFFERS) { showToast(`Du kannst höchstens ${MAX_OFFERS} Klangmomente anlegen.`); return; }
   context.store.flushHistoryGroup();

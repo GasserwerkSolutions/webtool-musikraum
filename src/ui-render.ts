@@ -29,24 +29,37 @@ export function renderTextItems(context: UiContext, list: TextListKey): void {
   if (!items.length) { listElement.innerHTML = '<div class="empty-state">Noch kein Punkt. Du kannst die Liste leer lassen oder einen Punkt hinzufügen.</div>'; return; }
   items.forEach((item, index) => {
     const fragment = context.textItemTemplate.content.cloneNode(true) as DocumentFragment; const card = fragment.querySelector<HTMLElement>("[data-text-item-card]"); if (!card) return;
-    card.dataset.textList = list; card.dataset.textItemId = item.id; const number = fragment.querySelector<HTMLElement>("[data-text-item-number]"); if (number) number.textContent = `${index + 1}. ${item.text || "Punkt"}`;
-    const input = fragment.querySelector<HTMLInputElement>("[data-text-item-field]"); if (input) input.value = String(item.text ?? ""); listElement.appendChild(fragment);
+    card.dataset.textList = list; card.dataset.textItemId = item.id; const label = `${list === "heroPoints" ? "Punkt im Titelbild" : "Punkt über Franz"} „${item.text.trim() || "Ohne Text"}“`;
+    const number = fragment.querySelector<HTMLElement>("[data-text-item-number]"); if (number) number.textContent = `${index + 1}. ${item.text || "Punkt"}`;
+    const input = fragment.querySelector<HTMLInputElement>("[data-text-item-field]"); if (input) input.value = String(item.text ?? ""); configureReorderControls(card, label, index, items.length); listElement.appendChild(fragment);
   });
 }
 export function renderOffers(context: UiContext): void {
   context.offerList.innerHTML = ""; document.querySelectorAll<HTMLButtonElement>('[data-action="add-offer"]').forEach((button) => { button.disabled = context.store.snapshot.offers.length >= 12; });
   if (!context.store.snapshot.offers.length) { context.offerList.innerHTML = '<div class="empty-state">Noch kein Klangmoment. Füge den ersten hinzu.</div>'; return; }
-  context.store.snapshot.offers.forEach((offer, index) => {
+  context.store.snapshot.offers.forEach((offer, index, offers) => {
     const fragment = context.offerTemplate.content.cloneNode(true) as DocumentFragment; const card = fragment.querySelector<HTMLElement>("[data-offer-card]"); if (!card) return; card.dataset.offerId = offer.id;
     const number = fragment.querySelector<HTMLElement>("[data-offer-number]"); if (number) number.textContent = `${index + 1}. ${offer.title || "Klangmoment"}`;
-    fragment.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>("[data-offer-field]").forEach((input) => { input.value = String(offer[input.dataset.offerField as keyof MusicraumOffer] ?? ""); }); context.offerList.appendChild(fragment);
+    fragment.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>("[data-offer-field]").forEach((input) => { input.value = String(offer[input.dataset.offerField as keyof MusicraumOffer] ?? ""); });
+    configureReorderControls(card, `Klangmoment „${offer.title.trim() || "Ohne Titel"}“`, index, offers.length); context.offerList.appendChild(fragment);
   });
 }
 export function renderStructure(context: UiContext): void {
-  context.structureList.innerHTML = context.store.snapshot.layout.order.map((key, index, order) => {
+  const order = context.store.snapshot.layout.order;
+  context.structureList.innerHTML = order.map((key) => {
     const meta = SECTION_LABELS[key]; const visible = context.store.snapshot.layout.visibility[key];
-    return `<article class="structure-row" data-section-key="${key}"><div class="structure-row__copy"><strong>${escapeHtml(meta.title)}</strong><span>${escapeHtml(meta.description)}</span></div><label class="visibility-toggle"><input type="checkbox" data-layout-visible ${visible ? "checked" : ""}><span>${visible ? "Sichtbar" : "Ausgeblendet"}</span></label><div class="structure-row__actions"><button class="icon-button icon-button--move" type="button" data-layout-action="up" aria-label="${escapeHtml(meta.title)} nach oben" ${index === 0 ? "disabled" : ""}>↑</button><button class="icon-button icon-button--move" type="button" data-layout-action="down" aria-label="${escapeHtml(meta.title)} nach unten" ${index === order.length - 1 ? "disabled" : ""}>↓</button></div></article>`;
+    return `<article class="structure-row" data-section-key="${key}"><div class="structure-row__copy"><strong>${escapeHtml(meta.title)}</strong><span>${escapeHtml(meta.description)}</span></div><label class="visibility-toggle"><input type="checkbox" data-layout-visible ${visible ? "checked" : ""}><span>${visible ? "Sichtbar" : "Ausgeblendet"}</span></label><div class="reorder-actions" role="group" aria-label="Reihenfolge von ${escapeHtml(meta.title)} ändern"><button class="icon-button icon-button--move" type="button" data-reorder-direction="up">↑</button><button class="reorder-handle" type="button" data-reorder-handle aria-hidden="false"><span aria-hidden="true">⠿</span></button><button class="icon-button icon-button--move" type="button" data-reorder-direction="down">↓</button></div></article>`;
   }).join("");
+  context.structureList.querySelectorAll<HTMLElement>("[data-section-key]").forEach((row, index) => { const key = row.dataset.sectionKey as SectionKey; configureReorderControls(row, `Bereich „${SECTION_LABELS[key].title}“`, index, order.length); });
+}
+export function configureReorderControls(item: HTMLElement, label: string, index: number, count: number): void {
+  item.dataset.reorderIndex = String(index); item.setAttribute("aria-label", `${label}, Position ${index + 1} von ${count}`);
+  item.querySelectorAll<HTMLButtonElement>("[data-reorder-direction]").forEach((button) => {
+    const direction = button.dataset.reorderDirection; const upward = direction === "up"; button.disabled = count < 2 || (upward ? index === 0 : index === count - 1);
+    button.setAttribute("aria-label", `${label} nach ${upward ? "oben" : "unten"}`); button.title = `${label} nach ${upward ? "oben" : "unten"}`;
+  });
+  const handle = item.querySelector<HTMLButtonElement>("[data-reorder-handle]"); if (!handle) return;
+  handle.disabled = count < 2; handle.setAttribute("aria-label", `${label} ziehen. Alternativ mit Alt und Pfeil hoch oder runter verschieben.`); handle.title = "Ziehen oder Alt + Pfeil hoch/runter";
 }
 export function renderPresets(context: UiContext): void { document.querySelectorAll<HTMLElement>("[data-preset]").forEach((button) => { const active = button.dataset.preset === context.store.snapshot.theme.preset; button.classList.toggle("is-active", active); button.setAttribute("aria-checked", String(active)); }); }
 export function syncPresetInputs(context: UiContext, name: ThemePresetName): void { const preset = PRESETS[name]; const primary = document.querySelector<HTMLInputElement>('[data-bind="theme.primary"]'); const accent = document.querySelector<HTMLInputElement>('[data-bind="theme.accent"]'); if (primary) primary.value = preset.primary; if (accent) accent.value = preset.accent; renderPresets(context); }

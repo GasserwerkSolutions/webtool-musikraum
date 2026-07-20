@@ -4,6 +4,7 @@ import { createUiContext } from "./ui-shared.js";
 import { parseNavigateMessage } from "./preview-contract.js";
 import { navigateToPreviewTarget } from "./preview-navigation.js";
 import { initSidebar } from "./sidebar.js";
+import { handleReorderKeydown, handleReorderPointerDown, handleReorderPointerEnd, handleReorderPointerMove } from "./reorder-actions.js";
 export class BuilderUi {
     context;
     constructor(store, repository) {
@@ -28,9 +29,20 @@ export class BuilderUi {
         document.addEventListener("change", (event) => { handleInput(this.context, event); this.context.store.flushHistoryGroup(); });
         document.addEventListener("focusin", (event) => { const target = event.target; if (target instanceof Element && target.matches("[data-bind], [data-text-item-field], [data-offer-field]"))
             this.context.store.flushHistoryGroup(); });
+        document.addEventListener("pointerdown", (event) => handleReorderPointerDown(this.context, event));
+        document.addEventListener("pointermove", (event) => handleReorderPointerMove(this.context, event));
+        document.addEventListener("pointerup", (event) => handleReorderPointerEnd(this.context, event));
+        document.addEventListener("pointercancel", (event) => handleReorderPointerEnd(this.context, event, true));
         window.addEventListener("message", (event) => this.handlePreviewMessage(event));
-        document.addEventListener("keydown", (event) => { if (!(event.ctrlKey || event.metaKey) || event.altKey || event.key.toLowerCase() !== "z")
-            return; event.preventDefault(); const action = event.shiftKey ? "redo" : "undo"; document.querySelector(`[data-action="${action}"]`)?.click(); });
+        document.addEventListener("keydown", (event) => {
+            if (handleReorderKeydown(this.context, event))
+                return;
+            if (!(event.ctrlKey || event.metaKey) || event.altKey || event.key.toLowerCase() !== "z")
+                return;
+            event.preventDefault();
+            const action = event.shiftKey ? "redo" : "undo";
+            document.querySelector(`[data-action="${action}"]`)?.click();
+        });
         const flushBeforeLeave = () => { void this.context.store.flush().catch((error) => console.error("Final draft flush failed.", error)); };
         document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden")
             flushBeforeLeave(); });

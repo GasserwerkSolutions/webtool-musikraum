@@ -7,6 +7,7 @@ import { bindStaticInputs, renderDynamicControls, renderOffers, renderPreview, r
 import { handleTextListAction, handleTextListInput } from "./text-list-actions.js";
 import { ensureEditorOpen } from "./sidebar.js";
 import { navigateToPreviewTarget } from "./preview-navigation.js";
+import { handleReorderClick } from "./reorder-actions.js";
 export const MAX_OFFERS = 12;
 export const MAX_BACKUP_BYTES = 1_000_000;
 export function isBackupFileSizeAllowed(file) { return file.size <= MAX_BACKUP_BYTES; }
@@ -30,11 +31,8 @@ export function handleClick(context, event) {
         applyPreset(context, presetButton.dataset.preset);
         return;
     }
-    const layoutButton = target.closest("[data-layout-action]");
-    if (layoutButton) {
-        moveSection(context, layoutButton);
+    if (handleReorderClick(context, target))
         return;
-    }
     const actionButton = target.closest("[data-action]");
     if (!actionButton)
         return;
@@ -106,16 +104,6 @@ export function handleInput(context, event) {
                 number.textContent = `${index + 1}. ${target.value || "Klangmoment"}`;
         }
     }
-}
-function moveSection(context, button) {
-    const key = button.closest("[data-section-key]")?.dataset.sectionKey;
-    const direction = button.dataset.layoutAction;
-    if (!key || (direction !== "up" && direction !== "down"))
-        return;
-    context.store.flushHistoryGroup();
-    context.store.mutate((draft) => { const index = draft.layout.order.indexOf(key); const nextIndex = direction === "up" ? index - 1 : index + 1; if (index < 0 || nextIndex < 0 || nextIndex >= draft.layout.order.length)
-        return; draft.layout.order.splice(index, 1); draft.layout.order.splice(nextIndex, 0, key); }, { intent: { type: "move-section", section: key }, history: { label: `${sectionLabel(key)} verschoben`, target: { kind: "panel", panel: "structure" } } });
-    renderStructure(context);
 }
 function addOffer(context) {
     if (context.store.snapshot.offers.length >= MAX_OFFERS) {

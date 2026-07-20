@@ -41,12 +41,14 @@ export function renderTextItems(context, list) {
             return;
         card.dataset.textList = list;
         card.dataset.textItemId = item.id;
+        const label = `${list === "heroPoints" ? "Punkt im Titelbild" : "Punkt über Franz"} „${item.text.trim() || "Ohne Text"}“`;
         const number = fragment.querySelector("[data-text-item-number]");
         if (number)
             number.textContent = `${index + 1}. ${item.text || "Punkt"}`;
         const input = fragment.querySelector("[data-text-item-field]");
         if (input)
             input.value = String(item.text ?? "");
+        configureReorderControls(card, label, index, items.length);
         listElement.appendChild(fragment);
     });
 }
@@ -57,7 +59,7 @@ export function renderOffers(context) {
         context.offerList.innerHTML = '<div class="empty-state">Noch kein Klangmoment. Füge den ersten hinzu.</div>';
         return;
     }
-    context.store.snapshot.offers.forEach((offer, index) => {
+    context.store.snapshot.offers.forEach((offer, index, offers) => {
         const fragment = context.offerTemplate.content.cloneNode(true);
         const card = fragment.querySelector("[data-offer-card]");
         if (!card)
@@ -67,15 +69,35 @@ export function renderOffers(context) {
         if (number)
             number.textContent = `${index + 1}. ${offer.title || "Klangmoment"}`;
         fragment.querySelectorAll("[data-offer-field]").forEach((input) => { input.value = String(offer[input.dataset.offerField] ?? ""); });
+        configureReorderControls(card, `Klangmoment „${offer.title.trim() || "Ohne Titel"}“`, index, offers.length);
         context.offerList.appendChild(fragment);
     });
 }
 export function renderStructure(context) {
-    context.structureList.innerHTML = context.store.snapshot.layout.order.map((key, index, order) => {
+    const order = context.store.snapshot.layout.order;
+    context.structureList.innerHTML = order.map((key) => {
         const meta = SECTION_LABELS[key];
         const visible = context.store.snapshot.layout.visibility[key];
-        return `<article class="structure-row" data-section-key="${key}"><div class="structure-row__copy"><strong>${escapeHtml(meta.title)}</strong><span>${escapeHtml(meta.description)}</span></div><label class="visibility-toggle"><input type="checkbox" data-layout-visible ${visible ? "checked" : ""}><span>${visible ? "Sichtbar" : "Ausgeblendet"}</span></label><div class="structure-row__actions"><button class="icon-button icon-button--move" type="button" data-layout-action="up" aria-label="${escapeHtml(meta.title)} nach oben" ${index === 0 ? "disabled" : ""}>↑</button><button class="icon-button icon-button--move" type="button" data-layout-action="down" aria-label="${escapeHtml(meta.title)} nach unten" ${index === order.length - 1 ? "disabled" : ""}>↓</button></div></article>`;
+        return `<article class="structure-row" data-section-key="${key}"><div class="structure-row__copy"><strong>${escapeHtml(meta.title)}</strong><span>${escapeHtml(meta.description)}</span></div><label class="visibility-toggle"><input type="checkbox" data-layout-visible ${visible ? "checked" : ""}><span>${visible ? "Sichtbar" : "Ausgeblendet"}</span></label><div class="reorder-actions" role="group" aria-label="Reihenfolge von ${escapeHtml(meta.title)} ändern"><button class="icon-button icon-button--move" type="button" data-reorder-direction="up">↑</button><button class="reorder-handle" type="button" data-reorder-handle aria-hidden="false"><span aria-hidden="true">⠿</span></button><button class="icon-button icon-button--move" type="button" data-reorder-direction="down">↓</button></div></article>`;
     }).join("");
+    context.structureList.querySelectorAll("[data-section-key]").forEach((row, index) => { const key = row.dataset.sectionKey; configureReorderControls(row, `Bereich „${SECTION_LABELS[key].title}“`, index, order.length); });
+}
+export function configureReorderControls(item, label, index, count) {
+    item.dataset.reorderIndex = String(index);
+    item.setAttribute("aria-label", `${label}, Position ${index + 1} von ${count}`);
+    item.querySelectorAll("[data-reorder-direction]").forEach((button) => {
+        const direction = button.dataset.reorderDirection;
+        const upward = direction === "up";
+        button.disabled = count < 2 || (upward ? index === 0 : index === count - 1);
+        button.setAttribute("aria-label", `${label} nach ${upward ? "oben" : "unten"}`);
+        button.title = `${label} nach ${upward ? "oben" : "unten"}`;
+    });
+    const handle = item.querySelector("[data-reorder-handle]");
+    if (!handle)
+        return;
+    handle.disabled = count < 2;
+    handle.setAttribute("aria-label", `${label} ziehen. Alternativ mit Alt und Pfeil hoch oder runter verschieben.`);
+    handle.title = "Ziehen oder Alt + Pfeil hoch/runter";
 }
 export function renderPresets(context) { document.querySelectorAll("[data-preset]").forEach((button) => { const active = button.dataset.preset === context.store.snapshot.theme.preset; button.classList.toggle("is-active", active); button.setAttribute("aria-checked", String(active)); }); }
 export function syncPresetInputs(context, name) { const preset = PRESETS[name]; const primary = document.querySelector('[data-bind="theme.primary"]'); const accent = document.querySelector('[data-bind="theme.accent"]'); if (primary)
