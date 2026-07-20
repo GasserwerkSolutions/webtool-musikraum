@@ -17,6 +17,7 @@ import { PreviewRuntime } from "./preview-runtime.js";
 import { ExportPreflightController } from "./export-preflight.js";
 import { navigateToEditorTarget } from "./preview-navigation.js";
 import { initSidebar } from "./sidebar.js";
+import { initMobileModes } from "./mobile-modes.js";
 import { handleReorderKeydown, handleReorderPointerDown, handleReorderPointerEnd, handleReorderPointerMove } from "./reorder-actions.js";
 
 export class BuilderUi {
@@ -41,6 +42,7 @@ export class BuilderUi {
   init(options: DraftLoadResult & { volatileStorage?: boolean }): void {
     this.context.volatileStorage = Boolean(options.volatileStorage);
     initSidebar(this.context);
+    initMobileModes(this.context);
     bindStaticInputs(this.context);
     renderDynamicControls(this.context);
     renderContentOverview(this.context);
