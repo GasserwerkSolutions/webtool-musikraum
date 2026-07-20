@@ -1,4 +1,4 @@
-import type { MusicraumDraft } from "./domain.js";
+import type { MusicraumDraft, SectionKey } from "./domain.js";
 import { evaluateContentCompleteness, type ContentCompleteness, type ContentPolicyTarget } from "./content-policy.js";
 import { EDITOR_FIELD_REGISTRY, type ReadinessGroup, type StaticEditableField } from "./editor-registry.js";
 import type { PreviewTarget } from "./preview-contract.js";
@@ -21,7 +21,14 @@ const GROUP_ORDER: readonly ReadinessGroup[] = ["identity", "hero", "navigation"
 const GROUP_LABELS: Record<ReadinessGroup, string> = {
   identity: "Grundlage",
   hero: "Einstieg",
-  navigation: "Navigation",
+  navigation: "Navigation und Bereiche",
+  intro: "Über Franz",
+  why: "Frei spielen",
+  offers: "Klangmomente",
+  story: "Geschichte",
+  contact: "Kontakt",
+};
+const SECTION_LABELS: Record<SectionKey, string> = {
   intro: "Über Franz",
   why: "Frei spielen",
   offers: "Klangmomente",
@@ -38,6 +45,16 @@ export function buildContentOverview(draft: Readonly<MusicraumDraft>): readonly 
       detail: summarize(fieldValue(definition.field, draft)),
       status: evaluateContentCompleteness({ kind: "field", field: definition.field }, draft),
       target: { kind: "field", field: definition.field },
+    });
+  }
+
+  for (const section of draft.layout.order) {
+    add(groups, "navigation", {
+      id: `section:${section}`,
+      label: `Bereich: ${SECTION_LABELS[section]}`,
+      detail: draft.layout.visibility[section] ? "Auf der Website sichtbar" : "Auf der Website ausgeblendet",
+      status: evaluateContentCompleteness({ kind: "section", section }, draft),
+      target: { kind: "section", section },
     });
   }
 
