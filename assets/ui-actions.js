@@ -1,12 +1,13 @@
 import { PRESETS, createId, normalizeDraft, slugify } from "./domain.js";
 import { replaceWithFreshDraft, replaceWithImportedDraft } from "./persistence.js";
 import { EDITOR_FIELD_REGISTRY } from "./editor-registry.js";
+import { isPreviewTargetShape } from "./preview-contract.js";
 import { buildWebsiteHtml, MUSICRAUM_HERO_URL } from "./website.js";
 import { inputValue, setAtPath } from "./ui-shared.js";
-import { bindStaticInputs, renderDynamicControls, renderOffers, renderPreview, renderStructure, setViewport, showPanel, showToast, syncPresetInputs, updateReadiness } from "./ui-render.js";
+import { bindStaticInputs, renderContentOverview, renderDynamicControls, renderOffers, renderPreview, renderStructure, setViewport, showPanel, showToast, syncPresetInputs, updateReadiness } from "./ui-render.js";
 import { handleTextListAction, handleTextListInput } from "./text-list-actions.js";
 import { ensureEditorOpen } from "./sidebar.js";
-import { navigateToPreviewTarget } from "./preview-navigation.js";
+import { navigateToEditorTarget } from "./preview-navigation.js";
 import { handleReorderClick } from "./reorder-actions.js";
 export const MAX_OFFERS = 12;
 export const MAX_BACKUP_BYTES = 1_000_000;
@@ -15,6 +16,16 @@ export function handleClick(context, event) {
     const target = event.target;
     if (!(target instanceof Element))
         return;
+    const editorTarget = target.closest("[data-editor-target]");
+    if (editorTarget) {
+        try {
+            const parsed = JSON.parse(editorTarget.dataset.editorTarget ?? "");
+            if (isPreviewTargetShape(parsed))
+                navigateToEditorTarget(context, parsed);
+        }
+        catch { /* malformed UI target is ignored */ }
+        return;
+    }
     const panelButton = target.closest("[data-panel-target]");
     if (panelButton) {
         ensureEditorOpen(context);
@@ -177,6 +188,7 @@ async function restoreBackup(context, file) {
         context.store.replace(restored, false, "import");
         bindStaticInputs(context);
         renderDynamicControls(context);
+        renderContentOverview(context);
         renderPreview(context);
         updateReadiness(context);
         showPanel(context, "site");
@@ -198,7 +210,7 @@ function undo(context) {
     renderDynamicControls(context);
     showToast(`„${mutation.history.label}“ wurde rückgängig gemacht.`);
     if (mutation.history.target)
-        navigateToPreviewTarget(context, mutation.history.target);
+        navigateToEditorTarget(context, mutation.history.target);
 }
 function redo(context) {
     const mutation = context.store.redo();
@@ -208,7 +220,7 @@ function redo(context) {
     renderDynamicControls(context);
     showToast(`„${mutation.history.label}“ wurde wiederhergestellt.`);
     if (mutation.history.target)
-        navigateToPreviewTarget(context, mutation.history.target);
+        navigateToEditorTarget(context, mutation.history.target);
 }
 async function resetBuilder(context) {
     if (!window.confirm("Alle eigenen Änderungen verwerfen und zum Musikraum-Ausgangspunkt zurückkehren?"))
@@ -220,6 +232,7 @@ async function resetBuilder(context) {
         context.store.replace(fresh, false, "reset");
         bindStaticInputs(context);
         renderDynamicControls(context);
+        renderContentOverview(context);
         renderPreview(context);
         updateReadiness(context);
         showPanel(context, "site");

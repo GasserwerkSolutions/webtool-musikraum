@@ -1,5 +1,5 @@
 import { PRESETS, escapeAttr, escapeHtml, normalizeEmail, normalizeInstagramUrl, normalizePhone, safeJson, } from "./domain.js";
-import { PREVIEW_CHANNEL, PREVIEW_PROTOCOL_VERSION } from "./preview-contract.js";
+import { EDITOR_FIELD_REGISTRY, PREVIEW_CHANNEL, PREVIEW_PROTOCOL_VERSION } from "./preview-contract.js";
 import { buildPreviewBridgeScript } from "./preview-bridge.js";
 export const MUSICRAUM_HERO_URL = "https://raw.githubusercontent.com/GasserwerkSolutions/musikraum/89f128d86fd2da8f6c827efd654de5b24e5c94f4/assets/photos/hero-klangraum-wood-1200w.webp";
 const HARFE_FAVICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='15' fill='%23343b39'/%3E%3Cpath d='M17 50.5h33' fill='none' stroke='%23f3dfae' stroke-width='4.5' stroke-linecap='round'/%3E%3Cpath d='M19.5 49.5c7-8.5 10-21.5 8.8-36 8.7 2.8 15.8 7.7 21.2 14.2' fill='none' stroke='%23d9ba70' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M49.5 27.7c-1.2 7.8-.9 15.3.5 22.8' fill='none' stroke='%23f3dfae' stroke-width='5' stroke-linecap='round'/%3E%3Cg fill='none' stroke='%239fb9b3' stroke-width='1.35' stroke-linecap='round'%3E%3Cpath d='M30 18.5v26'/%3E%3Cpath d='M34 20.2v24.3'/%3E%3Cpath d='M38 22.2v22.3'/%3E%3Cpath d='M42 24.5v20'/%3E%3Cpath d='M46 27v17.5'/%3E%3C/g%3E%3C/svg%3E";
@@ -22,13 +22,13 @@ export function buildWebsiteHtml(draft, options = {}) {
     const address = [draft.site.address, [draft.site.postalCode, draft.site.city].filter(Boolean).join(" ")].filter(Boolean).join(", ");
     const visibleOrder = draft.layout.order.filter((key) => draft.layout.visibility[key]);
     const firstActionKey = visibleOrder.find((key) => key !== "contact") ?? visibleOrder[0];
-    const primaryAction = firstActionKey ? previewAction(draft.copy.heroPrimaryAction, "copy.heroPrimaryAction", `#${SECTION_META[firstActionKey].id}`, "button button-light", options) : "";
-    const secondaryAction = draft.layout.visibility.contact && firstActionKey !== "contact" ? previewAction(draft.copy.heroSecondaryAction, "copy.heroSecondaryAction", "#kontakt", "button button-ghost", options) : "";
+    const primaryAction = firstActionKey ? previewAction(draft.copy.heroPrimaryAction, "copy.heroPrimaryAction", `#${SECTION_META[firstActionKey].id}`, "button button-light", "hero-primary-action", options) : "";
+    const secondaryAction = draft.layout.visibility.contact && firstActionKey !== "contact" ? previewAction(draft.copy.heroSecondaryAction, "copy.heroSecondaryAction", "#kontakt", "button button-ghost", "hero-secondary-action", options) : "";
     const heroActions = primaryAction || secondaryAction ? `<div class="actions">${primaryAction}${secondaryAction}</div>` : "";
     const heroNotes = renderTextList(draft.heroPoints, "heroPoints", "span", options);
-    const nav = visibleOrder.map((key) => { const label = draft.copy[NAV_COPY_KEYS[key]].trim(); return label ? `<a href="#${SECTION_META[key].id}">${escapeHtml(label)}</a>` : ""; }).join("");
+    const nav = visibleOrder.map((key) => { const field = `copy.${NAV_COPY_KEYS[key]}`; const label = draft.copy[NAV_COPY_KEYS[key]].trim(); return label ? previewNavigationLink(label, field, `#${SECTION_META[key].id}`, `header-nav-${key}`, options) : ""; }).join("");
     const sections = visibleOrder.map((key) => renderSection(key, draft, address, options)).join("");
-    const brand = `<span class="brand-mark" aria-hidden="true"><img src="${HARFE_FAVICON}" alt="" style="display:block;width:100%;height:100%;object-fit:contain;border-radius:inherit"></span><span><strong>${editable(draft.site.name, "site.name", options)}</strong><small>${editable(draft.site.tagline, "site.tagline", options)}</small></span>`;
+    const brand = `<span class="brand-mark" aria-hidden="true"><img src="${HARFE_FAVICON}" alt="" style="display:block;width:100%;height:100%;object-fit:contain;border-radius:inherit"></span><span><strong>${editable(draft.site.name, "site.name", "header-brand-name", options)}</strong><small>${editable(draft.site.tagline, "site.tagline", "header-brand-tagline", options)}</small></span>`;
     const schema = {
         "@context": "https://schema.org",
         "@type": "ProfessionalService",
@@ -56,7 +56,7 @@ export function buildWebsiteHtml(draft, options = {}) {
   <a class="skip-link" href="#main">Zum Inhalt springen</a>
   <header class="site-header"${previewRegionAttr(options, "header")}>
     <div class="container header-inner">
-      ${options.preview ? `<div class="brand"${previewTargetAttr(options, { kind: "panel", panel: "site" })}>${brand}</div>` : `<a class="brand" href="#top">${brand}</a>`}
+      ${options.preview ? `<div class="brand">${brand}</div>` : `<a class="brand" href="#top">${brand}</a>`}
       <button class="menu-button" type="button" aria-label="Navigation anzeigen" aria-expanded="false"><span></span><span></span><span></span></button>
       <nav class="main-nav" aria-label="Hauptnavigation">${nav}</nav>
     </div>
@@ -64,16 +64,16 @@ export function buildWebsiteHtml(draft, options = {}) {
   <main id="main">
     <section class="hero" id="top"${previewSectionAttr(options, "top", "hero")}${previewRegionAttr(options, "hero")}>
       <div class="container hero-inner">
-        <p class="eyebrow">${editable(draft.copy.heroLabel, "copy.heroLabel", options)}</p>
-        <h1>${editable(draft.copy.heroTitle, "copy.heroTitle", options)}</h1>
-        <p class="hero-lead">${editable(draft.copy.heroSubtitle, "copy.heroSubtitle", options)}</p>
+        <p class="eyebrow">${editable(draft.copy.heroLabel, "copy.heroLabel", "hero-label", options)}</p>
+        <h1>${editable(draft.copy.heroTitle, "copy.heroTitle", "hero-title", options)}</h1>
+        <p class="hero-lead">${editable(draft.copy.heroSubtitle, "copy.heroSubtitle", "hero-subtitle", options)}</p>
         ${heroActions}
         ${heroNotes ? `<div class="hero-notes" aria-label="Auf einen Blick">${heroNotes}</div>` : ""}
       </div>
     </section>
     ${sections}
   </main>
-  <footer class="site-footer"${previewSectionAttr(options, "footer", "site")}${previewRegionAttr(options, "footer")}><div class="container footer-grid"><div><strong>${editable(draft.site.name, "site.name", options)}</strong><p>${editable(draft.site.tagline, "site.tagline", options)}</p></div><div class="footer-contact">${address ? `<span class="footer-address">${addressParts(draft, options)}</span>` : ""}${email ? `<span class="footer-email">${previewLink(draft.site.email, "site.email", mailtoHref, options)}</span>` : ""}</div><p data-preview-no-action>© ${new Date().getFullYear()} ${escapeHtml(draft.site.name)}</p></div></footer>
+  <footer class="site-footer"${previewSectionAttr(options, "footer", "site")}${previewRegionAttr(options, "footer")}><div class="container footer-grid"><div><strong>${editable(draft.site.name, "site.name", "footer-brand-name", options)}</strong><p>${editable(draft.site.tagline, "site.tagline", "footer-brand-tagline", options)}</p></div><div class="footer-contact">${address ? `<span class="footer-address">${addressParts(draft, "footer-address", options)}</span>` : ""}${email ? `<span class="footer-email">${previewLink(draft.site.email, "site.email", mailtoHref, "preview-inline-link", "footer-email", options)}</span>` : ""}</div><p data-preview-no-action>© ${new Date().getFullYear()} ${options.preview ? editable(draft.site.name, "site.name", "footer-copyright-name", options) : escapeHtml(draft.site.name)}</p></div></footer>
   <script>(()=>{document.addEventListener('click',e=>{const t=e.target instanceof Element?e.target:null,n=document.querySelector('.main-nav');if(!t||!n)return;const b=t.closest('.menu-button');if(b){const o=b.getAttribute('aria-expanded')==='true';b.setAttribute('aria-expanded',String(!o));n.classList.toggle('is-open',!o);return}if(t.closest('.main-nav a')){const m=document.querySelector('.menu-button');if(m){m.setAttribute('aria-expanded','false');n.classList.remove('is-open')}}})})();</script>
   ${options.preview ? previewBridge(options) : ""}
 </body>
@@ -83,16 +83,16 @@ function renderSection(key, draft, address, options) {
     const copy = draft.copy;
     if (key === "intro") {
         const points = renderTextList(draft.introPoints, "introPoints", "li", options);
-        return `<section class="section intro" id="franz"${previewSectionAttr(options, "franz", "content")}${previewRegionAttr(options, "intro")}><div class="container split"><div><p class="eyebrow">${editable(copy.introLabel, "copy.introLabel", options)}</p><h2>${editable(copy.introTitle, "copy.introTitle", options)}</h2><blockquote>„${editable(copy.introQuote, "copy.introQuote", options)}“</blockquote></div><div><p class="lead">${editable(copy.introText, "copy.introText", options)}</p>${points ? `<ul class="plain-list">${points}</ul>` : ""}</div></div></section>`;
+        return `<section class="section intro" id="franz"${previewSectionAttr(options, "franz", "content")}${previewRegionAttr(options, "intro")}><div class="container split"><div><p class="eyebrow">${editable(copy.introLabel, "copy.introLabel", "intro-label", options)}</p><h2>${editable(copy.introTitle, "copy.introTitle", "intro-title", options)}</h2><blockquote>„${editable(copy.introQuote, "copy.introQuote", "intro-quote", options)}“</blockquote></div><div><p class="lead">${editable(copy.introText, "copy.introText", "intro-text", options)}</p>${points ? `<ul class="plain-list">${points}</ul>` : ""}</div></div></section>`;
     }
     if (key === "why")
-        return `<section class="section dark-band" id="frei-spielen"${previewSectionAttr(options, "frei-spielen", "content")}${previewRegionAttr(options, "why")}><div class="container narrow"><p class="eyebrow">${editable(copy.whyLabel, "copy.whyLabel", options)}</p><h2>${editable(copy.whyTitle, "copy.whyTitle", options)}</h2><p class="lead">${editable(copy.whyText, "copy.whyText", options)}</p><div class="resonance" aria-hidden="true" data-preview-no-action><span></span><span></span><span></span></div></div></section>`;
+        return `<section class="section dark-band" id="frei-spielen"${previewSectionAttr(options, "frei-spielen", "content")}${previewRegionAttr(options, "why")}><div class="container narrow"><p class="eyebrow">${editable(copy.whyLabel, "copy.whyLabel", "why-label", options)}</p><h2>${editable(copy.whyTitle, "copy.whyTitle", "why-title", options)}</h2><p class="lead">${editable(copy.whyText, "copy.whyText", "why-text", options)}</p><div class="resonance" aria-hidden="true" data-preview-no-action><span></span><span></span><span></span></div></div></section>`;
     if (key === "offers") {
-        const cards = draft.offers.filter((offer) => offer.title.trim()).map((offer, index) => `<article class="card"><span class="card-number" data-preview-no-action>0${index + 1}</span><h3>${editableOffer(offer.title, offer.id, "title", options)}</h3>${offer.text ? `<p>${editableOffer(offer.text, offer.id, "text", options)}</p>` : ""}</article>`).join("");
-        return `<section class="section offers" id="angebote"${previewSectionAttr(options, "angebote", "services")}${previewRegionAttr(options, "offers")}><div class="container"><div class="section-head"><p class="eyebrow">${editable(copy.offersLabel, "copy.offersLabel", options)}</p><h2>${editable(copy.offersTitle, "copy.offersTitle", options)}</h2><p class="lead">${editable(copy.offersIntro, "copy.offersIntro", options)}</p></div>${cards ? `<div class="card-grid">${cards}</div>` : ""}</div></section>`;
+        const cards = draft.offers.filter((offer) => offer.title.trim()).map((offer, index) => `<article class="card"><span class="card-number" data-preview-no-action>0${index + 1}</span><h3>${editableOffer(offer.title, offer.id, "title", `offer-${offer.id}-title`, options)}</h3>${offer.text ? `<p>${editableOffer(offer.text, offer.id, "text", `offer-${offer.id}-text`, options)}</p>` : ""}</article>`).join("");
+        return `<section class="section offers" id="angebote"${previewSectionAttr(options, "angebote", "services")}${previewRegionAttr(options, "offers")}><div class="container"><div class="section-head"><p class="eyebrow">${editable(copy.offersLabel, "copy.offersLabel", "offers-label", options)}</p><h2>${editable(copy.offersTitle, "copy.offersTitle", "offers-title", options)}</h2><p class="lead">${editable(copy.offersIntro, "copy.offersIntro", "offers-intro", options)}</p></div>${cards ? `<div class="card-grid">${cards}</div>` : ""}</div></section>`;
     }
     if (key === "story")
-        return `<section class="section story" id="geschichte"${previewSectionAttr(options, "geschichte", "content")}${previewRegionAttr(options, "story")}><div class="container split"><div><p class="eyebrow">${editable(copy.storyLabel, "copy.storyLabel", options)}</p><h2>${editable(copy.storyTitle, "copy.storyTitle", options)}</h2></div><p class="lead">${editable(copy.storyText, "copy.storyText", options)}</p></div></section>`;
+        return `<section class="section story" id="geschichte"${previewSectionAttr(options, "geschichte", "content")}${previewRegionAttr(options, "story")}><div class="container split"><div><p class="eyebrow">${editable(copy.storyLabel, "copy.storyLabel", "story-label", options)}</p><h2>${editable(copy.storyTitle, "copy.storyTitle", "story-title", options)}</h2></div><p class="lead">${editable(copy.storyText, "copy.storyText", "story-text", options)}</p></div></section>`;
     const email = normalizeEmail(draft.site.email);
     const phone = normalizePhone(draft.site.phone);
     const instagram = normalizeInstagramUrl(draft.site.instagram);
@@ -105,21 +105,36 @@ function renderSection(key, draft, address, options) {
         phone && phoneLabel ? `<a class="button button-ghost" href="tel:${escapeAttr(phone)}">${escapeHtml(phoneLabel)}</a>` : "",
         instagram && instagramLabel ? `<a class="button button-ghost" href="${escapeAttr(instagram)}" target="_blank" rel="noopener noreferrer">${escapeHtml(instagramLabel)}</a>` : "",
     ].filter(Boolean).join("");
-    const previewLinks = options.preview ? `${email && emailLabel ? `<button class="button button-light" type="button"${previewTargetAttr(options, { kind: "field", field: "copy.contactEmailAction" })}>${escapeHtml(emailLabel)}</button>` : ""}${phone && phoneLabel ? `<button class="button button-ghost" type="button"><span${previewTargetAttr(options, { kind: "field", field: "site.phone" })}>${escapeHtml(draft.site.phone)}</span>${phoneAction ? ` <span${previewTargetAttr(options, { kind: "field", field: "copy.contactPhoneAction" })}>${escapeHtml(phoneAction)}</span>` : ""}</button>` : ""}${instagram && instagramLabel ? `<button class="button button-ghost" type="button"${previewTargetAttr(options, { kind: "field", field: "copy.contactInstagramAction" })}>${escapeHtml(instagramLabel)}</button>` : ""}` : contactLinks;
-    return `<section class="section contact" id="kontakt"${previewSectionAttr(options, "kontakt", "contact")}${previewRegionAttr(options, "contact")}><div class="container narrow"><p class="eyebrow">${editable(copy.contactLabel, "copy.contactLabel", options)}</p><h2>${editable(copy.contactTitle, "copy.contactTitle", options)}</h2><p class="lead">${editable(copy.contactText, "copy.contactText", options)}</p>${address ? `<p class="address">${addressParts(draft, options)}</p>` : ""}${previewLinks ? `<div class="actions centered">${previewLinks}</div>` : ""}</div></section>`;
+    const previewLinks = options.preview ? `${email && emailLabel ? previewLink(emailLabel, "copy.contactEmailAction", buildMailtoHref(email, draft.site.name), "button button-light", "contact-email-action", options) : ""}${phone && phoneLabel ? `<span class="button button-ghost preview-composite-action">${editable(draft.site.phone, "site.phone", "contact-phone-number", options)}${phoneAction ? ` ${editable(phoneAction, "copy.contactPhoneAction", "contact-phone-action", options)}` : ""}</span>` : ""}${instagram && instagramLabel ? previewLink(instagramLabel, "copy.contactInstagramAction", instagram, "button button-ghost", "contact-instagram-action", options) : ""}` : contactLinks;
+    return `<section class="section contact" id="kontakt"${previewSectionAttr(options, "kontakt", "contact")}${previewRegionAttr(options, "contact")}><div class="container narrow"><p class="eyebrow">${editable(copy.contactLabel, "copy.contactLabel", "contact-label", options)}</p><h2>${editable(copy.contactTitle, "copy.contactTitle", "contact-title", options)}</h2><p class="lead">${editable(copy.contactText, "copy.contactText", "contact-text", options)}</p>${address ? `<p class="address">${addressParts(draft, "contact-address", options)}</p>` : ""}${previewLinks ? `<div class="actions centered">${previewLinks}</div>` : ""}</div></section>`;
 }
-function renderTextList(items, list, tag, options) { return items.filter((item) => item.text.trim()).map((item) => `<${tag}>${editableTextItem(item.text, list, item.id, options)}</${tag}>`).join(""); }
+function renderTextList(items, list, tag, options) { return items.filter((item) => item.text.trim()).map((item) => `<${tag}>${editableTextItem(item.text, list, item.id, `${list}-${item.id}`, options)}</${tag}>`).join(""); }
 function buildMailtoHref(email, siteName) { return `mailto:${encodeURIComponent(email)}?${new URLSearchParams({ subject: `Anfrage ${siteName}` }).toString()}`; }
-function previewTargetAttr(options, target) { return options.preview ? ` data-preview-target="${escapeAttr(JSON.stringify(target))}"` : ""; }
+function previewTargetAttr(options, target, occurrence, interactive = false) {
+    if (!options.preview)
+        return "";
+    const accessibleName = `${previewTargetLabel(target)} bearbeiten`;
+    return ` data-preview-target="${escapeAttr(JSON.stringify(target))}" data-preview-occurrence="${escapeAttr(occurrence)}" aria-label="${escapeAttr(accessibleName)}"${interactive ? "" : ' tabindex="0" role="button"'}`;
+}
+function previewTargetLabel(target) {
+    if (target.kind === "field")
+        return EDITOR_FIELD_REGISTRY[target.field].label;
+    if (target.kind === "offer")
+        return target.field === "title" ? "Klangmoment-Titel" : "Klangmoment-Beschreibung";
+    if (target.kind === "text-item")
+        return target.list === "heroPoints" ? "Punkt im Titelbild" : "Punkt über Franz";
+    return "Bearbeitungsbereich";
+}
 function previewSectionAttr(options, section, panel) { return options.preview ? ` data-preview-section="${escapeAttr(section)}" data-preview-panel="${panel}"` : ""; }
 function previewRegionAttr(options, region) { return options.preview ? ` data-preview-region="${escapeAttr(region)}"` : ""; }
-function editable(value, field, options) { return options.preview ? `<button class="preview-edit-trigger" type="button"${previewTargetAttr(options, { kind: "field", field })}>${escapeHtml(value)}</button>` : escapeHtml(value); }
-function editableOffer(value, offerId, field, options) { return options.preview ? `<button class="preview-edit-trigger" type="button"${previewTargetAttr(options, { kind: "offer", offerId, field })}>${escapeHtml(value)}</button>` : escapeHtml(value); }
-function editableTextItem(value, list, itemId, options) { return options.preview ? `<button class="preview-edit-trigger" type="button"${previewTargetAttr(options, { kind: "text-item", list, itemId })}>${escapeHtml(value)}</button>` : escapeHtml(value); }
-function previewAction(value, field, href, classes, options) { return options.preview ? `<button class="${classes} preview-action" type="button"${previewTargetAttr(options, { kind: "field", field })}>${escapeHtml(value)}</button>` : `<a class="${classes}" href="${href}">${escapeHtml(value)}</a>`; }
-function previewLink(value, field, href, options) { return options.preview ? `<button class="preview-edit-trigger preview-inline-link" type="button"${previewTargetAttr(options, { kind: "field", field })}>${escapeHtml(value)}</button>` : `<a href="${escapeAttr(href)}">${escapeHtml(value)}</a>`; }
-function addressParts(draft, options) { const street = draft.site.address ? editable(draft.site.address, "site.address", options) : ""; const postal = draft.site.postalCode ? editable(draft.site.postalCode, "site.postalCode", options) : ""; const city = draft.site.city ? editable(draft.site.city, "site.city", options) : ""; return [street, [postal, city].filter(Boolean).join(" ")].filter(Boolean).join(", "); }
-const PREVIEW_CSS = `html{scrollbar-width:thin;scrollbar-color:rgba(64,59,52,.32) transparent}html::-webkit-scrollbar{width:8px}html::-webkit-scrollbar-track{background:transparent}html::-webkit-scrollbar-thumb{border:2px solid transparent;border-radius:999px;background:rgba(64,59,52,.32);background-clip:padding-box}html::-webkit-scrollbar-thumb:hover{background-color:rgba(64,59,52,.52)}.preview-edit-trigger{all:unset;display:inline;box-decoration-break:clone;-webkit-box-decoration-break:clone;border-radius:.18em;cursor:pointer;color:inherit;font:inherit;letter-spacing:inherit;line-height:inherit;text-align:inherit}.preview-edit-trigger:hover,.preview-edit-trigger:focus-visible{outline:2px solid #d6b96f;outline-offset:4px;background:rgba(214,185,111,.14)}.preview-inline-link{text-decoration:underline}.preview-action{cursor:pointer}[data-preview-panel]{cursor:default}`;
+function editable(value, field, occurrence, options) { return options.preview ? `<span class="preview-edit-trigger"${previewTargetAttr(options, { kind: "field", field }, occurrence)}>${escapeHtml(value)}</span>` : escapeHtml(value); }
+function editableOffer(value, offerId, field, occurrence, options) { return options.preview ? `<span class="preview-edit-trigger"${previewTargetAttr(options, { kind: "offer", offerId, field }, occurrence)}>${escapeHtml(value)}</span>` : escapeHtml(value); }
+function editableTextItem(value, list, itemId, occurrence, options) { return options.preview ? `<span class="preview-edit-trigger"${previewTargetAttr(options, { kind: "text-item", list, itemId }, occurrence)}>${escapeHtml(value)}</span>` : escapeHtml(value); }
+function previewAction(value, field, href, classes, occurrence, options) { return options.preview ? `<button class="${classes} preview-action" type="button"${previewTargetAttr(options, { kind: "field", field }, occurrence, true)}>${escapeHtml(value)}</button>` : `<a class="${classes}" href="${href}">${escapeHtml(value)}</a>`; }
+function previewLink(value, field, href, classes, occurrence, options) { return options.preview ? `<a class="${classes}" href="${escapeAttr(href)}"${previewTargetAttr(options, { kind: "field", field }, occurrence, true)}>${escapeHtml(value)}</a>` : `<a class="${classes}" href="${escapeAttr(href)}">${escapeHtml(value)}</a>`; }
+function previewNavigationLink(value, field, href, occurrence, options) { return options.preview ? `<a href="${href}"${previewTargetAttr(options, { kind: "field", field }, occurrence, true)}>${escapeHtml(value)}</a>` : `<a href="${href}">${escapeHtml(value)}</a>`; }
+function addressParts(draft, prefix, options) { const street = draft.site.address ? editable(draft.site.address, "site.address", `${prefix}-street`, options) : ""; const postal = draft.site.postalCode ? editable(draft.site.postalCode, "site.postalCode", `${prefix}-postal-code`, options) : ""; const city = draft.site.city ? editable(draft.site.city, "site.city", `${prefix}-city`, options) : ""; return [street, [postal, city].filter(Boolean).join(" ")].filter(Boolean).join(", "); }
+const PREVIEW_CSS = `html{scrollbar-width:thin;scrollbar-color:rgba(64,59,52,.32) transparent}html::-webkit-scrollbar{width:8px}html::-webkit-scrollbar-track{background:transparent}html::-webkit-scrollbar-thumb{border:2px solid transparent;border-radius:999px;background:rgba(64,59,52,.32);background-clip:padding-box}html::-webkit-scrollbar-thumb:hover{background-color:rgba(64,59,52,.52)}.preview-edit-trigger{display:inline;box-decoration-break:clone;-webkit-box-decoration-break:clone;border-radius:.18em;cursor:pointer;color:inherit;font:inherit;letter-spacing:inherit;line-height:inherit;text-align:inherit}.preview-edit-trigger:hover,.preview-edit-trigger:focus-visible{outline:2px solid #d6b96f;outline-offset:4px;background:rgba(214,185,111,.14)}.preview-inline-link{text-decoration:underline}.preview-action{cursor:pointer}.preview-composite-action{gap:.35em}[data-preview-target]:focus-visible,[data-preview-target]:hover{outline:2px solid #d6b96f;outline-offset:4px;background:rgba(214,185,111,.14)}[data-preview-panel]{cursor:default}`;
 function previewBridge(options) {
     return buildPreviewBridgeScript({
         channel: PREVIEW_CHANNEL,
