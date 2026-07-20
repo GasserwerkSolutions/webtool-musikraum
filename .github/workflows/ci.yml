@@ -19,5 +19,17 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run check
-      - run: git diff --exit-code -- assets
+      - name: Typecheck and build
+        run: |
+          npm run typecheck
+          npm run build
+      - name: PR4 overview and target contracts
+        run: |
+          node --test tests/content-overview.test.mjs
+          node --test tests/preview-targets.test.mjs
+      - name: Existing unit and DOM regression tests
+        run: node --test $(find tests -maxdepth 1 -name '*.test.mjs' ! -name 'e2e.test.mjs' ! -name 'content-overview.test.mjs' ! -name 'preview-targets.test.mjs' -print | sort)
+      - name: Chromium acceptance
+        run: node --test tests/e2e.test.mjs
+      - name: Compiled assets are current
+        run: git diff --exit-code -- assets
