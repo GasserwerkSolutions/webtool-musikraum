@@ -3,6 +3,8 @@ import type { TextListKey } from "./preview-contract.js";
 import { EDITOR_FIELD_REGISTRY, type StaticEditableField } from "./editor-registry.js";
 import { contentHelpText, type ContentCompleteness } from "./content-policy.js";
 import { buildContentOverview } from "./content-overview.js";
+import { evaluateReadiness, type ReadinessSeverity } from "./readiness.js";
+import type { ExportPreparationState } from "./export-preflight.js";
 import type { SaveState } from "./store.js";
 import { buildWebsiteHtml } from "./website.js";
 import { getAtPath, type UiContext } from "./ui-shared.js";
@@ -15,6 +17,7 @@ const SECTION_LABELS: Record<SectionKey, { title: string; description: string }>
   contact: { title: "Kontakt", description: "Anfrage, Telefon und Adresse" },
 };
 const COMPLETENESS_LABELS: Record<ContentCompleteness, string> = { complete: "Vollständig", "optional-empty": "Optional leer", incomplete: "Unvollständig", hidden: "Ausgeblendet" };
+const SEVERITY_LABELS: Record<ReadinessSeverity, string> = { error: "Blocker", warning: "Hinweis", info: "Information" };
 
 export function bindStaticInputs(context: UiContext): void {
   document.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>("[data-bind]").forEach((input) => {
@@ -79,13 +82,42 @@ export function renderContentOverview(context: UiContext): void {
   }).join("")}</div></section>`).join("");
 }
 export function updateReadiness(context: UiContext): void {
-  const draft = context.store.snapshot; const checks = [
-    { label: "Musikraum ist benannt", ready: Boolean(draft.site.name.trim()) },
-    { label: "E-Mail oder Telefon ist vorhanden", ready: Boolean(draft.site.phone.trim() || draft.site.email.trim()) },
-    { label: "Der Einstieg erzählt, worum es geht", ready: Boolean(draft.copy.heroTitle.trim() && draft.copy.heroSubtitle.trim()) },
-    { label: "Mindestens ein Inhaltsbereich ist sichtbar", ready: draft.layout.order.some((key) => draft.layout.visibility[key]) },
-    { label: "Mindestens ein Klangmoment ist beschrieben", ready: draft.offers.some((offer) => offer.title.trim()) },
-  ]; context.readinessList.innerHTML = checks.map((check) => `<div class="readiness-item${check.ready ? " is-ready" : ""}">${escapeHtml(check.label)}</div>`).join("");
+  const summary = evaluateReadiness(context.store.snapshot);
+  const summaryTitle = summary.ready ? summary.clean ? "Bereit und ohne Hinweise" : "Bereit mit Hinweisen" : `${summary.errorCount} ${summary.errorCount === 1 ? "Blocker" : "Blocker"} offen`;
+  const summaryDetail = summary.ready
+    ? summary.clean ? "Die Website kann vorbereitet und heruntergeladen werden." : `${summary.warningCount} ${summary.warningCount === 1 ? "Hinweis verhindert" : "Hinweise verhindern"} den Export nicht.`
+    : "Behebe die Blocker. Jeder Eintrag führt direkt zum betroffenen Bearbeitungsfeld.";
+  context.readinessSummary.className = `readiness-summary ${summary.ready ? "is-ready" : "is-blocked"}${summary.clean ? " is-clean" : ""}`;
+  context.readinessSummary.innerHTML = `<strong>${escapeHtml(summaryTitle)}</strong><span>${escapeHtml(summaryDetail)}</span><div class="readiness-counts"><span>${summary.errorCount} Blocker</span><span>${summary.warningCount} Hinweise</span></div>`;
+  context.readinessList.innerHTML = summary.results.length ? summary.results.map((item) => {
+    const target = item.target ? ` data-editor-target="${escapeAttr(JSON.stringify(item.target))}"` : "";
+    const tag = item.target ? "button" : "div";
+    const type = item.target ? ' type="button"' : "";
+    return `<${tag} class="readiness-result is-${item.severity}"${type}${target} aria-label="${escapeAttr(`${SEVERITY_LABELS[item.severity]}: ${item.title}${item.target ? ", bearbeiten" : ""}`)}"><span class="readiness-result__severity">${escapeHtml(SEVERITY_LABELS[item.severity])}</span><span class="readiness-result__copy"><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.detail)}</small></span>${item.target ? '<span class="readiness-result__arrow" aria-hidden="true">→</span>' : ""}</${tag}>`;
+  }).join("") : '<div class="readiness-empty"><strong>Keine offenen Punkte</strong><span>Alle aktiven Regeln sind erfüllt.</span></div>';
+  renderExportState(context, context.exportState);
+}
+export function renderExportState(context: UiContext, state: ExportPreparationState): void {
+  context.exportState = state;
+  const summary = evaluateReadiness(context.store.snapshot);
+  let message = summary.ready ? "Der Export ist noch nicht vorbereitet." : "Der Export ist blockiert, bis die roten Punkte behoben sind.";
+  let visual = summary.ready ? "idle" : "blocked";
+  if (state.status === "preparing") { message = "Titelbild und HTML-Datei werden sicher vorbereitet …"; visual = "preparing"; }
+  else if (state.status === "stale") { message = "Der Entwurf wurde geändert. Die vorbereitete Datei ist nicht mehr gültig."; visual = "stale"; }
+  else if (state.status === "failed") { message = state.message; visual = "failed"; }
+  else if (state.status === "ready") { message = state.result.imageEmbedded ? `Bereit: ${formatBytes(state.result.byteSize)}, Titelbild eingebettet.` : `Bereit: ${formatBytes(state.result.byteSize)}. Das Titelbild benötigt beim Öffnen Internet.`; visual = "ready"; }
+  context.exportStatus.className = `export-status is-${visual}`;
+  context.exportStatus.textContent = message;
+  context.exportStatus.setAttribute("aria-label", message);
+  document.querySelectorAll<HTMLButtonElement>('[data-action="export"]').forEach((button) => {
+    const inTopbar = Boolean(button.closest(".topbar"));
+    const preparing = state.status === "preparing";
+    button.disabled = preparing || (!inTopbar && !summary.ready);
+    button.setAttribute("aria-busy", String(preparing));
+    const label = button.querySelector<HTMLElement>("[data-export-label]");
+    if (label && !inTopbar) label.textContent = state.status === "ready" && state.revision === context.store.revision ? "HTML-Datei herunterladen" : preparing ? "Export wird vorbereitet …" : summary.ready ? "Export vorbereiten" : "Blocker zuerst beheben";
+    button.title = !summary.ready ? "Öffnet den Bereich Fertig mit den noch offenen Blockern." : state.status === "ready" ? "Vorbereitete HTML-Datei herunterladen" : "Export sicher vorbereiten";
+  });
 }
 export function renderSaveState(context: UiContext, state: SaveState, error?: unknown): void {
   const sessionOnly = context.volatileStorage;
@@ -102,6 +134,7 @@ export function showPanel(context: UiContext, panelName: string): void {
   document.querySelectorAll<HTMLElement>("[data-panel]").forEach((panel) => { const active = panel.dataset.panel === panelName; panel.hidden = !active; panel.classList.toggle("is-active", active); });
   const index = Math.max(0, buttons.findIndex((button) => button.dataset.panelTarget === panelName)); context.panelStatus.textContent = `Schritt ${index + 1} von ${buttons.length}: ${buttons[index]?.textContent?.trim() ?? "Bearbeiten"}`;
   context.surfaceCard.classList.remove("is-turning"); void context.surfaceCard.offsetWidth; context.surfaceCard.classList.add("is-turning"); if (panelName === "site") renderContentOverview(context); if (panelName === "publish") updateReadiness(context);
+  context.exportController?.setPanelVisible(panelName === "publish");
 }
 export function setViewport(context: UiContext, viewport: string): void { const labels: Record<string, string> = { desktop: "Desktop", tablet: "Tablet", mobile: "Mobile" }; context.previewFrame.dataset.viewport = viewport; context.previewHint.textContent = labels[viewport] ?? "Desktop"; document.querySelectorAll<HTMLElement>("[data-viewport]").forEach((button) => { const active = button.dataset.viewport === viewport; button.classList.toggle("is-active", active); button.setAttribute("aria-pressed", String(active)); }); }
 export function showToast(message: string): void { document.querySelector(".toast")?.remove(); const toast = document.createElement("div"); toast.className = "toast"; toast.setAttribute("role", "status"); toast.textContent = message; document.body.appendChild(toast); setTimeout(() => toast.remove(), 4200); }
@@ -110,4 +143,5 @@ function renderFieldHelp(input: HTMLInputElement | HTMLTextAreaElement | HTMLSel
   if (!help) { existing?.remove(); return; }
   const element = existing ?? document.createElement("small"); element.dataset.policyHelp = ""; element.className = "field-help"; element.textContent = help; if (!existing) label.appendChild(element);
 }
+function formatBytes(bytes: number): string { return bytes < 1024 ? `${bytes} B` : bytes < 1024 * 1024 ? `${(bytes / 1024).toFixed(1)} KiB` : `${(bytes / 1024 / 1024).toFixed(2)} MiB`; }
 export function normalizeTextItemForRender(value: MusicraumTextItem): MusicraumTextItem { return { id: value.id, text: value.text }; }
