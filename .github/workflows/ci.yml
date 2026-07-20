@@ -26,6 +26,14 @@ jobs:
       - name: Unit and DOM tests
         run: node --test $(find tests -maxdepth 1 -name '*.test.mjs' ! -name 'e2e.test.mjs' -print | sort)
       - name: Chromium acceptance
-        run: node --test tests/e2e.test.mjs
+        run: |
+          set -o pipefail
+          node --test tests/e2e.test.mjs 2>&1 | tee chromium.log
+      - name: Upload Chromium diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr3-chromium-${{ github.run_number }}
+          path: chromium.log
       - name: Compiled assets are current
         run: git diff --exit-code -- assets
