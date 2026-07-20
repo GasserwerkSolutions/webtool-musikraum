@@ -171,11 +171,15 @@ export async function fetchPinnedHeroImage(fetchAsset, signal, options = {}) {
         signal.addEventListener("abort", abortFromParent, { once: true });
     });
     try {
-        const request = Promise.resolve().then(() => {
+        let request;
+        try {
             if (signal.aborted)
                 throw abortError();
-            return fetchAsset(MUSICRAUM_HERO_URL, { signal: controller.signal });
-        });
+            request = Promise.resolve(fetchAsset(MUSICRAUM_HERO_URL, { signal: controller.signal }));
+        }
+        catch (error) {
+            request = Promise.reject(error);
+        }
         let response;
         try {
             response = await Promise.race([request, timeout, parentAbort]);
