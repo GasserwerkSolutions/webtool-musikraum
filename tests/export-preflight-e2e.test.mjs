@@ -51,6 +51,14 @@ test("readiness results control preflight and download only after preparation", 
     assert.equal(await page.$eval('[data-panel="publish"] [data-action="export"]', (button) => button.disabled), true);
     const blocker = await page.$('#readinessList [data-editor-target*="site.name"]');
     assert.ok(blocker);
+    const blockerSemantics = await blocker.evaluate((node) => ({
+      ariaLabel: node.getAttribute("aria-label"),
+      text: node.textContent.replace(/\s+/g, " ").trim(),
+      action: node.querySelector(".visually-hidden")?.textContent.trim(),
+    }));
+    assert.equal(blockerSemantics.ariaLabel, null);
+    assert.match(blockerSemantics.text, /Trage einen Namen ein/);
+    assert.equal(blockerSemantics.action, "bearbeiten");
     await blocker.click();
     await page.waitForFunction(() => document.activeElement?.getAttribute("data-bind") === "site.name");
     assert.equal(await page.$eval('[data-panel="site"]', (panel) => panel.hidden), false);
