@@ -88,15 +88,20 @@ export function updateReadiness(context: UiContext): void {
   ]; context.readinessList.innerHTML = checks.map((check) => `<div class="readiness-item${check.ready ? " is-ready" : ""}">${escapeHtml(check.label)}</div>`).join("");
 }
 export function renderSaveState(context: UiContext, state: SaveState, error?: unknown): void {
-  if (context.volatileStorage) { context.saveStatus.textContent = "Nur für diese Sitzung"; context.saveStatus.className = "status-pill is-error"; return; }
-  const labels: Record<SaveState, string> = { idle: "Auf diesem Gerät gespeichert", saving: "Speichert …", saved: "Auf diesem Gerät gespeichert", error: "Speichern fehlgeschlagen" };
-  context.saveStatus.textContent = labels[state]; context.saveStatus.className = `status-pill ${state === "saving" ? "is-saving" : state === "saved" ? "is-saved" : state === "error" ? "is-error" : ""}`.trim(); if (state === "error") context.saveStatus.title = error instanceof Error ? error.message : "Der lokale Entwurf konnte nicht gespeichert werden.";
+  const sessionOnly = context.volatileStorage;
+  const label = sessionOnly ? "Nur für diese Sitzung gespeichert" : state === "saving" ? "Speichert auf diesem Gerät" : state === "error" ? "Speichern fehlgeschlagen" : "Auf diesem Gerät gespeichert";
+  const visualState = sessionOnly ? "session" : state;
+  context.saveStatus.textContent = "";
+  context.saveStatus.dataset.state = visualState;
+  context.saveStatus.className = `status-pill is-${visualState}`;
+  context.saveStatus.setAttribute("aria-label", label);
+  context.saveStatus.title = state === "error" && error instanceof Error ? `${label}: ${error.message}` : label;
 }
 export function showPanel(context: UiContext, panelName: string): void {
   const buttons = [...document.querySelectorAll<HTMLElement>("[data-panel-target]")]; buttons.forEach((button) => { const active = button.dataset.panelTarget === panelName; button.classList.toggle("is-active", active); if (active) button.setAttribute("aria-current", "step"); else button.removeAttribute("aria-current"); });
   document.querySelectorAll<HTMLElement>("[data-panel]").forEach((panel) => { const active = panel.dataset.panel === panelName; panel.hidden = !active; panel.classList.toggle("is-active", active); });
   const index = Math.max(0, buttons.findIndex((button) => button.dataset.panelTarget === panelName)); context.panelStatus.textContent = `Schritt ${index + 1} von ${buttons.length}: ${buttons[index]?.textContent?.trim() ?? "Bearbeiten"}`;
-  context.surfaceCard.classList.remove("is-turning"); void context.surfaceCard.offsetWidth; context.surfaceCard.classList.add("is-turning"); if (panelName === "publish") { renderContentOverview(context); updateReadiness(context); }
+  context.surfaceCard.classList.remove("is-turning"); void context.surfaceCard.offsetWidth; context.surfaceCard.classList.add("is-turning"); if (panelName === "site") renderContentOverview(context); if (panelName === "publish") updateReadiness(context);
 }
 export function setViewport(context: UiContext, viewport: string): void { const labels: Record<string, string> = { desktop: "Desktop", tablet: "Tablet", mobile: "Mobile" }; context.previewFrame.dataset.viewport = viewport; context.previewHint.textContent = labels[viewport] ?? "Desktop"; document.querySelectorAll<HTMLElement>("[data-viewport]").forEach((button) => { const active = button.dataset.viewport === viewport; button.classList.toggle("is-active", active); button.setAttribute("aria-pressed", String(active)); }); }
 export function showToast(message: string): void { document.querySelector(".toast")?.remove(); const toast = document.createElement("div"); toast.className = "toast"; toast.setAttribute("role", "status"); toast.textContent = message; document.body.appendChild(toast); setTimeout(() => toast.remove(), 4200); }
