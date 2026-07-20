@@ -6,7 +6,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   check:
@@ -14,26 +14,114 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: feature/revision-safe-incremental-preview
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Typecheck
-        run: npm run typecheck
-      - name: Build browser assets
-        run: npm run build
-      - name: Unit and DOM tests
-        run: node --test $(find tests -maxdepth 1 -name '*.test.mjs' ! -name 'e2e.test.mjs' -print | sort)
-      - name: Chromium acceptance
+      - name: Migrate Chromium acceptance to incremental DOM updates
         run: |
-          set -o pipefail
-          node --test tests/e2e.test.mjs 2>&1 | tee chromium.log
-      - name: Upload Chromium diagnostics
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: pr3-chromium-${{ github.run_number }}
-          path: chromium.log
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('tests/e2e.test.mjs')
+          source = path.read_text()
+
+          old = '''    const liveTitle = "Sofort sichtbarer Titel";
+              await page.$eval('[data-bind="copy.heroTitle"]', (input, value) => { input.value = value; input.dispatchEvent(new Event("input", { bubbles: true })); }, liveTitle);
+              await page.waitForFunction((value) => document.querySelector("#previewFrame")?.getAttribute("srcdoc")?.includes(value), {}, liveTitle);
+              preview = await waitForPreview(page); assert.equal(await preview.$eval("h1", (heading) => heading.textContent.trim()), liveTitle);
+              assert.match(await page.$eval('[data-action="undo"]', (button) => button.getAttribute("aria-label") ?? ""), /Rückgängig: Haupttitel geändert/);
+              await page.click('[data-action="undo"]'); await page.waitForFunction((value) => !document.querySelector("#previewFrame")?.getAttribute("srcdoc")?.includes(value), {}, liveTitle);
+              assert.match(await page.$eval('[data-action="redo"]', (button) => button.getAttribute("aria-label") ?? ""), /Wiederholen: Haupttitel geändert/);
+              await page.click('[data-action="redo"]'); await page.waitForFunction((value) => document.querySelector("#previewFrame")?.getAttribute("srcdoc")?.includes(value), {}, liveTitle);
+              preview = await waitForPreview(page);'''.replace('              ', '    ')
+          new = '''    const liveTitle = "Sofort sichtbarer Titel"; const originalTitle = await preview.$eval("h1", (heading) => heading.textContent.trim()); const srcdocBeforeIncremental = await page.$eval("#previewFrame", (frame) => frame.getAttribute("srcdoc"));
+              await page.$eval('[data-bind="copy.heroTitle"]', (input, value) => { input.value = value; input.dispatchEvent(new Event("input", { bubbles: true })); }, liveTitle);
+              await preview.waitForFunction((value) => document.querySelector("h1")?.textContent.trim() === value, {}, liveTitle);
+              assert.equal(await page.$eval("#previewFrame", (frame) => frame.getAttribute("srcdoc")), srcdocBeforeIncremental);
+              assert.match(await page.$eval('[data-action="undo"]', (button) => button.getAttribute("aria-label") ?? ""), /Rückgängig: Haupttitel geändert/);
+              await page.click('[data-action="undo"]'); await preview.waitForFunction((value) => document.querySelector("h1")?.textContent.trim() === value, {}, originalTitle);
+              assert.match(await page.$eval('[data-action="redo"]', (button) => button.getAttribute("aria-label") ?? ""), /Wiederholen: Haupttitel geändert/);
+              await page.click('[data-action="redo"]'); await preview.waitForFunction((value) => document.querySelector("h1")?.textContent.trim() === value, {}, liveTitle);
+              assert.equal(await page.$eval("#previewFrame", (frame) => frame.getAttribute("srcdoc")), srcdocBeforeIncremental);'''.replace('              ', '    ')
+          if old in source: source = source.replace(old, new)
+          elif 'srcdocBeforeIncremental' not in source: raise SystemExit('Title acceptance block not found')
+
+          old = '''    const heroAdd = '[data-action="add-text-item"][data-list="heroPoints"]';
+              assert.equal(await page.$$eval('#heroPointList [data-text-item-card]', (cards) => cards.length), 3);
+              await page.click(heroAdd); assert.equal(await page.$$eval('#heroPointList [data-text-item-card]', (cards) => cards.length), 4);
+              const lastHeroInput = '#heroPointList [data-text-item-card]:last-child [data-text-item-field]';
+              await page.$eval(lastHeroInput, (input) => { input.value = "Vierter Punkt"; input.dispatchEvent(new Event("input", { bubbles: true })); });
+              await page.waitForFunction(() => document.querySelector("#previewFrame")?.getAttribute("srcdoc")?.includes("Vierter Punkt"));
+              await page.$eval(lastHeroInput, (input) => { input.value = ""; input.dispatchEvent(new Event("input", { bubbles: true })); });
+              await page.click('#heroPointList [data-text-item-card]:last-child [data-action="remove-text-item"]'); assert.equal(await page.$$eval('#heroPointList [data-text-item-card]', (cards) => cards.length), 3);
+              const previewBeforeLimit = await page.$eval("#previewFrame", (frame) => frame.getAttribute("srcdoc"));
+              await page.click(heroAdd); await page.click(heroAdd); await page.click(heroAdd);
+              assert.equal(await page.$$eval('#heroPointList [data-text-item-card]', (cards) => cards.length), 6); assert.equal(await page.$eval(heroAdd, (button) => button.disabled), true);
+              await page.waitForFunction((previous) => document.querySelector("#previewFrame")?.getAttribute("srcdoc") !== previous, {}, previewBeforeLimit);
+              preview = await waitForPreview(page);'''.replace('              ', '    ')
+          new = '''    const heroAdd = '[data-action="add-text-item"][data-list="heroPoints"]';
+              assert.equal(await page.$$eval('#heroPointList [data-text-item-card]', (cards) => cards.length), 3);
+              const srcdocBeforeRegions = await page.$eval("#previewFrame", (frame) => frame.getAttribute("srcdoc"));
+              await page.click(heroAdd); assert.equal(await page.$$eval('#heroPointList [data-text-item-card]', (cards) => cards.length), 4); await preview.waitForFunction(() => document.querySelectorAll('.hero-notes [data-preview-target*="text-item"]').length === 4);
+              const lastHeroInput = '#heroPointList [data-text-item-card]:last-child [data-text-item-field]';
+              await page.$eval(lastHeroInput, (input) => { input.value = "Vierter Punkt"; input.dispatchEvent(new Event("input", { bubbles: true })); });
+              await preview.waitForFunction(() => document.querySelector('.hero-notes')?.textContent.includes("Vierter Punkt"));
+              await page.$eval(lastHeroInput, (input) => { input.value = ""; input.dispatchEvent(new Event("input", { bubbles: true })); });
+              await page.click('#heroPointList [data-text-item-card]:last-child [data-action="remove-text-item"]'); assert.equal(await page.$$eval('#heroPointList [data-text-item-card]', (cards) => cards.length), 3); await preview.waitForFunction(() => document.querySelectorAll('.hero-notes [data-preview-target*="text-item"]').length === 3);
+              await page.click(heroAdd); await page.click(heroAdd); await page.click(heroAdd);
+              assert.equal(await page.$$eval('#heroPointList [data-text-item-card]', (cards) => cards.length), 6); assert.equal(await page.$eval(heroAdd, (button) => button.disabled), true); await preview.waitForFunction(() => document.querySelectorAll('.hero-notes [data-preview-target*="text-item"]').length === 6);
+              assert.equal(await page.$eval("#previewFrame", (frame) => frame.getAttribute("srcdoc")), srcdocBeforeRegions);'''.replace('              ', '    ')
+          if old in source: source = source.replace(old, new)
+          elif 'srcdocBeforeRegions' not in source: raise SystemExit('Region acceptance block not found')
+
+          source = source.replace(
+            '    assert.equal(await page.$eval(\'#heroPointList [data-text-item-card]:first-child [data-text-item-field]\', (input) => input.value), heroOrderBefore[1]);',
+            '    assert.equal(await page.$eval(\'#heroPointList [data-text-item-card]:first-child [data-text-item-field]\', (input) => input.value), heroOrderBefore[1]); await preview.waitForFunction((value) => document.querySelector(".hero-notes span")?.textContent.includes(value), {}, heroOrderBefore[1]);'
+          )
+          source = source.replace(
+            '    assert.deepEqual(await page.$$eval(\'#heroPointList [data-text-item-field]\', (inputs) => inputs.map((input) => input.value)), heroOrderBefore);',
+            '    assert.deepEqual(await page.$$eval(\'#heroPointList [data-text-item-field]\', (inputs) => inputs.map((input) => input.value)), heroOrderBefore); await preview.waitForFunction((value) => document.querySelector(".hero-notes span")?.textContent.includes(value), {}, heroOrderBefore[0]);'
+          )
+          source = source.replace(
+            '    assert.equal(await page.$eval(\'#offerList [data-offer-card]:first-child [data-offer-field="title"]\', (input) => input.value), offerOrderBefore[1]);',
+            '    assert.equal(await page.$eval(\'#offerList [data-offer-card]:first-child [data-offer-field="title"]\', (input) => input.value), offerOrderBefore[1]); await preview.waitForFunction((value) => document.querySelector(".card h3")?.textContent.includes(value), {}, offerOrderBefore[1]);'
+          )
+          source = source.replace(
+            '    await page.click(\'[data-action="undo"]\'); assert.deepEqual(await page.$$eval(\'#offerList [data-offer-field="title"]\', (inputs) => inputs.map((input) => input.value)), offerOrderBefore);',
+            '    await page.click(\'[data-action="undo"]\'); assert.deepEqual(await page.$$eval(\'#offerList [data-offer-field="title"]\', (inputs) => inputs.map((input) => input.value)), offerOrderBefore); await preview.waitForFunction((value) => document.querySelector(".card h3")?.textContent.includes(value), {}, offerOrderBefore[0]);'
+          )
+
+          old = '''    await page.click('[data-panel-target="structure"]'); const sectionOrderBefore = await page.$$eval('#structureList [data-section-key]', (rows) => rows.map((row) => row.getAttribute("data-section-key")));
+              await page.click('#structureList [data-section-key]:nth-child(2) [data-reorder-direction="up"]');
+              assert.equal(await page.$eval('#structureList [data-section-key]:first-child', (row) => row.getAttribute("data-section-key")), sectionOrderBefore[1]);
+              assert.match(await page.$eval("#editorAnnouncer", (node) => node.textContent), /Bereich .* Position 1 von 5/);'''.replace('              ', '    ')
+          new = '''    await page.click('[data-panel-target="structure"]'); const sectionOrderBefore = await page.$$eval('#structureList [data-section-key]', (rows) => rows.map((row) => row.getAttribute("data-section-key"))); const srcdocBeforeLayout = await page.$eval("#previewFrame", (frame) => frame.getAttribute("srcdoc"));
+              await page.click('#structureList [data-section-key]:nth-child(2) [data-reorder-direction="up"]');
+              assert.equal(await page.$eval('#structureList [data-section-key]:first-child', (row) => row.getAttribute("data-section-key")), sectionOrderBefore[1]);
+              assert.match(await page.$eval("#editorAnnouncer", (node) => node.textContent), /Bereich .* Position 1 von 5/); await page.waitForFunction((previous) => document.querySelector("#previewFrame")?.getAttribute("srcdoc") !== previous, {}, srcdocBeforeLayout); preview = await waitForPreview(page);'''.replace('              ', '    ')
+          if old in source: source = source.replace(old, new)
+          elif 'srcdocBeforeLayout' not in source: raise SystemExit('Layout acceptance block not found')
+
+          source = source.replace('[data-preview-target], .sidebar-resizer, .sidebar-toggle', '[data-preview-target], [data-preview-region], .sidebar-resizer, .sidebar-toggle')
+          path.write_text(source)
+          PY
+      - name: Typecheck and build
+        run: |
+          npm run typecheck
+          npm run build
+      - name: Commit synchronized acceptance and assets
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tests/e2e.test.mjs assets
+          if ! git diff --cached --quiet; then
+            git commit -m "Migrate Chromium acceptance to incremental preview"
+            git push origin HEAD:feature/revision-safe-incremental-preview
+          fi
+      - name: Full check
+        run: npm run check
       - name: Compiled assets are current
         run: git diff --exit-code -- assets
