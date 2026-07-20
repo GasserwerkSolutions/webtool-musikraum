@@ -80,7 +80,7 @@ export class PreviewRuntime {
     if (!isPreviewMessageEnvelope(event.data, this.instanceIdValue, this.renderGenerationValue)) return false;
     const ready = parseReadyMessage(event.data, this.instanceIdValue, this.renderGenerationValue);
     if (ready) {
-      if (ready.revision !== this.fullRenderRevision) return true;
+      if (this.ready || ready.revision !== this.fullRenderRevision || ready.revision < this.appliedRevisionValue) return true;
       this.clearReadyTimer();
       this.ready = true;
       this.appliedRevisionValue = ready.revision;
