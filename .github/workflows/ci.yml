@@ -33,15 +33,29 @@ jobs:
           script = "\n".join(line[10:] if line.startswith("          ") else line for line in block.splitlines())
           exec(compile(script, 'pr4-integrate.py', 'exec'))
           PYTHON
-      - name: Full check
-        run: npm run check
-      - name: Commit integrated sources and assets
+      - name: Commit integrated source
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html layout-overrides.css src tests assets
+          git add index.html layout-overrides.css src tests
           if ! git diff --cached --quiet; then
             git commit -m "Complete content overview and preview target coverage"
             git push origin HEAD:feature/content-overview-direct-editing
           fi
-      - run: git diff --exit-code -- assets
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Build browser assets
+        run: npm run build
+      - name: Commit synchronized assets
+        run: |
+          git add assets
+          if ! git diff --cached --quiet; then
+            git commit -m "Synchronize PR4 browser modules"
+            git push origin HEAD:feature/content-overview-direct-editing
+          fi
+      - name: Unit and DOM tests
+        run: node --test $(find tests -maxdepth 1 -name '*.test.mjs' ! -name 'e2e.test.mjs' -print | sort)
+      - name: Chromium acceptance
+        run: node --test tests/e2e.test.mjs
+      - name: Compiled assets are current
+        run: git diff --exit-code -- assets
