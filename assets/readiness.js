@@ -43,7 +43,10 @@ export const READINESS_RULES = [
         id: "layout",
         order: 30,
         evaluate(draft) {
-            return draft.layout.order.some((section) => draft.layout.visibility[section]) ? [] : [result("layout:visible-section:missing", "layout", "error", "Alle Inhaltsbereiche sind ausgeblendet", "Blende mindestens einen Bereich ein, damit die Website nach dem Einstieg weiterführt.", { kind: "panel", panel: "structure" }, undefined, 30)];
+            if (draft.layout.order.some((section) => draft.layout.visibility[section]))
+                return [];
+            const section = draft.layout.order[0] ?? "intro";
+            return [result("layout:visible-section:missing", "layout", "error", "Alle Inhaltsbereiche sind ausgeblendet", "Blende mindestens einen Bereich ein, damit die Website nach dem Einstieg weiterführt.", { kind: "section", section }, section, 30)];
         },
     },
     {
@@ -58,8 +61,9 @@ export const READINESS_RULES = [
             const rawInstagram = draft.site.instagram.trim();
             const email = normalizeEmail(rawEmail);
             const phone = normalizePhone(rawPhone);
+            const contactTarget = rawEmail ? { kind: "field", field: "site.email" } : rawPhone ? { kind: "field", field: "site.phone" } : { kind: "field", field: "site.email" };
             if (!email && !phone)
-                results.push(result("contact:methods:missing", "contact", "error", "Keine gültige Kontaktmöglichkeit", "Hinterlege eine gültige E-Mail-Adresse oder Telefonnummer.", { kind: "panel", panel: "contact" }, "contact", 40));
+                results.push(result("contact:methods:missing", "contact", "error", "Keine gültige Kontaktmöglichkeit", "Hinterlege eine gültige E-Mail-Adresse oder Telefonnummer.", contactTarget, "contact", 40));
             if (rawEmail && !email)
                 results.push(result("contact:email:invalid", "contact", "warning", "E-Mail-Adresse ist ungültig", "Die E-Mail-Adresse wird erst als Kontaktlink ausgegeben, wenn ihr Format gültig ist.", { kind: "field", field: "site.email" }, "contact", 41));
             if (rawPhone && !phone)
@@ -102,6 +106,8 @@ export const READINESS_RULES = [
         evaluate(draft) {
             const results = [];
             for (const list of ["heroPoints", "introPoints"]) {
+                if (list === "introPoints" && !draft.layout.visibility.intro)
+                    continue;
                 const groups = duplicateGroups(draft[list].map((item) => ({ id: item.id, value: item.text })));
                 for (const group of groups)
                     for (const id of group.ids)
