@@ -85,7 +85,7 @@ function renderHistoryState(context: UiContext, state: HistoryState): void {
 }
 function describeHistoryButton(button: HTMLButtonElement, direction: string, label: string | null, shortcut: string): void {
   const description = label ? `${direction}: ${label}` : direction;
-  const visible = button.querySelector<HTMLElement>("span"); if (visible) visible.textContent = description;
+  const visible = button.querySelector<HTMLElement>("span"); if (visible) visible.textContent = direction;
   button.setAttribute("aria-label", `${description} (${shortcut})`);
   button.title = `${description} (${shortcut})`;
 }
