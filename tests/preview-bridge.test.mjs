@@ -12,6 +12,7 @@ async function bridgeFixture(revision = 0) {
   const draft = createDefaultDraft();
   const html = buildWebsiteHtml(draft, { preview: true, previewInstanceId: instanceId, parentOrigin: "*", previewRevision: revision, renderGeneration });
   const dom = new JSDOM(html, { url: "https://preview.test", runScripts: "dangerously", pretendToBeVisual: true });
+  dom.window.matchMedia = () => ({ matches: true });
   const results = [];
   dom.window.addEventListener("message", (event) => { if (event.data?.action === "update-result") results.push(event.data); });
   await new Promise((resolve) => dom.window.setTimeout(resolve, 10));
@@ -49,6 +50,25 @@ test("multi-operation validation is atomic", async () => {
   dom.window.close();
 });
 
+test("duplicate and nested operations are rejected before the first mutation", async () => {
+  const { dom, draft, results } = await bridgeFixture();
+  const target = { kind: "field", field: "copy.heroTitle" }; const original = exactTarget(dom.window.document, target).textContent;
+  draft.copy.heroTitle = "Regionaler Titel";
+  dispatch(dom, request(1, [
+    { type: "patch-text", target, value: "Erster Wert" },
+    { type: "patch-text", target, value: "Zweiter Wert" },
+  ], 0, "duplicate"));
+  await new Promise((resolve) => dom.window.setTimeout(resolve, 10));
+  assert.equal(exactTarget(dom.window.document, target).textContent, original); assert.equal(results.at(-1)?.reason, "conflicting-operations");
+  dispatch(dom, request(1, [
+    { type: "patch-text", target, value: "Nicht anwenden" },
+    { type: "replace-region", region: "hero", html: regionHtml(draft, "hero", 1) },
+  ], 0, "nested"));
+  await new Promise((resolve) => dom.window.setTimeout(resolve, 10));
+  assert.equal(exactTarget(dom.window.document, target).textContent, original); assert.equal(results.at(-1)?.reason, "conflicting-operations");
+  dom.window.close();
+});
+
 test("valid text and theme operations commit together and advance revision", async () => {
   const { dom, results } = await bridgeFixture();
   const target = { kind: "field", field: "copy.heroTitle" };
@@ -73,6 +93,17 @@ test("region replacement restores focus to the same preview target", async () =>
   assert.equal(exactTarget(dom.window.document, target).textContent, "Neu gerenderter Titel");
   assert.equal(dom.window.document.activeElement?.getAttribute("data-preview-target"), JSON.stringify(target));
   assert.equal(results.at(-1)?.success, true);
+  dom.window.close();
+});
+
+test("header replacement preserves an open mobile navigation", async () => {
+  const { dom, draft, results } = await bridgeFixture();
+  const menu = dom.window.document.querySelector(".menu-button"); const nav = dom.window.document.querySelector(".main-nav");
+  menu.setAttribute("aria-expanded", "true"); nav.classList.add("is-open"); draft.copy.navIntro = "Neu benannt";
+  dispatch(dom, request(1, [{ type: "replace-region", region: "header", html: regionHtml(draft, "header", 1) }]));
+  await new Promise((resolve) => dom.window.setTimeout(resolve, 10));
+  assert.equal(dom.window.document.querySelector(".menu-button")?.getAttribute("aria-expanded"), "true");
+  assert.equal(dom.window.document.querySelector(".main-nav")?.classList.contains("is-open"), true); assert.equal(results.at(-1)?.success, true);
   dom.window.close();
 });
 
