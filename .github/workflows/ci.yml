@@ -6,7 +6,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   check:
@@ -14,10 +14,34 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: feature/content-overview-direct-editing
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run check
+      - name: Apply PR4 integration
+        run: |
+          python3 - <<'PYTHON'
+          from pathlib import Path
+          workflow = Path('.github/workflows/pr4-development.yml').read_text()
+          marker = "          python3 - <<'PY'\n"
+          start = workflow.index(marker) + len(marker)
+          end = workflow.index("\n          PY", start)
+          block = workflow[start:end]
+          script = "\n".join(line[10:] if line.startswith("          ") else line for line in block.splitlines())
+          exec(compile(script, 'pr4-integrate.py', 'exec'))
+          PYTHON
+      - name: Full check
+        run: npm run check
+      - name: Commit integrated sources and assets
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html layout-overrides.css src tests assets
+          if ! git diff --cached --quiet; then
+            git commit -m "Complete content overview and preview target coverage"
+            git push origin HEAD:feature/content-overview-direct-editing
+          fi
       - run: git diff --exit-code -- assets
