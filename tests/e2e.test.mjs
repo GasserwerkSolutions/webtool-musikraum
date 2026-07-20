@@ -49,8 +49,10 @@ test("real browser layout, live editing and sidebar contract", { timeout: 90000 
     await page.waitForFunction(() => document.querySelector("#previewFrame")?.getAttribute("srcdoc")?.includes("Vierter Punkt"));
     await page.$eval(lastHeroInput, (input) => { input.value = ""; input.dispatchEvent(new Event("input", { bubbles: true })); });
     await page.click('#heroPointList [data-text-item-card]:last-child [data-action="remove-text-item"]'); assert.equal(await page.$$eval('#heroPointList [data-text-item-card]', (cards) => cards.length), 3);
+    const previewBeforeLimit = await page.$eval("#previewFrame", (frame) => frame.getAttribute("srcdoc"));
     await page.click(heroAdd); await page.click(heroAdd); await page.click(heroAdd);
     assert.equal(await page.$$eval('#heroPointList [data-text-item-card]', (cards) => cards.length), 6); assert.equal(await page.$eval(heroAdd, (button) => button.disabled), true);
+    await page.waitForFunction((previous) => document.querySelector("#previewFrame")?.getAttribute("srcdoc") !== previous, {}, previewBeforeLimit);
     preview = await waitForPreview(page);
 
     await page.click('[data-viewport="desktop"]'); await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 450))); const separator = await page.$("#sidebarResizer"); const separatorBox = await separator.boundingBox(); const beforeDrag = await page.$eval(".control-surface", (surface) => surface.getBoundingClientRect().width); await page.mouse.move(separatorBox.x + separatorBox.width / 2, separatorBox.y + 80); await page.mouse.down(); await page.mouse.move(separatorBox.x + separatorBox.width / 2 + 42, separatorBox.y + 80, { steps: 4 }); await page.mouse.up(); const afterDrag = await page.$eval(".control-surface", (surface) => surface.getBoundingClientRect().width); assert.ok(afterDrag > beforeDrag);
@@ -60,7 +62,7 @@ test("real browser layout, live editing and sidebar contract", { timeout: 90000 
     const addOfferContained = await page.evaluate(() => { const button = document.querySelector('[data-action="add-offer"]'); const stage = document.querySelector(".surface-stage"); const buttonRect = button.getBoundingClientRect(); const stageRect = stage.getBoundingClientRect(); return { visible: getComputedStyle(button).display !== "none" && buttonRect.width > 0 && buttonRect.height > 0, contained: buttonRect.left >= stageRect.left - .5 && buttonRect.right <= stageRect.right + .5 }; });
     assert.equal(addOfferContained.visible, true); assert.equal(addOfferContained.contained, true);
 
-    await page.click("#sidebarToggle"); assert.equal(await page.$eval(".control-surface", (surface) => surface.classList.contains("is-collapsed")), true); await preview.click("h1 .preview-edit-trigger"); await page.waitForFunction(() => !document.querySelector(".control-surface")?.classList.contains("is-collapsed"));
+    await page.click("#sidebarToggle"); assert.equal(await page.$eval(".control-surface", (surface) => surface.classList.contains("is-collapsed")), true); preview = await waitForPreview(page); await preview.click("h1 .preview-edit-trigger"); await page.waitForFunction(() => !document.querySelector(".control-surface")?.classList.contains("is-collapsed"));
 
     await page.focus("#sidebarResizer"); await page.keyboard.press("Home"); await page.keyboard.press("ArrowRight"); const storedWidth = await page.$eval(".control-surface", (surface) => surface.getBoundingClientRect().width); await page.reload({ waitUntil: "domcontentloaded" }); const restoredWidth = await page.$eval(".control-surface", (surface) => surface.getBoundingClientRect().width); assert.ok(Math.abs(restoredWidth - storedWidth) <= 1);
 
