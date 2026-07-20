@@ -26,7 +26,7 @@
   <main id="builder-main" class="workspace">
     <aside class="control-surface" aria-label="Musikraum-Website bearbeiten">
       <nav class="surface-nav" aria-label="Bearbeitungsbereiche">
-        <button class="surface-nav__item is-active" type="button" data-panel-target="site" aria-current="step">Grundlage</button>
+        <button class="surface-nav__item is-active" type="button" data-panel-target="site" aria-current="step">Übersicht</button>
         <button class="surface-nav__item" type="button" data-panel-target="hero">Einstieg</button>
         <button class="surface-nav__item" type="button" data-panel-target="content">Inhalte</button>
         <button class="surface-nav__item" type="button" data-panel-target="services" aria-label="Klangmomente"><span aria-hidden="true">Klang<wbr>momente</span></button>
@@ -38,11 +38,13 @@
       <button id="sidebarToggle" class="sidebar-toggle" type="button" aria-controls="surfaceStage" aria-expanded="true" title="Bearbeitungsfläche einklappen"><span aria-hidden="true">‹</span><span class="visually-hidden">Bearbeitungsfläche einklappen</span></button>
       <div id="sidebarResizer" class="sidebar-resizer" role="separator" aria-label="Breite der Bearbeitungsfläche" aria-orientation="vertical" aria-valuemin="420" aria-valuemax="720" aria-valuenow="560" tabindex="0"></div>
 
-      <div id="surfaceStage" class="surface-stage"><p id="panelStatus" class="panel-status" aria-live="polite">Schritt 1 von 8: Grundlage</p><div id="surfaceCard" class="surface-card">
+      <div id="surfaceStage" class="surface-stage"><p id="panelStatus" class="panel-status" aria-live="polite">Schritt 1 von 8: Übersicht</p><div id="surfaceCard" class="surface-card">
         <section class="panel is-active" data-panel="site" aria-labelledby="panel-site-title">
-          <div class="panel__header"><p class="eyebrow">Die Grundlage</p><h1 id="panel-site-title">Dein Musikraum</h1><p>Gib der Website ihren Namen und einen kurzen Leitsatz. Jede Änderung erscheint sofort in der Vorschau.</p></div>
+          <div class="panel__header"><p class="eyebrow">Alles an einem Ort</p><h1 id="panel-site-title">Dein Musikraum</h1><p>Bearbeite Name und Leitsatz und sieh direkt darunter, welche Inhalte vollständig, optional leer, unvollständig oder ausgeblendet sind.</p></div>
           <label class="field"><span>Name der Website</span><input type="text" data-bind="site.name" autocomplete="organization" required></label>
           <label class="field"><span>Leitsatz</span><input type="text" data-bind="site.tagline" placeholder="Lauschen. Spielen. Entdecken."></label>
+          <div class="overview-subheading"><h2>Inhaltsübersicht</h2><p>Jeder Eintrag führt direkt zum gleichen Bearbeitungsziel wie die Vorschau.</p></div>
+          <div id="contentOverviewList" class="content-overview"></div>
           <div class="foundation-notes">
             <div class="foundation-note"><span class="foundation-note__icon" aria-hidden="true">◇</span><div><strong>Das Titelbild ist bereits eingebaut</strong><span>Bis die Bildverwaltung fertig ist, verwendet das Werkzeug das ausgewählte Musikraum-Titelbild. Beim Export wird es nach Möglichkeit direkt in die HTML-Datei eingebettet.</span></div></div>
             <div class="foundation-note"><span class="foundation-note__icon" aria-hidden="true">✓</span><div><strong>Alles bleibt bei dir</strong><span>Dein Entwurf wird nur in diesem Browser gespeichert. Es gibt keine Anmeldung und nichts wird automatisch veröffentlicht.</span></div></div>

@@ -1,4 +1,4 @@
-import type { MusicraumDraft } from "./domain.js";
+import type { MusicraumDraft, SectionKey } from "./domain.js";
 import { EDITOR_FIELD_REGISTRY } from "./editor-registry.js";
 import type { EditorPanel, StaticEditableField, TextListKey } from "./editor-registry.js";
 
@@ -12,6 +12,7 @@ export type PreviewTarget =
   | { kind: "field"; field: StaticEditableField }
   | { kind: "offer"; offerId: string; field: "title" | "text" }
   | { kind: "text-item"; list: TextListKey; itemId: string }
+  | { kind: "section"; section: SectionKey }
   | { kind: "panel"; panel: EditorPanel };
 
 export type PreviewRegion = "header" | "hero" | "intro" | "why" | "offers" | "story" | "contact" | "footer";
@@ -70,6 +71,7 @@ export type PreviewBridgeConfig = PreviewMessageEnvelope & {
 const PANELS = new Set<EditorPanel>(["site", "hero", "content", "services", "structure", "contact", "design", "publish"]);
 const FIELDS = new Set(Object.keys(EDITOR_FIELD_REGISTRY));
 const TEXT_LISTS = new Set<TextListKey>(["heroPoints", "introPoints"]);
+const SECTIONS = new Set<SectionKey>(["intro", "why", "offers", "story", "contact"]);
 const REGIONS = new Set<PreviewRegion>(["header", "hero", "intro", "why", "offers", "story", "contact", "footer"]);
 const FAILURE_REASONS = new Set<PreviewUpdateFailureReason>(["stale-revision", "revision-gap", "unknown-target", "ambiguous-target", "invalid-region", "conflicting-operations", "invalid-operation", "internal-error"]);
 
@@ -89,6 +91,7 @@ export function isPreviewTargetShape(value: unknown): value is PreviewTarget {
   if (target.kind === "panel") return typeof target.panel === "string" && PANELS.has(target.panel as EditorPanel);
   if (target.kind === "offer") return typeof target.offerId === "string" && (target.field === "title" || target.field === "text");
   if (target.kind === "text-item") return typeof target.list === "string" && TEXT_LISTS.has(target.list as TextListKey) && typeof target.itemId === "string";
+  if (target.kind === "section") return typeof target.section === "string" && SECTIONS.has(target.section as SectionKey);
   return false;
 }
 
@@ -134,5 +137,6 @@ export function panelForTarget(target: PreviewTarget): EditorPanel {
   if (target.kind === "field") return EDITOR_FIELD_REGISTRY[target.field].panel;
   if (target.kind === "offer") return "services";
   if (target.kind === "text-item") return target.list === "heroPoints" ? "hero" : "content";
+  if (target.kind === "section") return "structure";
   return target.panel;
 }

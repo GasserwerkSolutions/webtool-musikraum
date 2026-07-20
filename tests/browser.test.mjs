@@ -44,7 +44,7 @@ test("stale dynamic navigation falls back calmly to its heading", () => {
 test("preview uses native buttons, permits hash navigation and blocks external actions", () => {
   const draft = createDefaultDraft(); const html = buildWebsiteHtml(draft, { preview: true, previewInstanceId: "browser", parentOrigin: "*", previewRevision: 0, renderGeneration: 1 }); const dom = new JSDOM(html, { url: "https://preview.test", runScripts: "dangerously", pretendToBeVisual: true });
   const link = dom.window.document.querySelector(".main-nav a"); const event = new dom.window.MouseEvent("click", { bubbles: true, cancelable: true }); link.dispatchEvent(event);
-  assert.equal(event.defaultPrevented, true); assert.ok(dom.window.document.querySelector('h1 > button.preview-edit-trigger[type="button"]'));
+  assert.equal(event.defaultPrevented, true); assert.ok(dom.window.document.querySelector('h1 > .preview-edit-trigger[role="button"][tabindex="0"]'));
   assert.equal(dom.window.document.querySelectorAll('.hero-notes [data-preview-target*="text-item"]').length, 3);
   const external = dom.window.document.querySelector('a[href^="mailto:"]'); const blocked = new dom.window.MouseEvent("click", { bubbles: true, cancelable: true }); external?.dispatchEvent(blocked); if (external) assert.equal(blocked.defaultPrevented, true); dom.window.close();
 });

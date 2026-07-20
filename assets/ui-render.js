@@ -1,6 +1,7 @@
-import { PRESETS, escapeHtml } from "./domain.js";
+import { PRESETS, escapeAttr, escapeHtml } from "./domain.js";
 import { EDITOR_FIELD_REGISTRY } from "./editor-registry.js";
 import { contentHelpText } from "./content-policy.js";
+import { buildContentOverview } from "./content-overview.js";
 import { buildWebsiteHtml } from "./website.js";
 import { getAtPath } from "./ui-shared.js";
 const SECTION_LABELS = {
@@ -10,6 +11,7 @@ const SECTION_LABELS = {
     story: { title: "Geschichte", description: "Franz’ eigener Weg zur Musik" },
     contact: { title: "Kontakt", description: "Anfrage, Telefon und Adresse" },
 };
+const COMPLETENESS_LABELS = { complete: "Vollständig", "optional-empty": "Optional leer", incomplete: "Unvollständig", hidden: "Ausgeblendet" };
 export function bindStaticInputs(context) {
     document.querySelectorAll("[data-bind]").forEach((input) => {
         const bind = input.dataset.bind ?? "";
@@ -118,6 +120,13 @@ export function renderPreview(context) {
 }
 export function schedulePreview(context) { if (context.previewTimer)
     clearTimeout(context.previewTimer); context.previewTimer = setTimeout(() => renderPreview(context), 40); }
+export function renderContentOverview(context) {
+    context.contentOverviewList.innerHTML = buildContentOverview(context.store.snapshot).map((group) => `<section class="content-overview__group" aria-labelledby="overview-${group.id}"><h3 id="overview-${group.id}">${escapeHtml(group.label)}</h3><div class="content-overview__entries">${group.entries.map((entry) => {
+        const target = escapeAttr(JSON.stringify(entry.target));
+        const status = COMPLETENESS_LABELS[entry.status];
+        return `<button class="content-overview__entry is-${entry.status}" type="button" data-editor-target="${target}" aria-label="${escapeAttr(`${entry.label} bearbeiten, ${status}`)}"><span class="content-overview__copy"><strong>${escapeHtml(entry.label)}</strong><small>${escapeHtml(entry.detail)}</small></span><span class="content-overview__status">${escapeHtml(status)}</span></button>`;
+    }).join("")}</div></section>`).join("");
+}
 export function updateReadiness(context) {
     const draft = context.store.snapshot;
     const checks = [
@@ -130,16 +139,14 @@ export function updateReadiness(context) {
     context.readinessList.innerHTML = checks.map((check) => `<div class="readiness-item${check.ready ? " is-ready" : ""}">${escapeHtml(check.label)}</div>`).join("");
 }
 export function renderSaveState(context, state, error) {
-    if (context.volatileStorage) {
-        context.saveStatus.textContent = "Nur für diese Sitzung";
-        context.saveStatus.className = "status-pill is-error";
-        return;
-    }
-    const labels = { idle: "Auf diesem Gerät gespeichert", saving: "Speichert …", saved: "Auf diesem Gerät gespeichert", error: "Speichern fehlgeschlagen" };
-    context.saveStatus.textContent = labels[state];
-    context.saveStatus.className = `status-pill ${state === "saving" ? "is-saving" : state === "saved" ? "is-saved" : state === "error" ? "is-error" : ""}`.trim();
-    if (state === "error")
-        context.saveStatus.title = error instanceof Error ? error.message : "Der lokale Entwurf konnte nicht gespeichert werden.";
+    const sessionOnly = context.volatileStorage;
+    const label = sessionOnly ? "Nur für diese Sitzung gespeichert" : state === "saving" ? "Speichert auf diesem Gerät" : state === "error" ? "Speichern fehlgeschlagen" : "Auf diesem Gerät gespeichert";
+    const visualState = sessionOnly ? "session" : state;
+    context.saveStatus.textContent = label;
+    context.saveStatus.dataset.state = visualState;
+    context.saveStatus.className = `status-pill is-${visualState}`;
+    context.saveStatus.setAttribute("aria-label", label);
+    context.saveStatus.title = state === "error" && error instanceof Error ? `${label}: ${error.message}` : label;
 }
 export function showPanel(context, panelName) {
     const buttons = [...document.querySelectorAll("[data-panel-target]")];
@@ -153,6 +160,8 @@ export function showPanel(context, panelName) {
     context.surfaceCard.classList.remove("is-turning");
     void context.surfaceCard.offsetWidth;
     context.surfaceCard.classList.add("is-turning");
+    if (panelName === "site")
+        renderContentOverview(context);
     if (panelName === "publish")
         updateReadiness(context);
 }

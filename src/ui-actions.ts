@@ -1,12 +1,13 @@
 import { PRESETS, createId, normalizeDraft, slugify, type MusicraumDraft, type SectionKey, type ThemePresetName } from "./domain.js";
 import { replaceWithFreshDraft, replaceWithImportedDraft } from "./persistence.js";
 import { EDITOR_FIELD_REGISTRY, type StaticEditableField } from "./editor-registry.js";
+import { isPreviewTargetShape } from "./preview-contract.js";
 import { buildWebsiteHtml, MUSICRAUM_HERO_URL } from "./website.js";
 import { inputValue, setAtPath, type UiContext } from "./ui-shared.js";
-import { bindStaticInputs, renderDynamicControls, renderOffers, renderPreview, renderStructure, setViewport, showPanel, showToast, syncPresetInputs, updateReadiness } from "./ui-render.js";
+import { bindStaticInputs, renderContentOverview, renderDynamicControls, renderOffers, renderPreview, renderStructure, setViewport, showPanel, showToast, syncPresetInputs, updateReadiness } from "./ui-render.js";
 import { handleTextListAction, handleTextListInput } from "./text-list-actions.js";
 import { ensureEditorOpen } from "./sidebar.js";
-import { navigateToPreviewTarget } from "./preview-navigation.js";
+import { navigateToEditorTarget } from "./preview-navigation.js";
 import { handleReorderClick } from "./reorder-actions.js";
 
 export const MAX_OFFERS = 12;
@@ -15,6 +16,11 @@ export function isBackupFileSizeAllowed(file: Pick<File, "size">): boolean { ret
 
 export function handleClick(context: UiContext, event: Event): void {
   const target = event.target; if (!(target instanceof Element)) return;
+  const editorTarget = target.closest<HTMLElement>("[data-editor-target]");
+  if (editorTarget) {
+    try { const parsed: unknown = JSON.parse(editorTarget.dataset.editorTarget ?? ""); if (isPreviewTargetShape(parsed)) navigateToEditorTarget(context, parsed); } catch { /* malformed UI target is ignored */ }
+    return;
+  }
   const panelButton = target.closest<HTMLElement>("[data-panel-target]"); if (panelButton) { ensureEditorOpen(context); showPanel(context, panelButton.dataset.panelTarget ?? "site"); return; }
   const viewportButton = target.closest<HTMLElement>("[data-viewport]"); if (viewportButton) { setViewport(context, viewportButton.dataset.viewport ?? "desktop"); return; }
   const presetButton = target.closest<HTMLElement>("[data-preset]"); if (presetButton) { applyPreset(context, presetButton.dataset.preset as ThemePresetName); return; }
@@ -38,7 +44,7 @@ export function handleInput(context: UiContext, event: Event): void {
   if (target.matches("[data-layout-visible]")) {
     const key = target.closest<HTMLElement>("[data-section-key]")?.dataset.sectionKey as SectionKey | undefined; if (!key || !(target instanceof HTMLInputElement)) return;
     context.store.flushHistoryGroup();
-    context.store.mutate((draft) => { draft.layout.visibility[key] = target.checked; }, { intent: { type: "set-section-visibility", section: key }, history: { label: `${sectionLabel(key)} ${target.checked ? "eingeblendet" : "ausgeblendet"}`, target: { kind: "panel", panel: "structure" } } });
+    context.store.mutate((draft) => { draft.layout.visibility[key] = target.checked; }, { intent: { type: "set-section-visibility", section: key }, history: { label: `${sectionLabel(key)} ${target.checked ? "eingeblendet" : "ausgeblendet"}`, target: { kind: "section", section: key } } });
     renderStructure(context); return;
   }
   const bind = target.dataset.bind;
@@ -95,18 +101,18 @@ function downloadBackup(context: UiContext): void { const name = slugify(context
 async function restoreBackup(context: UiContext, file: File): Promise<void> {
   try {
     if (!isBackupFileSizeAllowed(file)) { showToast("Diese Sicherung ist zu gross. Bitte verwende eine Musikraum-Sicherung unter 1 MB."); return; }
-    const parsed: unknown = JSON.parse(await file.text()); const imported = normalizeDraft(parsed); context.store.flushHistoryGroup(); await context.store.flush(); const restored = await replaceWithImportedDraft(context.repository, context.store.snapshot as MusicraumDraft, imported); context.store.replace(restored, false, "import"); bindStaticInputs(context); renderDynamicControls(context); renderPreview(context); updateReadiness(context); showPanel(context, "site"); showToast("Sicherung wiederhergestellt. Prüfe kurz die Vorschau.");
+    const parsed: unknown = JSON.parse(await file.text()); const imported = normalizeDraft(parsed); context.store.flushHistoryGroup(); await context.store.flush(); const restored = await replaceWithImportedDraft(context.repository, context.store.snapshot as MusicraumDraft, imported); context.store.replace(restored, false, "import"); bindStaticInputs(context); renderDynamicControls(context); renderContentOverview(context); renderPreview(context); updateReadiness(context); showPanel(context, "site"); showToast("Sicherung wiederhergestellt. Prüfe kurz die Vorschau.");
   } catch (error) { console.error(error); showToast("Diese Datei ist keine gültige Musikraum-Sicherung."); } finally { context.backupInput.value = ""; }
 }
 function undo(context: UiContext): void {
-  const mutation = context.store.undo(); if (!mutation) return; bindStaticInputs(context); renderDynamicControls(context); showToast(`„${mutation.history.label}“ wurde rückgängig gemacht.`); if (mutation.history.target) navigateToPreviewTarget(context, mutation.history.target);
+  const mutation = context.store.undo(); if (!mutation) return; bindStaticInputs(context); renderDynamicControls(context); showToast(`„${mutation.history.label}“ wurde rückgängig gemacht.`); if (mutation.history.target) navigateToEditorTarget(context, mutation.history.target);
 }
 function redo(context: UiContext): void {
-  const mutation = context.store.redo(); if (!mutation) return; bindStaticInputs(context); renderDynamicControls(context); showToast(`„${mutation.history.label}“ wurde wiederhergestellt.`); if (mutation.history.target) navigateToPreviewTarget(context, mutation.history.target);
+  const mutation = context.store.redo(); if (!mutation) return; bindStaticInputs(context); renderDynamicControls(context); showToast(`„${mutation.history.label}“ wurde wiederhergestellt.`); if (mutation.history.target) navigateToEditorTarget(context, mutation.history.target);
 }
 async function resetBuilder(context: UiContext): Promise<void> {
   if (!window.confirm("Alle eigenen Änderungen verwerfen und zum Musikraum-Ausgangspunkt zurückkehren?")) return;
-  try { context.store.flushHistoryGroup(); await context.store.flush(); const fresh = await replaceWithFreshDraft(context.repository, context.store.snapshot as MusicraumDraft); context.store.replace(fresh, false, "reset"); bindStaticInputs(context); renderDynamicControls(context); renderPreview(context); updateReadiness(context); showPanel(context, "site"); showToast("Der Musikraum-Ausgangspunkt ist wiederhergestellt."); } catch (error) { console.error(error); showToast("Der Entwurf konnte nicht zurückgesetzt werden."); }
+  try { context.store.flushHistoryGroup(); await context.store.flush(); const fresh = await replaceWithFreshDraft(context.repository, context.store.snapshot as MusicraumDraft); context.store.replace(fresh, false, "reset"); bindStaticInputs(context); renderDynamicControls(context); renderContentOverview(context); renderPreview(context); updateReadiness(context); showPanel(context, "site"); showToast("Der Musikraum-Ausgangspunkt ist wiederhergestellt."); } catch (error) { console.error(error); showToast("Der Entwurf konnte nicht zurückgesetzt werden."); }
 }
 function sectionLabel(key: SectionKey): string { return ({ intro: "Über Franz", why: "Frei spielen", offers: "Klangabende", story: "Geschichte", contact: "Kontakt" } satisfies Record<SectionKey, string>)[key]; }
 function presetLabel(name: ThemePresetName): string { return ({ musikraum: "Musikraum", waldton: "Waldton", holzklang: "Holzklang", nachtklang: "Nachtklang" } satisfies Record<ThemePresetName, string>)[name]; }

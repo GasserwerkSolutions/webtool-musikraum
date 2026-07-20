@@ -1,7 +1,8 @@
-import { PRESETS, escapeHtml, type MusicraumDraft, type MusicraumOffer, type MusicraumTextItem, type SectionKey, type ThemePresetName } from "./domain.js";
+import { PRESETS, escapeAttr, escapeHtml, type MusicraumDraft, type MusicraumOffer, type MusicraumTextItem, type SectionKey, type ThemePresetName } from "./domain.js";
 import type { TextListKey } from "./preview-contract.js";
 import { EDITOR_FIELD_REGISTRY, type StaticEditableField } from "./editor-registry.js";
-import { contentHelpText } from "./content-policy.js";
+import { contentHelpText, type ContentCompleteness } from "./content-policy.js";
+import { buildContentOverview } from "./content-overview.js";
 import type { SaveState } from "./store.js";
 import { buildWebsiteHtml } from "./website.js";
 import { getAtPath, type UiContext } from "./ui-shared.js";
@@ -13,6 +14,7 @@ const SECTION_LABELS: Record<SectionKey, { title: string; description: string }>
   story: { title: "Geschichte", description: "Franz’ eigener Weg zur Musik" },
   contact: { title: "Kontakt", description: "Anfrage, Telefon und Adresse" },
 };
+const COMPLETENESS_LABELS: Record<ContentCompleteness, string> = { complete: "Vollständig", "optional-empty": "Optional leer", incomplete: "Unvollständig", hidden: "Ausgeblendet" };
 
 export function bindStaticInputs(context: UiContext): void {
   document.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>("[data-bind]").forEach((input) => {
@@ -70,6 +72,12 @@ export function renderPreview(context: UiContext): void {
   context.previewFrame.srcdoc = buildWebsiteHtml(context.store.snapshot as MusicraumDraft, { preview: true, previewInstanceId: instanceId, parentOrigin: location.origin === "null" ? "*" : location.origin, previewScroll: context.previewScroll, previewRevision: context.store.revision, renderGeneration: 1 });
 }
 export function schedulePreview(context: UiContext): void { if (context.previewTimer) clearTimeout(context.previewTimer); context.previewTimer = setTimeout(() => renderPreview(context), 40); }
+export function renderContentOverview(context: UiContext): void {
+  context.contentOverviewList.innerHTML = buildContentOverview(context.store.snapshot).map((group) => `<section class="content-overview__group" aria-labelledby="overview-${group.id}"><h3 id="overview-${group.id}">${escapeHtml(group.label)}</h3><div class="content-overview__entries">${group.entries.map((entry) => {
+    const target = escapeAttr(JSON.stringify(entry.target)); const status = COMPLETENESS_LABELS[entry.status];
+    return `<button class="content-overview__entry is-${entry.status}" type="button" data-editor-target="${target}" aria-label="${escapeAttr(`${entry.label} bearbeiten, ${status}`)}"><span class="content-overview__copy"><strong>${escapeHtml(entry.label)}</strong><small>${escapeHtml(entry.detail)}</small></span><span class="content-overview__status">${escapeHtml(status)}</span></button>`;
+  }).join("")}</div></section>`).join("");
+}
 export function updateReadiness(context: UiContext): void {
   const draft = context.store.snapshot; const checks = [
     { label: "Musikraum ist benannt", ready: Boolean(draft.site.name.trim()) },
@@ -80,15 +88,20 @@ export function updateReadiness(context: UiContext): void {
   ]; context.readinessList.innerHTML = checks.map((check) => `<div class="readiness-item${check.ready ? " is-ready" : ""}">${escapeHtml(check.label)}</div>`).join("");
 }
 export function renderSaveState(context: UiContext, state: SaveState, error?: unknown): void {
-  if (context.volatileStorage) { context.saveStatus.textContent = "Nur für diese Sitzung"; context.saveStatus.className = "status-pill is-error"; return; }
-  const labels: Record<SaveState, string> = { idle: "Auf diesem Gerät gespeichert", saving: "Speichert …", saved: "Auf diesem Gerät gespeichert", error: "Speichern fehlgeschlagen" };
-  context.saveStatus.textContent = labels[state]; context.saveStatus.className = `status-pill ${state === "saving" ? "is-saving" : state === "saved" ? "is-saved" : state === "error" ? "is-error" : ""}`.trim(); if (state === "error") context.saveStatus.title = error instanceof Error ? error.message : "Der lokale Entwurf konnte nicht gespeichert werden.";
+  const sessionOnly = context.volatileStorage;
+  const label = sessionOnly ? "Nur für diese Sitzung gespeichert" : state === "saving" ? "Speichert auf diesem Gerät" : state === "error" ? "Speichern fehlgeschlagen" : "Auf diesem Gerät gespeichert";
+  const visualState = sessionOnly ? "session" : state;
+  context.saveStatus.textContent = label;
+  context.saveStatus.dataset.state = visualState;
+  context.saveStatus.className = `status-pill is-${visualState}`;
+  context.saveStatus.setAttribute("aria-label", label);
+  context.saveStatus.title = state === "error" && error instanceof Error ? `${label}: ${error.message}` : label;
 }
 export function showPanel(context: UiContext, panelName: string): void {
   const buttons = [...document.querySelectorAll<HTMLElement>("[data-panel-target]")]; buttons.forEach((button) => { const active = button.dataset.panelTarget === panelName; button.classList.toggle("is-active", active); if (active) button.setAttribute("aria-current", "step"); else button.removeAttribute("aria-current"); });
   document.querySelectorAll<HTMLElement>("[data-panel]").forEach((panel) => { const active = panel.dataset.panel === panelName; panel.hidden = !active; panel.classList.toggle("is-active", active); });
   const index = Math.max(0, buttons.findIndex((button) => button.dataset.panelTarget === panelName)); context.panelStatus.textContent = `Schritt ${index + 1} von ${buttons.length}: ${buttons[index]?.textContent?.trim() ?? "Bearbeiten"}`;
-  context.surfaceCard.classList.remove("is-turning"); void context.surfaceCard.offsetWidth; context.surfaceCard.classList.add("is-turning"); if (panelName === "publish") updateReadiness(context);
+  context.surfaceCard.classList.remove("is-turning"); void context.surfaceCard.offsetWidth; context.surfaceCard.classList.add("is-turning"); if (panelName === "site") renderContentOverview(context); if (panelName === "publish") updateReadiness(context);
 }
 export function setViewport(context: UiContext, viewport: string): void { const labels: Record<string, string> = { desktop: "Desktop", tablet: "Tablet", mobile: "Mobile" }; context.previewFrame.dataset.viewport = viewport; context.previewHint.textContent = labels[viewport] ?? "Desktop"; document.querySelectorAll<HTMLElement>("[data-viewport]").forEach((button) => { const active = button.dataset.viewport === viewport; button.classList.toggle("is-active", active); button.setAttribute("aria-pressed", String(active)); }); }
 export function showToast(message: string): void { document.querySelector(".toast")?.remove(); const toast = document.createElement("div"); toast.className = "toast"; toast.setAttribute("role", "status"); toast.textContent = message; document.body.appendChild(toast); setTimeout(() => toast.remove(), 4200); }

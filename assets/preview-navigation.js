@@ -2,15 +2,15 @@ import { isPreviewTarget, panelForTarget } from "./preview-contract.js";
 import { showPanel } from "./ui-render.js";
 import { ensureEditorOpen } from "./sidebar.js";
 const highlightTimers = new WeakMap();
-export function navigateToPreviewTarget(context, target) {
+export function navigateToEditorTarget(context, target) {
     const valid = isPreviewTarget(target, context.store.snapshot);
-    const panel = target.kind === "offer" ? "services" : target.kind === "text-item" ? panelForTarget(target) : valid ? panelForTarget(target) : null;
+    const panel = target.kind === "offer" || target.kind === "text-item" ? panelForTarget(target) : valid ? panelForTarget(target) : null;
     if (!panel)
         return;
     ensureEditorOpen(context);
     showPanel(context, panel);
     requestAnimationFrame(() => requestAnimationFrame(() => {
-        const element = valid ? resolveTarget(target) : null;
+        const element = valid ? resolveEditorTarget(target) : null;
         const destination = element ?? document.querySelector(`[data-panel="${panel}"] h1, [data-panel="${panel}"] h2`);
         if (!destination)
             return;
@@ -29,13 +29,16 @@ export function navigateToPreviewTarget(context, target) {
         context.announcer.textContent = missing ? "Der gewählte Eintrag ist nicht mehr vorhanden. Der passende Bereich wurde geöffnet." : "Das passende Bearbeitungsfeld ist geöffnet.";
     }));
 }
-function resolveTarget(target) {
+export const navigateToPreviewTarget = navigateToEditorTarget;
+export function resolveEditorTarget(target) {
     if (target.kind === "field")
         return document.querySelector(`[data-bind="${target.field}"]`);
     if (target.kind === "offer")
         return document.querySelector(`[data-offer-card][data-offer-id="${CSS.escape(target.offerId)}"] [data-offer-field="${target.field}"]`);
     if (target.kind === "text-item")
         return document.querySelector(`[data-text-list="${target.list}"][data-text-item-id="${CSS.escape(target.itemId)}"] [data-text-item-field]`);
+    if (target.kind === "section")
+        return document.querySelector(`[data-section-key="${CSS.escape(target.section)}"] [data-layout-visible]`);
     return document.querySelector(`[data-panel="${target.panel}"] h1, [data-panel="${target.panel}"] h2`);
 }
 function revealTarget(context, target) {

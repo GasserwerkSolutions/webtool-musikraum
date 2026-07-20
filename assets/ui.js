@@ -1,9 +1,9 @@
 import { handleClick, handleInput } from "./ui-actions.js";
-import { bindStaticInputs, renderDynamicControls, renderPreview, renderSaveState, showToast, updateReadiness, } from "./ui-render.js";
+import { bindStaticInputs, renderContentOverview, renderDynamicControls, renderPreview, renderSaveState, showToast, updateReadiness, } from "./ui-render.js";
 import { createUiContext } from "./ui-shared.js";
 import { parseNavigateMessage, parseScrollMessage } from "./preview-contract.js";
 import { PreviewRuntime } from "./preview-runtime.js";
-import { navigateToPreviewTarget } from "./preview-navigation.js";
+import { navigateToEditorTarget } from "./preview-navigation.js";
 import { initSidebar } from "./sidebar.js";
 import { handleReorderKeydown, handleReorderPointerDown, handleReorderPointerEnd, handleReorderPointerMove } from "./reorder-actions.js";
 export class BuilderUi {
@@ -23,11 +23,13 @@ export class BuilderUi {
         initSidebar(this.context);
         bindStaticInputs(this.context);
         renderDynamicControls(this.context);
+        renderContentOverview(this.context);
         renderPreview(this.context);
         updateReadiness(this.context);
         this.context.store.subscribe((event) => {
             if (!this.context.suppressPreview)
                 this.context.previewRuntime?.enqueue(event);
+            renderContentOverview(this.context);
             updateReadiness(this.context);
         });
         this.context.store.subscribeSave((state, error) => renderSaveState(this.context, state, error));
@@ -73,7 +75,7 @@ export class BuilderUi {
         }
         const navigate = parseNavigateMessage(event.data, runtime.instanceId, this.context.store.snapshot, runtime.renderGeneration);
         if (navigate && navigate.revision === runtime.appliedRevision)
-            navigateToPreviewTarget(this.context, navigate.target);
+            navigateToEditorTarget(this.context, navigate.target);
     }
 }
 function renderHistoryState(context, state) {
@@ -86,7 +88,7 @@ function describeHistoryButton(button, direction, label, shortcut) {
     const description = label ? `${direction}: ${label}` : direction;
     const visible = button.querySelector("span");
     if (visible)
-        visible.textContent = description;
+        visible.textContent = direction;
     button.setAttribute("aria-label", `${description} (${shortcut})`);
     button.title = `${description} (${shortcut})`;
 }

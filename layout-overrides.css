@@ -174,3 +174,134 @@ body {
   .preview-desk { padding: 12px; }
   #previewFrame { border-radius: 12px; }
 }
+
+
+/* PR4 content overview */
+.content-overview{display:grid;gap:22px;margin-bottom:28px}.content-overview__group{display:grid;gap:10px}.content-overview__group h3,.overview-subheading h3{margin:0;font-size:1rem}.content-overview__entries{display:grid;gap:8px}.content-overview__entry{width:100%;min-height:58px;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:11px 13px;border:1px solid rgba(64,59,52,.14);border-radius:12px;background:#fff;text-align:left;color:inherit;cursor:pointer}.content-overview__entry:hover,.content-overview__entry:focus-visible{border-color:rgba(88,114,113,.55);box-shadow:0 0 0 3px rgba(88,114,113,.12)}.content-overview__copy{min-width:0;display:grid;gap:3px}.content-overview__copy strong,.content-overview__copy small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.content-overview__copy small{color:#756c62}.content-overview__status{flex:0 0 auto;padding:4px 8px;border-radius:999px;background:rgba(64,59,52,.08);font-size:.74rem;font-weight:800}.content-overview__entry.is-complete .content-overview__status{background:rgba(70,128,91,.14);color:#285b3a}.content-overview__entry.is-incomplete .content-overview__status{background:rgba(171,82,62,.14);color:#7a2f20}.content-overview__entry.is-hidden{opacity:.68}.content-overview__entry.is-optional-empty .content-overview__status{background:rgba(88,114,113,.12);color:#405f5e}.overview-subheading{margin:30px 0 12px}.overview-subheading p{margin:4px 0 0;color:#756c62;font-size:.9rem}@media(max-width:560px){.content-overview__entry{align-items:flex-start;flex-direction:column}.content-overview__status{align-self:flex-start}.content-overview__copy strong,.content-overview__copy small{white-space:normal}}
+
+/* Stable, compact editor header */
+.topbar,
+.topbar * {
+  white-space: nowrap;
+}
+
+.topbar {
+  min-height: 56px;
+  gap: 14px;
+  padding: 7px 12px;
+  overflow: hidden;
+}
+
+.brand {
+  flex: 0 1 auto;
+  gap: 9px;
+  overflow: hidden;
+}
+
+.brand__mark {
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  box-shadow: 0 3px 10px rgba(40, 32, 24, .1);
+}
+
+.brand__copy {
+  overflow: hidden;
+}
+
+.brand strong,
+.brand__copy span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.brand strong { font-size: 14px; }
+.brand__copy span { margin-top: 1px; font-size: 10.5px; }
+
+.topbar__actions {
+  flex: 0 1 auto;
+  gap: 5px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+.topbar__actions::-webkit-scrollbar { display: none; }
+.topbar__actions > * { flex: 0 0 auto; }
+
+.topbar .button {
+  min-height: 34px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  font-size: 12px;
+  box-shadow: none;
+}
+
+.topbar .button:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.topbar .button--primary {
+  background: #526967;
+  border-color: #526967;
+}
+
+.topbar .viewport-switch {
+  padding: 2px;
+  border-radius: 9px;
+}
+
+.topbar .viewport-switch__button {
+  min-height: 30px;
+  padding: 5px 8px;
+  border-radius: 7px;
+  font-size: 10.5px;
+}
+
+.status-pill {
+  display: grid;
+  place-items: center;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  padding: 0;
+  border-color: rgba(64, 59, 52, .14);
+  background: rgba(255,255,255,.55);
+  color: var(--muted);
+  font-size: 0;
+}
+
+.status-pill::before {
+  content: "✓";
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.status-pill.is-idle::before,
+.status-pill.is-saved::before { content: "✓"; color: var(--success); }
+.status-pill.is-saving::before { content: "•"; color: var(--accent-dark); animation: savePulse .8s ease-in-out infinite alternate; }
+.status-pill.is-error::before { content: "!"; color: var(--danger); }
+.status-pill.is-session::before { content: "○"; color: var(--muted); }
+
+@keyframes savePulse {
+  from { opacity: .35; transform: scale(.85); }
+  to { opacity: 1; transform: scale(1.1); }
+}
+
+@media (max-width: 1180px) {
+  .status-pill { display: grid; }
+}
+
+@media (max-width: 700px) {
+  .topbar {
+    min-height: 56px;
+    gap: 8px;
+    padding: 7px 9px;
+  }
+  .brand__mark { width: 34px; height: 34px; }
+  .history-actions .button { width: 34px; min-height: 34px; }
+  .surface-nav { top: 56px; }
+}
