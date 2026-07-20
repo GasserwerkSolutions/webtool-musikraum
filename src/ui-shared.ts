@@ -10,6 +10,7 @@ export type UiContext = {
   surfaceCard: HTMLElement;
   workspace: HTMLElement;
   controlSurface: HTMLElement;
+  previewArea: HTMLElement;
   surfaceStage: HTMLElement;
   sidebarToggle: HTMLButtonElement;
   sidebarResizer: HTMLElement;
@@ -21,6 +22,11 @@ export type UiContext = {
   redoButton: HTMLButtonElement;
   backupInput: HTMLInputElement;
   announcer: HTMLElement;
+  mobileModeSwitch: HTMLElement;
+  mobileModeButtons: readonly HTMLButtonElement[];
+  mobileMode: "edit" | "preview";
+  mobileModesActive: boolean;
+  mobileEditorScroll: number;
   heroPointList: HTMLElement;
   introPointList: HTMLElement;
   offerList: HTMLElement;
@@ -48,12 +54,21 @@ function requiredElement<T extends Element>(id: string): T {
 }
 
 export function createUiContext(store: BuilderStore, repository: DraftRepository): UiContext {
+  const controlSurface = document.querySelector<HTMLElement>(".control-surface");
+  const previewArea = document.querySelector<HTMLElement>(".preview-area");
+  if (!controlSurface || !previewArea) throw new Error("MISSING_EDITOR_SURFACES");
+  controlSurface.id ||= "editorSurface";
+  previewArea.id ||= "previewSurface";
+  const mobileModeSwitch = ensureMobileModeSwitch(controlSurface.id, previewArea.id);
+  const mobileModeButtons = [...mobileModeSwitch.querySelectorAll<HTMLButtonElement>("[data-mobile-mode]")];
+  if (mobileModeButtons.length !== 2) throw new Error("MISSING_MOBILE_MODE_BUTTONS");
   return {
     store,
     repository,
     surfaceCard: requiredElement("surfaceCard"),
     workspace: document.querySelector(".workspace") as HTMLElement,
-    controlSurface: document.querySelector(".control-surface") as HTMLElement,
+    controlSurface,
+    previewArea,
     surfaceStage: requiredElement("surfaceStage"),
     sidebarToggle: requiredElement("sidebarToggle"),
     sidebarResizer: requiredElement("sidebarResizer"),
@@ -65,6 +80,11 @@ export function createUiContext(store: BuilderStore, repository: DraftRepository
     redoButton: requiredElement("redoButton"),
     backupInput: requiredElement("backupInput"),
     announcer: requiredElement("editorAnnouncer"),
+    mobileModeSwitch,
+    mobileModeButtons,
+    mobileMode: "edit",
+    mobileModesActive: false,
+    mobileEditorScroll: 0,
     heroPointList: requiredElement("heroPointList"),
     introPointList: requiredElement("introPointList"),
     offerList: requiredElement("offerList"),
@@ -84,6 +104,20 @@ export function createUiContext(store: BuilderStore, repository: DraftRepository
     previewScroll: null,
     volatileStorage: false,
   };
+}
+
+function ensureMobileModeSwitch(editorId: string, previewId: string): HTMLElement {
+  const existing = document.getElementById("mobileModeSwitch");
+  if (existing) return existing;
+  const switcher = document.createElement("div");
+  switcher.id = "mobileModeSwitch";
+  switcher.className = "mobile-mode-switch";
+  switcher.hidden = true;
+  switcher.setAttribute("role", "group");
+  switcher.setAttribute("aria-label", "Mobile Ansicht wechseln");
+  switcher.innerHTML = `<button class="mobile-mode-switch__button is-active" type="button" data-mobile-mode="edit" aria-controls="${editorId}" aria-pressed="true"><span aria-hidden="true">✎</span><strong>Bearbeiten</strong></button><button class="mobile-mode-switch__button" type="button" data-mobile-mode="preview" aria-controls="${previewId}" aria-pressed="false"><span aria-hidden="true">◇</span><strong>Vorschau</strong></button>`;
+  document.querySelector(".topbar")?.insertAdjacentElement("afterend", switcher);
+  return switcher;
 }
 
 export function getAtPath(object: unknown, path: string): unknown { return path.split(".").reduce<unknown>((value, key) => value && typeof value === "object" ? (value as Record<string, unknown>)[key] : undefined, object); }
