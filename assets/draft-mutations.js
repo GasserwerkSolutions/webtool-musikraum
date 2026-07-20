@@ -89,7 +89,7 @@ export function invertDraftEffect(effect) {
     if (effect.type === "section-move")
         return { ...effect, previousIndex: effect.nextIndex, nextIndex: effect.previousIndex };
     if (effect.type === "theme-set")
-        return { ...effect, changed: [...effect.changed] };
+        throw new Error("THEME_EFFECT_REQUIRES_SNAPSHOT_VERIFICATION");
     throw new Error("DRAFT_REPLACE_EFFECT_IS_NOT_INVERTIBLE");
 }
 export function sameIntentTarget(left, right) { return intentIdentity(left) === intentIdentity(right); }
@@ -136,7 +136,7 @@ function createMoveEffect(before, after, collection, itemId) {
         throw new Error("UNEXPECTED_COLLECTION_MOVE_CHANGE");
     const expected = copyDraft(before);
     setCollection(expected, collection, expectedItems);
-    assertExpectedDraft(expected, after, "UNEXPECTED_COLLECTION_MOVE_DRAFT_CHANGE");
+    assertExpectedDraft(expected, after, "UNEXPECTED_COLLECTION_MOVE_CHANGE");
     return { type: "collection-move", collection, itemId, previousIndex, nextIndex };
 }
 function assertOnlyFieldChanged(before, after, field) {
