@@ -32,6 +32,7 @@ export function resolveEditorTarget(target: PreviewTarget): HTMLElement | null {
   if (target.kind === "field") return document.querySelector<HTMLElement>(`[data-bind="${target.field}"]`);
   if (target.kind === "offer") return document.querySelector<HTMLElement>(`[data-offer-card][data-offer-id="${CSS.escape(target.offerId)}"] [data-offer-field="${target.field}"]`);
   if (target.kind === "text-item") return document.querySelector<HTMLElement>(`[data-text-list="${target.list}"][data-text-item-id="${CSS.escape(target.itemId)}"] [data-text-item-field]`);
+  if (target.kind === "section") return document.querySelector<HTMLElement>(`[data-section-key="${CSS.escape(target.section)}"] [data-layout-visible]`);
   return document.querySelector<HTMLElement>(`[data-panel="${target.panel}"] h1, [data-panel="${target.panel}"] h2`);
 }
 
