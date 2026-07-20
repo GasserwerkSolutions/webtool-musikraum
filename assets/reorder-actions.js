@@ -85,11 +85,8 @@ export function handleReorderPointerEnd(context, event, cancelled = false) {
     const drag = activeDrags.get(context);
     if (!drag || drag.pointerId !== event.pointerId)
         return false;
-    const { target, targetIndex: nextIndex, originalIndex, handle } = drag;
-    try {
-        handle.releasePointerCapture(event.pointerId);
-    }
-    catch { /* unsupported capture is harmless */ }
+    const { target, targetIndex: nextIndex, originalIndex } = drag;
+    releasePointerCapture(drag);
     cleanupDrag(context, drag);
     if (cancelled)
         context.announcer.textContent = "Verschieben abgebrochen.";
@@ -173,9 +170,13 @@ function resolveReorderTarget(element) {
 function resolveReorderItem(element) { return element.closest("[data-text-item-card], [data-offer-card], [data-section-key]"); }
 function reorderItems(container) { return [...container.children].filter((child) => child instanceof HTMLElement && child.matches("[data-text-item-card], [data-offer-card], [data-section-key]")); }
 function clearDropMarkers(container) { reorderItems(container).forEach((item) => item.classList.remove("is-drop-target-before", "is-drop-target-after")); }
+function releasePointerCapture(drag) { try {
+    drag.handle.releasePointerCapture(drag.pointerId);
+}
+catch { /* unsupported capture is harmless */ } }
 function cleanupDrag(context, drag) { drag.item.classList.remove("is-dragging"); drag.handle.classList.remove("is-dragging-handle"); clearDropMarkers(drag.container); activeDrags.delete(context); }
 function cancelActiveDrag(context, message) { const drag = activeDrags.get(context); if (!drag)
-    return; cleanupDrag(context, drag); if (message)
+    return; releasePointerCapture(drag); cleanupDrag(context, drag); if (message)
     context.announcer.textContent = message; }
 function targetIndex(draft, target) { if (target.kind === "section")
     return draft.layout.order.indexOf(target.section); return draft[target.collection].findIndex((item) => item.id === target.itemId); }
