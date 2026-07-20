@@ -3,6 +3,7 @@ import { replaceWithFreshDraft, replaceWithImportedDraft } from "./persistence.j
 import { buildWebsiteHtml, MUSICRAUM_HERO_URL } from "./website.js";
 import { inputValue, setAtPath } from "./ui-shared.js";
 import { bindStaticInputs, renderDynamicControls, renderOffers, renderPreview, renderStructure, setViewport, showPanel, showToast, syncPresetInputs, updateReadiness } from "./ui-render.js";
+import { handleTextListAction, handleTextListInput } from "./text-list-actions.js";
 import { ensureEditorOpen } from "./sidebar.js";
 export const MAX_OFFERS = 12;
 export const MAX_BACKUP_BYTES = 1_000_000;
@@ -34,6 +35,8 @@ export function handleClick(context, event) {
     }
     const actionButton = target.closest("[data-action]");
     if (!actionButton)
+        return;
+    if (handleTextListAction(context, actionButton))
         return;
     const action = actionButton.dataset.action;
     if (action === "add-offer")
@@ -71,45 +74,31 @@ export function handleInput(context, event) {
         renderStructure(context);
         return;
     }
-    const deferPreview = isContinuousInput(target) && event.type === "input";
     const bind = target.dataset.bind;
     if (bind) {
         try {
-            context.suppressPreview = deferPreview;
             context.store.mutate((draft) => setAtPath(draft, bind, inputValue(target)), `field:${bind}`);
         }
         catch (error) {
             console.error(error);
         }
-        finally {
-            context.suppressPreview = false;
-        }
-        if (isContinuousInput(target) && event.type === "change")
-            renderPreview(context);
         return;
     }
+    if (handleTextListInput(context, target))
+        return;
     const field = target.dataset.offerField;
     const card = target.closest("[data-offer-card]");
     if (field && card?.dataset.offerId) {
-        try {
-            context.suppressPreview = deferPreview;
-            context.store.mutate((draft) => { const offer = draft.offers.find((item) => item.id === card.dataset.offerId); if (offer)
-                offer[field] = target.value; }, `offer:${card.dataset.offerId}:${field}`);
-        }
-        finally {
-            context.suppressPreview = false;
-        }
+        context.store.mutate((draft) => { const offer = draft.offers.find((item) => item.id === card.dataset.offerId); if (offer)
+            offer[field] = target.value; }, `offer:${card.dataset.offerId}:${field}`);
         if (field === "title") {
             const number = card.querySelector("[data-offer-number]");
             const index = context.store.snapshot.offers.findIndex((offer) => offer.id === card.dataset.offerId);
             if (number)
                 number.textContent = `${index + 1}. ${target.value || "Klangmoment"}`;
         }
-        if (event.type === "change")
-            renderPreview(context);
     }
 }
-function isContinuousInput(target) { return target instanceof HTMLTextAreaElement || target instanceof HTMLInputElement && ["text", "email", "tel", "url", "color"].includes(target.type); }
 function moveSection(context, button) {
     const key = button.closest("[data-section-key]")?.dataset.sectionKey;
     const direction = button.dataset.layoutAction;

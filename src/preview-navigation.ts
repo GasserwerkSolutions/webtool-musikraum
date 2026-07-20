@@ -6,7 +6,7 @@ const highlightTimers = new WeakMap<HTMLElement, number>();
 
 export function navigateToPreviewTarget(context: UiContext, target: PreviewTarget): void {
   const valid = isPreviewTarget(target, context.store.snapshot);
-  const panel = target.kind === "offer" ? "services" : valid ? panelForTarget(target) : null;
+  const panel = target.kind === "offer" ? "services" : target.kind === "text-item" ? panelForTarget(target) : valid ? panelForTarget(target) : null;
   if (!panel) return;
   ensureEditorOpen(context);
   showPanel(context, panel);
@@ -20,14 +20,15 @@ export function navigateToPreviewTarget(context: UiContext, target: PreviewTarge
     const activeTimer = highlightTimers.get(destination); if (activeTimer) window.clearTimeout(activeTimer);
     destination.classList.remove("is-preview-target"); void destination.offsetWidth; destination.classList.add("is-preview-target");
     highlightTimers.set(destination, window.setTimeout(() => { destination.classList.remove("is-preview-target"); highlightTimers.delete(destination); }, 1800));
-    const missing = target.kind === "offer" && !valid;
-    context.announcer.textContent = missing ? "Der gewählte Klangmoment ist nicht mehr vorhanden. Der Bereich Klangmomente wurde geöffnet." : "Das passende Bearbeitungsfeld ist geöffnet.";
+    const missing = (target.kind === "offer" || target.kind === "text-item") && !valid;
+    context.announcer.textContent = missing ? "Der gewählte Eintrag ist nicht mehr vorhanden. Der passende Bereich wurde geöffnet." : "Das passende Bearbeitungsfeld ist geöffnet.";
   }));
 }
 
 function resolveTarget(target: PreviewTarget): HTMLElement | null {
   if (target.kind === "field") return document.querySelector<HTMLElement>(`[data-bind="${target.field}"]`);
   if (target.kind === "offer") return document.querySelector<HTMLElement>(`[data-offer-card][data-offer-id="${CSS.escape(target.offerId)}"] [data-offer-field="${target.field}"]`);
+  if (target.kind === "text-item") return document.querySelector<HTMLElement>(`[data-text-list="${target.list}"][data-text-item-id="${CSS.escape(target.itemId)}"] [data-text-item-field]`);
   return document.querySelector<HTMLElement>(`[data-panel="${target.panel}"] h1, [data-panel="${target.panel}"] h2`);
 }
 

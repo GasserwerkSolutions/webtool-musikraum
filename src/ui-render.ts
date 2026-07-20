@@ -1,4 +1,5 @@
-import { PRESETS, escapeHtml, type MusicraumDraft, type MusicraumOffer, type SectionKey, type ThemePresetName } from "./domain.js";
+import { PRESETS, escapeHtml, type MusicraumDraft, type MusicraumOffer, type MusicraumTextItem, type SectionKey, type ThemePresetName } from "./domain.js";
+import type { TextListKey } from "./preview-contract.js";
 import type { SaveState } from "./store.js";
 import { buildWebsiteHtml } from "./website.js";
 import { getAtPath, type UiContext } from "./ui-shared.js";
@@ -15,10 +16,27 @@ export function bindStaticInputs(context: UiContext): void {
   document.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>("[data-bind]").forEach((input) => { const value = getAtPath(context.store.snapshot, input.dataset.bind ?? ""); if (value === undefined) return; if (input instanceof HTMLInputElement && input.type === "checkbox") input.checked = Boolean(value); else input.value = String(value ?? ""); });
 }
 
-export function renderDynamicControls(context: UiContext): void { renderOffers(context); renderPresets(context); renderStructure(context); }
+export function renderDynamicControls(context: UiContext): void { renderTextItems(context, "heroPoints"); renderTextItems(context, "introPoints"); renderOffers(context); renderPresets(context); renderStructure(context); }
+
+export function renderTextItems(context: UiContext, list: TextListKey): void {
+  const listElement = list === "heroPoints" ? context.heroPointList : context.introPointList;
+  const items = context.store.snapshot[list];
+  listElement.innerHTML = "";
+  document.querySelectorAll<HTMLButtonElement>(`[data-action="add-text-item"][data-list="${list}"]`).forEach((button) => { button.disabled = items.length >= 6; });
+  if (!items.length) { listElement.innerHTML = '<div class="empty-state">Noch kein Punkt. Du kannst die Liste leer lassen oder einen Punkt hinzufügen.</div>'; return; }
+  items.forEach((item, index) => {
+    const fragment = context.textItemTemplate.content.cloneNode(true) as DocumentFragment;
+    const card = fragment.querySelector<HTMLElement>("[data-text-item-card]"); if (!card) return;
+    card.dataset.textList = list; card.dataset.textItemId = item.id;
+    const number = fragment.querySelector<HTMLElement>("[data-text-item-number]"); if (number) number.textContent = `${index + 1}. ${item.text || "Punkt"}`;
+    const input = fragment.querySelector<HTMLInputElement>("[data-text-item-field]"); if (input) input.value = String(item.text ?? "");
+    listElement.appendChild(fragment);
+  });
+}
 
 export function renderOffers(context: UiContext): void {
   context.offerList.innerHTML = "";
+  document.querySelectorAll<HTMLButtonElement>('[data-action="add-offer"]').forEach((button) => { button.disabled = context.store.snapshot.offers.length >= 12; });
   if (!context.store.snapshot.offers.length) { context.offerList.innerHTML = '<div class="empty-state">Noch kein Klangmoment. Füge den ersten hinzu.</div>'; return; }
   context.store.snapshot.offers.forEach((offer, index) => {
     const fragment = context.offerTemplate.content.cloneNode(true) as DocumentFragment;

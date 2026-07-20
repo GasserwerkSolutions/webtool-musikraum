@@ -10,9 +10,10 @@ import { handleInput } from "../assets/ui-actions.js";
 
 function editorFixture() {
   const dom = new JSDOM(`<!doctype html><body>
-    <button data-panel-target="hero"></button><button data-panel-target="services"></button>
+    <button data-panel-target="hero"></button><button data-panel-target="content"></button><button data-panel-target="services"></button>
     <aside class="control-surface"><div class="surface-stage"><div id="surfaceCard">
-      <section data-panel="hero" hidden><h2>Einstieg</h2><textarea data-bind="copy.heroTitle"></textarea></section>
+      <section data-panel="hero" hidden><h2>Einstieg</h2><textarea data-bind="copy.heroTitle"></textarea><article data-text-item-card data-text-list="heroPoints" data-text-item-id="hero-point-group"><input data-text-item-field></article></section>
+      <section data-panel="content" hidden><h2>Inhalte</h2><article data-text-item-card data-text-list="introPoints" data-text-item-id="intro-point-listen"><input data-text-item-field></article></section>
       <section data-panel="services" hidden><h2>Klangmomente</h2><article data-offer-card data-offer-id="offer-1"><input data-offer-field="title"></article><article data-offer-card data-offer-id="offer-2"><textarea data-offer-field="text"></textarea></article></section>
     </div></div></aside><section class="preview-area"></section><span id="panelStatus"></span><div id="announcer"></div>
   </body>`, { url: "https://editor.test" });
@@ -28,12 +29,14 @@ test("preview navigation focuses the exact static field without changing history
   assert.equal(dom.window.document.activeElement?.getAttribute("data-bind"), "copy.heroTitle"); assert.equal(store.canUndo, false); dom.window.close();
 });
 
-test("preview navigation resolves the second offer instead of the first", () => {
+test("preview navigation resolves offers and editable text-list items", () => {
   const { dom, context } = editorFixture(); navigateToPreviewTarget(context, { kind: "offer", offerId: "offer-2", field: "text" });
-  assert.equal(dom.window.document.activeElement?.closest("[data-offer-card]")?.getAttribute("data-offer-id"), "offer-2"); dom.window.close();
+  assert.equal(dom.window.document.activeElement?.closest("[data-offer-card]")?.getAttribute("data-offer-id"), "offer-2");
+  navigateToPreviewTarget(context, { kind: "text-item", list: "introPoints", itemId: "intro-point-listen" });
+  assert.equal(dom.window.document.activeElement?.closest("[data-text-item-card]")?.getAttribute("data-text-list"), "introPoints"); dom.window.close();
 });
 
-test("stale offer navigation falls back calmly to the offers heading", () => {
+test("stale dynamic navigation falls back calmly to its heading", () => {
   const { dom, context } = editorFixture(); navigateToPreviewTarget(context, { kind: "offer", offerId: "deleted", field: "title" });
   assert.equal(dom.window.document.activeElement?.textContent, "Klangmomente"); assert.match(context.announcer.textContent, /nicht mehr vorhanden/); dom.window.close();
 });
@@ -42,13 +45,14 @@ test("preview uses native buttons, permits hash navigation and blocks external a
   const draft = createDefaultDraft(); const html = buildWebsiteHtml(draft, { preview: true, previewInstanceId: "browser", parentOrigin: "*" }); const dom = new JSDOM(html, { url: "https://preview.test", runScripts: "dangerously", pretendToBeVisual: true });
   const link = dom.window.document.querySelector(".main-nav a"); const event = new dom.window.MouseEvent("click", { bubbles: true, cancelable: true }); link.dispatchEvent(event);
   assert.equal(event.defaultPrevented, true); assert.ok(dom.window.document.querySelector('h1 > button.preview-edit-trigger[type="button"]'));
+  assert.equal(dom.window.document.querySelectorAll('.hero-notes [data-preview-target*="text-item"]').length, 3);
   const external = dom.window.document.querySelector('a[href^="mailto:"]'); const blocked = new dom.window.MouseEvent("click", { bubbles: true, cancelable: true }); external?.dispatchEvent(blocked); if (external) assert.equal(blocked.defaultPrevented, true); dom.window.close();
 });
 
-test("typing saves without rebuilding preview and change rebuilds exactly once", () => {
+test("typing rebuilds the preview immediately and duplicate change does not rebuild twice", () => {
   const { dom, store } = editorFixture(); const input = dom.window.document.querySelector('[data-bind="copy.heroTitle"]'); let rebuilds = 0;
   const context = { store, suppressPreview: false, previewTimer: null, previewScroll: null, previewInstanceId: "", previewFrame: { set srcdoc(_) { rebuilds += 1; } } };
   store.subscribe(() => { if (!context.suppressPreview) rebuilds += 1; }); input.value = "Ein neuer Titel";
-  const typing = new dom.window.Event("input", { bubbles: true }); Object.defineProperty(typing, "target", { value: input }); handleInput(context, typing); assert.equal(rebuilds, 0);
+  const typing = new dom.window.Event("input", { bubbles: true }); Object.defineProperty(typing, "target", { value: input }); handleInput(context, typing); assert.equal(rebuilds, 1);
   const finished = new dom.window.Event("change", { bubbles: true }); Object.defineProperty(finished, "target", { value: input }); handleInput(context, finished); assert.equal(rebuilds, 1); dom.window.close();
 });

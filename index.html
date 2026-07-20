@@ -55,17 +55,20 @@
           <label class="field"><span>Haupttitel</span><textarea data-bind="copy.heroTitle" rows="3"></textarea></label>
           <label class="field"><span>Einleitung</span><textarea data-bind="copy.heroSubtitle" rows="5"></textarea></label>
           <div class="field-grid"><label class="field"><span>Text des ersten Knopfs</span><input type="text" data-bind="copy.heroPrimaryAction"></label><label class="field"><span>Text des Kontaktknopfs</span><input type="text" data-bind="copy.heroSecondaryAction"></label></div>
+          <div class="list-editor-head"><div><strong>Punkte im Titelbild</strong><span>Optional, 0 bis 6 kurze Aussagen</span></div><button class="button button--primary button--add" type="button" data-action="add-text-item" data-list="heroPoints">Punkt hinzufügen</button></div>
+          <div id="heroPointList" class="item-list"></div>
         </section>
 
         <section class="panel" data-panel="content" aria-labelledby="panel-content-title" hidden>
           <div class="panel__header"><p class="eyebrow">Persönliche Inhalte</p><h2 id="panel-content-title">Deine Haltung und Geschichte</h2><p>Hier bearbeitest du die drei längeren Textbereiche. Ihre Reihenfolge kannst du später unter „Aufbau“ verändern.</p></div>
-          <fieldset class="copy-group"><legend>Über Franz</legend><label class="field"><span>Kleine Zeile</span><input type="text" data-bind="copy.introLabel"></label><label class="field"><span>Titel</span><input type="text" data-bind="copy.introTitle"></label><label class="field"><span>Persönliches Zitat</span><textarea data-bind="copy.introQuote" rows="4"></textarea></label><label class="field"><span>Text</span><textarea data-bind="copy.introText" rows="6"></textarea></label></fieldset>
+          <fieldset class="copy-group"><legend>Über Franz</legend><label class="field"><span>Kleine Zeile</span><input type="text" data-bind="copy.introLabel"></label><label class="field"><span>Titel</span><input type="text" data-bind="copy.introTitle"></label><label class="field"><span>Persönliches Zitat</span><textarea data-bind="copy.introQuote" rows="4"></textarea></label><label class="field"><span>Text</span><textarea data-bind="copy.introText" rows="6"></textarea></label><div class="list-editor-head"><div><strong>Punkte unter dem Text</strong><span>Optional, 0 bis 6 kurze Aussagen</span></div><button class="button button--primary button--add" type="button" data-action="add-text-item" data-list="introPoints">Punkt hinzufügen</button></div><div id="introPointList" class="item-list"></div></fieldset>
           <fieldset class="copy-group"><legend>Frei spielen</legend><label class="field"><span>Kleine Zeile</span><input type="text" data-bind="copy.whyLabel"></label><label class="field"><span>Titel</span><input type="text" data-bind="copy.whyTitle"></label><label class="field"><span>Text</span><textarea data-bind="copy.whyText" rows="6"></textarea></label></fieldset>
           <fieldset class="copy-group"><legend>Meine Geschichte</legend><label class="field"><span>Kleine Zeile</span><input type="text" data-bind="copy.storyLabel"></label><label class="field"><span>Titel</span><input type="text" data-bind="copy.storyTitle"></label><label class="field"><span>Text</span><textarea data-bind="copy.storyText" rows="6"></textarea></label></fieldset>
         </section>
 
         <section class="panel" data-panel="services" aria-labelledby="panel-services-title" hidden>
-          <div class="panel__header panel__header--action"><div><p class="eyebrow">Die Klangabende</p><h2 id="panel-services-title">Klangmomente</h2><p>Beschreibe in kurzen, übersichtlichen Karten, was Menschen bei dir erleben können.</p></div><button class="button button--primary" type="button" data-action="add-offer">Klangmoment hinzufügen</button></div>
+          <div class="panel__header panel__header--action"><div><p class="eyebrow">Die Klangabende</p><h2 id="panel-services-title">Klangmomente</h2><p>Beschreibe in kurzen, übersichtlichen Karten, was Menschen bei dir erleben können.</p></div><button class="button button--primary button--add" type="button" data-action="add-offer">Klangmoment hinzufügen</button></div>
+          <label class="field"><span>Kleine Zeile</span><input type="text" data-bind="copy.offersLabel"></label>
           <label class="field"><span>Titel des Bereichs</span><input type="text" data-bind="copy.offersTitle"></label>
           <label class="field"><span>Einleitung</span><textarea data-bind="copy.offersIntro" rows="4"></textarea></label>
           <div id="offerList" class="item-list"></div>
@@ -73,17 +76,21 @@
 
         <section class="panel" data-panel="structure" aria-labelledby="panel-structure-title" hidden>
           <div class="panel__header"><p class="eyebrow">Reihenfolge und Sichtbarkeit</p><h2 id="panel-structure-title">Website aufbauen</h2><p>Verschiebe Bereiche mit den Pfeilen nach oben oder unten. Über „Sichtbar“ kannst du einen Bereich ein- oder ausblenden. Das Titelbild bleibt immer am Anfang.</p></div>
+          <fieldset class="copy-group"><legend>Navigation benennen</legend><label class="field"><span>Über Franz</span><input type="text" data-bind="copy.navIntro"></label><label class="field"><span>Frei spielen</span><input type="text" data-bind="copy.navWhy"></label><label class="field"><span>Klangabende</span><input type="text" data-bind="copy.navOffers"></label><label class="field"><span>Geschichte</span><input type="text" data-bind="copy.navStory"></label><label class="field"><span>Kontakt</span><input type="text" data-bind="copy.navContact"></label></fieldset>
           <div id="structureList" class="structure-list"></div>
         </section>
 
         <section class="panel" data-panel="contact" aria-labelledby="panel-contact-title" hidden>
           <div class="panel__header"><p class="eyebrow">Erreichbarkeit</p><h2 id="panel-contact-title">Kontakt und Abschluss</h2><p>Aus deinen Angaben entstehen direkt anklickbare E-Mail- und Telefonknöpfe.</p></div>
+          <label class="field"><span>Kleine Zeile</span><input type="text" data-bind="copy.contactLabel"></label>
           <label class="field"><span>Abschluss-Titel</span><input type="text" data-bind="copy.contactTitle"></label>
           <label class="field"><span>Abschluss-Text</span><textarea data-bind="copy.contactText" rows="4"></textarea></label>
           <div class="field-grid"><label class="field"><span>Telefon</span><input type="tel" data-bind="site.phone" autocomplete="tel"></label><label class="field"><span>E-Mail</span><input type="email" data-bind="site.email" autocomplete="email"></label></div>
+          <div class="field-grid"><label class="field"><span>Text des E-Mail-Knopfs</span><input type="text" data-bind="copy.contactEmailAction"></label><label class="field"><span>Zusatz beim Telefonknopf</span><input type="text" data-bind="copy.contactPhoneAction"></label></div>
           <label class="field"><span>Adresse</span><input type="text" data-bind="site.address" autocomplete="street-address"></label>
           <div class="field-grid"><label class="field"><span>PLZ</span><input type="text" data-bind="site.postalCode" inputmode="numeric" autocomplete="postal-code"></label><label class="field"><span>Ort</span><input type="text" data-bind="site.city" autocomplete="address-level2"></label></div>
           <label class="field"><span>Instagram (optional)</span><input type="url" data-bind="site.instagram" placeholder="https://instagram.com/..."></label>
+          <label class="field"><span>Text des Instagram-Knopfs</span><input type="text" data-bind="copy.contactInstagramAction"></label>
         </section>
 
         <section class="panel" data-panel="design" aria-labelledby="panel-design-title" hidden>
@@ -110,6 +117,13 @@
       <div class="preview-desk"><iframe id="previewFrame" title="Vorschau der Musikraum-Website" sandbox="allow-scripts" data-viewport="desktop"></iframe></div>
     </section>
   </main>
+
+  <template id="textItemTemplate">
+    <article class="item-card item-card--compact" data-text-item-card>
+      <div class="item-card__topline"><strong data-text-item-number>Punkt</strong><button class="icon-button" type="button" data-action="remove-text-item" aria-label="Punkt entfernen">×</button></div>
+      <label class="field"><span>Text</span><input type="text" data-text-item-field placeholder="Kurze Aussage"></label>
+    </article>
+  </template>
 
   <template id="offerTemplate">
     <article class="item-card" data-offer-card>

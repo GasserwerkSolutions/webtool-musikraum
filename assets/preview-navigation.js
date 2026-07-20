@@ -4,7 +4,7 @@ import { ensureEditorOpen } from "./sidebar.js";
 const highlightTimers = new WeakMap();
 export function navigateToPreviewTarget(context, target) {
     const valid = isPreviewTarget(target, context.store.snapshot);
-    const panel = target.kind === "offer" ? "services" : valid ? panelForTarget(target) : null;
+    const panel = target.kind === "offer" ? "services" : target.kind === "text-item" ? panelForTarget(target) : valid ? panelForTarget(target) : null;
     if (!panel)
         return;
     ensureEditorOpen(context);
@@ -25,8 +25,8 @@ export function navigateToPreviewTarget(context, target) {
         void destination.offsetWidth;
         destination.classList.add("is-preview-target");
         highlightTimers.set(destination, window.setTimeout(() => { destination.classList.remove("is-preview-target"); highlightTimers.delete(destination); }, 1800));
-        const missing = target.kind === "offer" && !valid;
-        context.announcer.textContent = missing ? "Der gewählte Klangmoment ist nicht mehr vorhanden. Der Bereich Klangmomente wurde geöffnet." : "Das passende Bearbeitungsfeld ist geöffnet.";
+        const missing = (target.kind === "offer" || target.kind === "text-item") && !valid;
+        context.announcer.textContent = missing ? "Der gewählte Eintrag ist nicht mehr vorhanden. Der passende Bereich wurde geöffnet." : "Das passende Bearbeitungsfeld ist geöffnet.";
     }));
 }
 function resolveTarget(target) {
@@ -34,6 +34,8 @@ function resolveTarget(target) {
         return document.querySelector(`[data-bind="${target.field}"]`);
     if (target.kind === "offer")
         return document.querySelector(`[data-offer-card][data-offer-id="${CSS.escape(target.offerId)}"] [data-offer-field="${target.field}"]`);
+    if (target.kind === "text-item")
+        return document.querySelector(`[data-text-list="${target.list}"][data-text-item-id="${CSS.escape(target.itemId)}"] [data-text-item-field]`);
     return document.querySelector(`[data-panel="${target.panel}"] h1, [data-panel="${target.panel}"] h2`);
 }
 function revealTarget(context, target) {

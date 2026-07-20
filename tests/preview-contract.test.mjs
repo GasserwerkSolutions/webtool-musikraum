@@ -12,13 +12,17 @@ test("accepts only current, well-formed preview targets", () => {
   const draft = createDefaultDraft(); const base = { channel: "musikraum-preview", version: 1, instanceId: "current", action: "navigate-to-editor" };
   assert.equal(parseNavigateMessage({ ...base, target: { kind: "field", field: "copy.heroTitle" } }, "current", draft)?.target.kind, "field");
   assert.equal(parseNavigateMessage({ ...base, target: { kind: "offer", offerId: draft.offers[1].id, field: "text" } }, "current", draft)?.target.kind, "offer");
+  assert.equal(parseNavigateMessage({ ...base, target: { kind: "text-item", list: "heroPoints", itemId: draft.heroPoints[0].id } }, "current", draft)?.target.kind, "text-item");
   assert.equal(parseNavigateMessage({ ...base, instanceId: "old", target: { kind: "panel", panel: "hero" } }, "current", draft), null);
   assert.equal(parseNavigateMessage({ ...base, target: { kind: "field", field: "site.unknown" } }, "current", draft), null);
+  assert.equal(parseNavigateMessage({ ...base, target: { kind: "text-item", list: "unknown", itemId: "x" } }, "current", draft), null);
   assert.equal(parseNavigateMessage({ ...base, target: { kind: "offer", offerId: "deleted", field: "title" } }, "current", draft)?.target.kind, "offer");
 });
 
 test("resolves the editor panel for all target kinds", () => {
   assert.equal(panelForTarget({ kind: "field", field: "site.email" }), "contact");
   assert.equal(panelForTarget({ kind: "offer", offerId: "offer-2", field: "text" }), "services");
+  assert.equal(panelForTarget({ kind: "text-item", list: "heroPoints", itemId: "hero-1" }), "hero");
+  assert.equal(panelForTarget({ kind: "text-item", list: "introPoints", itemId: "intro-1" }), "content");
   assert.equal(panelForTarget({ kind: "panel", panel: "design" }), "design");
 });

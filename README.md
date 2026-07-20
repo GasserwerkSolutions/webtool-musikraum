@@ -5,26 +5,32 @@ Ein bewusst einfaches, persönliches Website-Werkzeug für Franz Gasser. Datenmo
 ## Was Franz bearbeiten kann
 
 - Name und Leitsatz der Website
-- Einstieg auf dem grossen Titelbild
+- sämtliche sichtbaren Website-Inhalte: Einstieg, Eyebrows, Überschriften, Fliesstexte, Navigation und Knopftexte
+- die kurzen Punkte im Titelbild als Liste mit 0 bis 6 Einträgen
+- die kurzen Punkte unter „Über Franz“ als Liste mit 0 bis 6 Einträgen
 - persönliche Texte über Franz, seine Haltung und seine Geschichte
-- Klangmomente für die Klangabende
+- Klangmomente für die Klangabende, jeweils mit Titel und Beschreibung
 - Reihenfolge und Sichtbarkeit der Inhaltsbereiche
-- Kontaktangaben und Abschluss
+- Kontaktangaben, Abschluss-Texte und Kontakt-CTA-Beschriftungen
 - vier kuratierte Farbwelten
 - responsive Live-Vorschau für Desktop, Tablet und Mobiltelefon
-- direkte Bearbeitung: Ein Klick auf sichtbaren Text öffnet exakt das zugehörige Feld
+- direkte Bearbeitung: Ein Klick auf sichtbaren Inhalt öffnet das zugehörige Feld
 - falt- und per Maus, Touch oder Tastatur grössenveränderbare Bearbeitungsfläche
-- feste Vorschaugrössen von 1200, 768 und 390 Pixeln mit eindeutiger Scrollverantwortung
-- ruhige Vorschau-Aktualisierung nach abgeschlossener Texteingabe, damit das feste Titelbild beim Schreiben stabil bleibt
 - Rückgängig/Wiederholen per Knopf oder Tastatur
 - herunterladbare und wieder einlesbare Entwurfssicherung
 - Export als einzelne HTML-Datei
 
-Der Entwurf besteht nur aus Website-Angaben, Texten, Klangmomenten, Bereichsaufbau und Farbwelt. Er wird lokal in IndexedDB gespeichert. Es gibt keine Anmeldung und keine automatische Veröffentlichung.
+Änderungen werden während der Eingabe unmittelbar in der Vorschau gerendert. Die Geräteauswahl sitzt im Header; die Vorschau bleibt innerhalb der verfügbaren Breite und verwendet 12-Pixel-Ecken. Der Button „Klangmoment hinzufügen“ bleibt auch bei minimaler Sidebar-Breite sichtbar.
 
-## Bewusste Grenze der ersten Version
+Der Entwurf besteht nur aus Website-Angaben, Texten, Listen, Klangmomenten, Bereichsaufbau und Farbwelt. Er wird lokal in IndexedDB gespeichert. Es gibt keine Anmeldung und keine automatische Veröffentlichung.
 
-Die allgemeine Bildverwaltung des Ausgangs-Builders ist noch nicht fertig. Deshalb verwendet dieses Werkzeug vorerst das kuratierte Musikraum-Titelbild aus `GasserwerkSolutions/musikraum`. Beim Export versucht der Browser, das Bild direkt als Data-URL in die HTML-Datei einzubetten. Falls das Laden blockiert ist, bleibt die feste Online-Quelle als Rückfall erhalten.
+## Datenmodell und Kompatibilität
+
+Bestehende Entwürfe und Sicherungen der ersten Schema-Version bleiben kompatibel. Fehlen die neueren Listen oder Textfelder, ergänzt die Normalisierung die bisherigen Musikraum-Standardwerte. Eine ausdrücklich leere Liste bleibt dagegen leer. Hero- und Intro-Punktlisten werden auf höchstens sechs Einträge begrenzt; Klangmomente auf höchstens zwölf.
+
+## Bewusste Grenze
+
+Die allgemeine Bildverwaltung des Ausgangs-Builders ist noch nicht fertig. Deshalb verwendet dieses Werkzeug vorerst das kuratierte Musikraum-Titelbild aus `GasserwerkSolutions/musikraum`. Die Quelle ist auf einen konkreten Commit festgelegt. Beim Export versucht der Browser, das Bild direkt als Data-URL in die HTML-Datei einzubetten. Falls das Laden blockiert ist, bleibt die feste Online-Quelle als Rückfall erhalten.
 
 ## Entwicklung
 
@@ -38,8 +44,8 @@ python3 -m http.server 8080
 
 Danach `http://localhost:8080` öffnen.
 
-Die TypeScript-Quellen liegen unter `src/`; die kompilierten, statisch auslieferbaren Browsermodule unter `assets/` werden bewusst mitcommittet. `npm run check` umfasst zusätzlich zu Typ- und Logiktests eine echte Chromium-Abnahme für iframe-Navigation, Breakpoints, Scrollcontainer und Sidebar-Bedienung.
+Die TypeScript-Quellen liegen unter `src/`; die kompilierten, statisch auslieferbaren Browsermodule unter `assets/` werden bewusst mitcommittet. `npm run check` umfasst Typprüfung, Logik- und Sicherheitstests sowie eine echte Chromium-Abnahme für Live-Rendering, iframe-Navigation, Breakpoints, Scrollcontainer, Footer-Abstände und Sidebar-Bedienung.
 
-Die Editorvorschau und der HTML-Export entstehen aus demselben Renderer. Nur `preview: true` ergänzt die kurzlebigen Zielkennungen, das versionierte Nachrichtenprotokoll und die Bedienhilfen. Der Export enthält diese Editorbestandteile von Anfang an nicht. Die Funktion verändert das Entwurfsschema nicht.
+Editorvorschau und HTML-Export entstehen aus demselben Renderer. Nur `preview: true` ergänzt kurzlebige Zielkennungen, das versionierte Nachrichtenprotokoll und Bedienhilfen. Der Export enthält diese Editorbestandteile nicht.
 
 Nach dem Zusammenführen kann das Werkzeug direkt über GitHub Pages ausgeliefert werden.
