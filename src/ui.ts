@@ -3,6 +3,7 @@ import type { BuilderStore, HistoryState } from "./store.js";
 import { handleClick, handleInput } from "./ui-actions.js";
 import {
   bindStaticInputs,
+  renderContentOverview,
   renderDynamicControls,
   renderPreview,
   renderSaveState,
@@ -12,7 +13,7 @@ import {
 import { createUiContext, type UiContext } from "./ui-shared.js";
 import { parseNavigateMessage, parseScrollMessage } from "./preview-contract.js";
 import { PreviewRuntime } from "./preview-runtime.js";
-import { navigateToPreviewTarget } from "./preview-navigation.js";
+import { navigateToEditorTarget } from "./preview-navigation.js";
 import { initSidebar } from "./sidebar.js";
 import { handleReorderKeydown, handleReorderPointerDown, handleReorderPointerEnd, handleReorderPointerMove } from "./reorder-actions.js";
 
@@ -35,10 +36,12 @@ export class BuilderUi {
     initSidebar(this.context);
     bindStaticInputs(this.context);
     renderDynamicControls(this.context);
+    renderContentOverview(this.context);
     renderPreview(this.context);
     updateReadiness(this.context);
     this.context.store.subscribe((event) => {
       if (!this.context.suppressPreview) this.context.previewRuntime?.enqueue(event);
+      renderContentOverview(this.context);
       updateReadiness(this.context);
     });
     this.context.store.subscribeSave((state, error) => renderSaveState(this.context, state, error));
@@ -70,7 +73,7 @@ export class BuilderUi {
     const scroll = parseScrollMessage(event.data, runtime.instanceId, runtime.renderGeneration);
     if (scroll && scroll.revision === runtime.appliedRevision) { this.context.previewScroll = scroll.position; return; }
     const navigate = parseNavigateMessage(event.data, runtime.instanceId, this.context.store.snapshot, runtime.renderGeneration);
-    if (navigate && navigate.revision === runtime.appliedRevision) navigateToPreviewTarget(this.context, navigate.target);
+    if (navigate && navigate.revision === runtime.appliedRevision) navigateToEditorTarget(this.context, navigate.target);
   }
 }
 
