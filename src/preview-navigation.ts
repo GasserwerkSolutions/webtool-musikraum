@@ -2,16 +2,17 @@ import { isPreviewTarget, panelForTarget, type PreviewTarget } from "./preview-c
 import type { UiContext } from "./ui-shared.js";
 import { showPanel } from "./ui-render.js";
 import { ensureEditorOpen } from "./sidebar.js";
+
 const highlightTimers = new WeakMap<HTMLElement, number>();
 
-export function navigateToPreviewTarget(context: UiContext, target: PreviewTarget): void {
+export function navigateToEditorTarget(context: UiContext, target: PreviewTarget): void {
   const valid = isPreviewTarget(target, context.store.snapshot);
-  const panel = target.kind === "offer" ? "services" : target.kind === "text-item" ? panelForTarget(target) : valid ? panelForTarget(target) : null;
+  const panel = target.kind === "offer" || target.kind === "text-item" ? panelForTarget(target) : valid ? panelForTarget(target) : null;
   if (!panel) return;
   ensureEditorOpen(context);
   showPanel(context, panel);
   requestAnimationFrame(() => requestAnimationFrame(() => {
-    const element = valid ? resolveTarget(target) : null;
+    const element = valid ? resolveEditorTarget(target) : null;
     const destination = element ?? document.querySelector<HTMLElement>(`[data-panel="${panel}"] h1, [data-panel="${panel}"] h2`);
     if (!destination) return;
     if (destination.matches("h1, h2")) destination.tabIndex = -1;
@@ -25,7 +26,9 @@ export function navigateToPreviewTarget(context: UiContext, target: PreviewTarge
   }));
 }
 
-function resolveTarget(target: PreviewTarget): HTMLElement | null {
+export const navigateToPreviewTarget = navigateToEditorTarget;
+
+export function resolveEditorTarget(target: PreviewTarget): HTMLElement | null {
   if (target.kind === "field") return document.querySelector<HTMLElement>(`[data-bind="${target.field}"]`);
   if (target.kind === "offer") return document.querySelector<HTMLElement>(`[data-offer-card][data-offer-id="${CSS.escape(target.offerId)}"] [data-offer-field="${target.field}"]`);
   if (target.kind === "text-item") return document.querySelector<HTMLElement>(`[data-text-list="${target.list}"][data-text-item-id="${CSS.escape(target.itemId)}"] [data-text-item-field]`);
@@ -40,4 +43,5 @@ function revealTarget(context: UiContext, target: HTMLElement): void {
   target.scrollIntoView({ block: "center", behavior: reducedMotion() ? "auto" : "smooth" });
   const viewport = window.visualViewport; if (viewport) { const reposition = () => { target.scrollIntoView({ block: "center", behavior: "auto" }); viewport.removeEventListener("resize", reposition); }; viewport.addEventListener("resize", reposition, { once: true }); setTimeout(() => viewport.removeEventListener("resize", reposition), 1200); }
 }
+
 function reducedMotion(): boolean { return matchMedia("(prefers-reduced-motion: reduce)").matches; }
