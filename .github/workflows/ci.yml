@@ -53,8 +53,12 @@ jobs:
             git commit -m "Synchronize PR4 browser modules"
             git push origin HEAD:feature/content-overview-direct-editing
           fi
-      - name: Unit and DOM tests
-        run: node --test $(find tests -maxdepth 1 -name '*.test.mjs' ! -name 'e2e.test.mjs' -print | sort)
+      - name: Content overview tests
+        run: node --test tests/content-overview.test.mjs
+      - name: Preview target tests
+        run: node --test tests/preview-targets.test.mjs
+      - name: Existing unit and DOM tests
+        run: node --test $(find tests -maxdepth 1 -name '*.test.mjs' ! -name 'e2e.test.mjs' ! -name 'content-overview.test.mjs' ! -name 'preview-targets.test.mjs' -print | sort)
       - name: Chromium acceptance
         run: node --test tests/e2e.test.mjs
       - name: Compiled assets are current
