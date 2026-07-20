@@ -76,6 +76,11 @@ export function handleInput(context, event) {
         return;
     }
     const bind = target.dataset.bind;
+    if (bind === "theme.primary" || bind === "theme.accent") {
+        context.store.flushHistoryGroup();
+        context.store.mutate((draft) => setAtPath(draft, bind, inputValue(target)), { intent: { type: "set-theme" }, history: { label: bind === "theme.primary" ? "Primärfarbe geändert" : "Akzentfarbe geändert", target: { kind: "panel", panel: "design" } } });
+        return;
+    }
     if (bind && bind in EDITOR_FIELD_REGISTRY) {
         const field = bind;
         try {
