@@ -85,8 +85,8 @@ export function handleReorderPointerMove(context: UiContext, event: PointerEvent
 
 export function handleReorderPointerEnd(context: UiContext, event: PointerEvent, cancelled = false): boolean {
   const drag = activeDrags.get(context); if (!drag || drag.pointerId !== event.pointerId) return false;
-  const { target, targetIndex: nextIndex, originalIndex, handle } = drag;
-  try { handle.releasePointerCapture(event.pointerId); } catch { /* unsupported capture is harmless */ }
+  const { target, targetIndex: nextIndex, originalIndex } = drag;
+  releasePointerCapture(drag);
   cleanupDrag(context, drag);
   if (cancelled) context.announcer.textContent = "Verschieben abgebrochen.";
   else if (nextIndex === originalIndex) context.announcer.textContent = "Reihenfolge unverändert.";
@@ -145,8 +145,9 @@ function resolveReorderTarget(element: Element): ReorderTarget | null {
 function resolveReorderItem(element: Element): HTMLElement | null { return element.closest<HTMLElement>("[data-text-item-card], [data-offer-card], [data-section-key]"); }
 function reorderItems(container: HTMLElement): HTMLElement[] { return [...container.children].filter((child): child is HTMLElement => child instanceof HTMLElement && child.matches("[data-text-item-card], [data-offer-card], [data-section-key]")); }
 function clearDropMarkers(container: HTMLElement): void { reorderItems(container).forEach((item) => item.classList.remove("is-drop-target-before", "is-drop-target-after")); }
+function releasePointerCapture(drag: ActiveDrag): void { try { drag.handle.releasePointerCapture(drag.pointerId); } catch { /* unsupported capture is harmless */ } }
 function cleanupDrag(context: UiContext, drag: ActiveDrag): void { drag.item.classList.remove("is-dragging"); drag.handle.classList.remove("is-dragging-handle"); clearDropMarkers(drag.container); activeDrags.delete(context); }
-function cancelActiveDrag(context: UiContext, message?: string): void { const drag = activeDrags.get(context); if (!drag) return; cleanupDrag(context, drag); if (message) context.announcer.textContent = message; }
+function cancelActiveDrag(context: UiContext, message?: string): void { const drag = activeDrags.get(context); if (!drag) return; releasePointerCapture(drag); cleanupDrag(context, drag); if (message) context.announcer.textContent = message; }
 
 function targetIndex(draft: Readonly<MusicraumDraft>, target: ReorderTarget): number { if (target.kind === "section") return draft.layout.order.indexOf(target.section); return draft[target.collection].findIndex((item) => item.id === target.itemId); }
 function targetCount(draft: Readonly<MusicraumDraft>, target: ReorderTarget): number { return target.kind === "section" ? draft.layout.order.length : draft[target.collection].length; }
