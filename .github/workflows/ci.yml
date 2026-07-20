@@ -19,5 +19,25 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run check
-      - run: git diff --exit-code -- assets
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Build assets
+        run: npm run build
+      - name: Browser tests
+        run: node --test tests/browser.test.mjs
+      - name: Domain tests
+        run: node --test tests/domain.test.mjs tests/editable-copy.test.mjs
+      - name: Persistence tests
+        run: node --test tests/persistence.test.mjs
+      - name: Preview contract tests
+        run: node --test tests/preview-contract.test.mjs
+      - name: Security tests
+        run: node --test tests/security.test.mjs
+      - name: Static smoke tests
+        run: node --test tests/static-smoke.test.mjs
+      - name: Store tests
+        run: node --test tests/store.test.mjs
+      - name: Chromium E2E
+        run: node --test tests/e2e.test.mjs
+      - name: Compiled assets are current
+        run: git diff --exit-code -- assets
