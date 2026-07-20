@@ -33,7 +33,7 @@
         <button class="surface-nav__item" type="button" data-panel-target="structure">Aufbau</button>
         <button class="surface-nav__item" type="button" data-panel-target="contact">Kontakt</button>
         <button class="surface-nav__item" type="button" data-panel-target="design">Farben</button>
-        <button class="surface-nav__item" type="button" data-panel-target="publish">Fertig</button>
+        <button class="surface-nav__item" type="button" data-panel-target="publish">Übersicht</button>
       </nav>
       <button id="sidebarToggle" class="sidebar-toggle" type="button" aria-controls="surfaceStage" aria-expanded="true" title="Bearbeitungsfläche einklappen"><span aria-hidden="true">‹</span><span class="visually-hidden">Bearbeitungsfläche einklappen</span></button>
       <div id="sidebarResizer" class="sidebar-resizer" role="separator" aria-label="Breite der Bearbeitungsfläche" aria-orientation="vertical" aria-valuemin="420" aria-valuemax="720" aria-valuenow="560" tabindex="0"></div>
@@ -105,7 +105,9 @@
         </section>
 
         <section class="panel" data-panel="publish" aria-labelledby="panel-publish-title" hidden>
-          <div class="panel__header"><p class="eyebrow">Prüfen und mitnehmen</p><h2 id="panel-publish-title">Deine Website ist bereit</h2><p>Prüfe die wichtigsten Inhalte. Danach kannst du die Website als einzelne HTML-Datei herunterladen oder deinen Entwurf sichern.</p></div>
+          <div class="panel__header"><p class="eyebrow">Alles an einem Ort</p><h2 id="panel-publish-title">Inhaltsübersicht</h2><p>Sieh sofort, welche Inhalte vollständig, optional leer, unvollständig oder ausgeblendet sind. Jeder Eintrag führt direkt zum gleichen Bearbeitungsziel wie die Vorschau.</p></div>
+          <div id="contentOverviewList" class="content-overview"></div>
+          <div class="overview-subheading"><h3>Kurzer Abschlusscheck</h3><p>Diese einfache Prüfung bleibt bis zum vollständigen Readiness-Preflight in PR 5 bestehen.</p></div>
           <div id="readinessList" class="readiness-list"></div>
           <div class="publish-actions"><button class="button button--primary button--large" type="button" data-action="export">Website als HTML exportieren</button><button class="button button--quiet" type="button" data-action="download-backup">Sicherung herunterladen</button><button class="button button--quiet" type="button" data-action="restore-backup">Sicherung wiederherstellen</button><input id="backupInput" class="visually-hidden" type="file" accept="application/json,.json" aria-label="Musikraum-Sicherung auswählen"></div>
           <p class="privacy-note">Deine Texte, Farben und die Reihenfolge bleiben in diesem Browser gespeichert. Das Titelbild ist vorgegeben, bis die Bildverwaltung ergänzt wird.</p>
