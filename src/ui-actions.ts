@@ -44,7 +44,7 @@ export function handleInput(context: UiContext, event: Event): void {
   if (target.matches("[data-layout-visible]")) {
     const key = target.closest<HTMLElement>("[data-section-key]")?.dataset.sectionKey as SectionKey | undefined; if (!key || !(target instanceof HTMLInputElement)) return;
     context.store.flushHistoryGroup();
-    context.store.mutate((draft) => { draft.layout.visibility[key] = target.checked; }, { intent: { type: "set-section-visibility", section: key }, history: { label: `${sectionLabel(key)} ${target.checked ? "eingeblendet" : "ausgeblendet"}`, target: { kind: "panel", panel: "structure" } } });
+    context.store.mutate((draft) => { draft.layout.visibility[key] = target.checked; }, { intent: { type: "set-section-visibility", section: key }, history: { label: `${sectionLabel(key)} ${target.checked ? "eingeblendet" : "ausgeblendet"}`, target: { kind: "section", section: key } } });
     renderStructure(context); return;
   }
   const bind = target.dataset.bind;
