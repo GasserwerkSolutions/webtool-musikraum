@@ -44,11 +44,17 @@ test("collection moves replace one shared region and supersede nested text patch
   assert.equal(plan.operations[0].html, regionFromFullHtml(full, "hero"));
 }));
 
-test("layout, metadata and preset changes require a complete render", () => withDom(() => {
+test("normal fields stay incremental while layout and preset changes require a complete render", () => withDom(() => {
   const draft = createDefaultDraft();
-  assert.equal(planPreviewUpdate([mutation(2, { type: "section-move", section: "why", previousIndex: 1, nextIndex: 0 })], draft, { ...renderOptions, revision: 2 }).kind, "full");
-  assert.equal(planPreviewUpdate([mutation(2, { type: "field-set", field: "site.name", previousPresence: "present", nextPresence: "present" })], draft, { ...renderOptions, revision: 2 }).kind, "full");
-  assert.equal(planPreviewUpdate([mutation(2, { type: "theme-set", changed: ["preset", "primary", "accent"] })], draft, { ...renderOptions, revision: 2 }).kind, "full");
+  const sitePlan = planPreviewUpdate([mutation(2, { type: "field-set", field: "site.name", previousPresence: "present", nextPresence: "present" })], draft, { ...renderOptions, revision: 2 });
+  assert.equal(sitePlan.kind, "patch");
+  assert.deepEqual(sitePlan.operations.map((operation) => operation.type === "replace-region" ? operation.region : operation.type), ["header", "contact", "footer"]);
+  const subtitlePlan = planPreviewUpdate([mutation(2, { type: "field-set", field: "copy.heroSubtitle", previousPresence: "present", nextPresence: "present" })], draft, { ...renderOptions, revision: 2 });
+  assert.deepEqual(subtitlePlan, { kind: "patch", revision: 2, operations: [{ type: "patch-text", target: { kind: "field", field: "copy.heroSubtitle" }, value: draft.copy.heroSubtitle }] });
+  draft.layout.visibility.contact = false;
+  assert.deepEqual(planPreviewUpdate([mutation(3, { type: "field-set", field: "site.phone", previousPresence: "present", nextPresence: "present" })], draft, { ...renderOptions, revision: 3 }), { kind: "noop", revision: 3 });
+  assert.equal(planPreviewUpdate([mutation(4, { type: "section-move", section: "why", previousIndex: 1, nextIndex: 0 })], draft, { ...renderOptions, revision: 4 }).kind, "full");
+  assert.equal(planPreviewUpdate([mutation(5, { type: "theme-set", changed: ["preset", "primary", "accent"] })], draft, { ...renderOptions, revision: 5 }).kind, "full");
 }));
 
 test("direct color changes use a theme patch", () => withDom(() => {

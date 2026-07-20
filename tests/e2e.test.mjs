@@ -35,6 +35,19 @@ test("real browser layout, live editing and sidebar contract", { timeout: 90000 
 
     const previousLocation = preview.url(); const mail = await preview.$('a[href^="mailto:"]'); if (mail) await mail.click(); assert.equal(preview.url(), previousLocation);
 
+
+    await page.click('[data-viewport="desktop"]'); await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 450)));
+    await preview.evaluate(() => { const root = document.documentElement; const previous = root.style.scrollBehavior; root.style.scrollBehavior = 'auto'; scrollTo(0, document.querySelector('#angebote')?.offsetTop ?? 700); root.style.scrollBehavior = previous; });
+    const stableScroll = await preview.evaluate(() => scrollY); const stableSrcdoc = await page.$eval('#previewFrame', (frame) => frame.getAttribute('srcdoc'));
+    await page.click('[data-panel-target="site"]');
+    const stableName = `Musikraum ${Date.now()}`;
+    await page.$eval('[data-bind="site.name"]', (input, value) => { input.value = value; input.dispatchEvent(new Event('input', { bubbles: true })); }, stableName);
+    await preview.waitForFunction((value) => document.querySelector('.brand strong')?.textContent === value, {}, stableName);
+    await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 120)));
+    assert.equal(await page.$eval('#previewFrame', (frame) => frame.getAttribute('srcdoc')), stableSrcdoc);
+    closeEnough(await preview.evaluate(() => scrollY), stableScroll, 1);
+    assert.equal(await preview.$eval('.hero-notes > span', (item) => item.querySelector('.preview-edit-trigger')), null);
+
     await preview.click("h1 .preview-edit-trigger"); await page.waitForFunction(() => document.activeElement?.getAttribute("data-bind") === "copy.heroTitle"); assert.equal(await page.evaluate(() => document.querySelector('[data-panel="hero"]')?.hidden), false);
     assert.match(await page.$eval('[data-bind="copy.heroTitle"]', (input) => input.closest("label")?.querySelector("[data-policy-help]")?.textContent ?? ""), /vollständigen Einstieg erforderlich/);
     const headerBefore = await headerSnapshot(page); assert.equal(headerBefore.statusWidth, 30); assert.equal(headerBefore.wrapViolations.length, 0); assert.ok(headerBefore.topbarOverflow <= 1); assert.ok(headerBefore.topbarHeight <= 57); assert.equal(headerBefore.undoText, "Rückgängig"); assert.equal(headerBefore.redoText, "Wiederholen");

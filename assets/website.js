@@ -108,7 +108,14 @@ function renderSection(key, draft, address, options) {
     const previewLinks = options.preview ? `${email && emailLabel ? previewLink(emailLabel, "copy.contactEmailAction", buildMailtoHref(email, draft.site.name), "button button-light", "contact-email-action", options) : ""}${phone && phoneLabel ? `<span class="button button-ghost preview-composite-action">${editable(draft.site.phone, "site.phone", "contact-phone-number", options)}${phoneAction ? ` ${editable(phoneAction, "copy.contactPhoneAction", "contact-phone-action", options)}` : ""}</span>` : ""}${instagram && instagramLabel ? previewLink(instagramLabel, "copy.contactInstagramAction", instagram, "button button-ghost", "contact-instagram-action", options) : ""}` : contactLinks;
     return `<section class="section contact" id="kontakt"${previewSectionAttr(options, "kontakt", "contact")}${previewRegionAttr(options, "contact")}><div class="container narrow"><p class="eyebrow">${editable(copy.contactLabel, "copy.contactLabel", "contact-label", options)}</p><h2>${editable(copy.contactTitle, "copy.contactTitle", "contact-title", options)}</h2><p class="lead">${editable(copy.contactText, "copy.contactText", "contact-text", options)}</p>${address ? `<p class="address">${addressParts(draft, "contact-address", options)}</p>` : ""}${previewLinks ? `<div class="actions centered">${previewLinks}</div>` : ""}</div></section>`;
 }
-function renderTextList(items, list, tag, options) { return items.filter((item) => item.text.trim()).map((item) => `<${tag}>${editableTextItem(item.text, list, item.id, `${list}-${item.id}`, options)}</${tag}>`).join(""); }
+function renderTextList(items, list, tag, options) {
+    return items.filter((item) => item.text.trim()).map((item) => {
+        const value = escapeHtml(item.text);
+        return options.preview
+            ? `<${tag} class="preview-edit-trigger"${previewTargetAttr(options, { kind: "text-item", list, itemId: item.id }, `${list}-${item.id}`)}>${value}</${tag}>`
+            : `<${tag}>${value}</${tag}>`;
+    }).join("");
+}
 function buildMailtoHref(email, siteName) { return `mailto:${encodeURIComponent(email)}?${new URLSearchParams({ subject: `Anfrage ${siteName}` }).toString()}`; }
 function previewTargetAttr(options, target, occurrence, interactive = false) {
     if (!options.preview)
@@ -129,7 +136,6 @@ function previewSectionAttr(options, section, panel) { return options.preview ? 
 function previewRegionAttr(options, region) { return options.preview ? ` data-preview-region="${escapeAttr(region)}"` : ""; }
 function editable(value, field, occurrence, options) { return options.preview ? `<span class="preview-edit-trigger"${previewTargetAttr(options, { kind: "field", field }, occurrence)}>${escapeHtml(value)}</span>` : escapeHtml(value); }
 function editableOffer(value, offerId, field, occurrence, options) { return options.preview ? `<span class="preview-edit-trigger"${previewTargetAttr(options, { kind: "offer", offerId, field }, occurrence)}>${escapeHtml(value)}</span>` : escapeHtml(value); }
-function editableTextItem(value, list, itemId, occurrence, options) { return options.preview ? `<span class="preview-edit-trigger"${previewTargetAttr(options, { kind: "text-item", list, itemId }, occurrence)}>${escapeHtml(value)}</span>` : escapeHtml(value); }
 function previewAction(value, field, href, classes, occurrence, options) { return options.preview ? `<button class="${classes} preview-action" type="button"${previewTargetAttr(options, { kind: "field", field }, occurrence, true)}>${escapeHtml(value)}</button>` : `<a class="${classes}" href="${href}">${escapeHtml(value)}</a>`; }
 function previewLink(value, field, href, classes, occurrence, options) { return options.preview ? `<a class="${classes}" href="${escapeAttr(href)}"${previewTargetAttr(options, { kind: "field", field }, occurrence, true)}>${escapeHtml(value)}</a>` : `<a class="${classes}" href="${escapeAttr(href)}">${escapeHtml(value)}</a>`; }
 function previewNavigationLink(value, field, href, occurrence, options) { return options.preview ? `<a href="${href}"${previewTargetAttr(options, { kind: "field", field }, occurrence, true)}>${escapeHtml(value)}</a>` : `<a href="${href}">${escapeHtml(value)}</a>`; }

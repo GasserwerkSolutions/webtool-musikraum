@@ -45,12 +45,26 @@ test("every visibly rendered field has a direct preview target", () => {
   dom.window.close();
 });
 
-test("space activates non-interactive preview targets while export stays clean", async () => {
+test("space activates non-interactive preview targets", async () => {
   const preview = buildWebsiteHtml(completeDraft(), { preview: true, previewInstanceId: "keyboard", parentOrigin: "*", previewRevision: 0, renderGeneration: 1 });
   const dom = new JSDOM(preview, { url: "https://preview.test", runScripts: "dangerously", pretendToBeVisual: true }); const messages = [];
   dom.window.addEventListener("message", (event) => { if (event.data?.action === "navigate-to-editor") messages.push(event.data); });
   const target = dom.window.document.querySelector("h1 [data-preview-target]"); target.dispatchEvent(new dom.window.KeyboardEvent("keydown", { key: " ", bubbles: true, cancelable: true }));
   await new Promise((resolve) => dom.window.setTimeout(resolve, 10)); assert.equal(messages.at(-1)?.target?.field, "copy.heroTitle"); dom.window.close();
+});
+
+test("export stays free of preview instrumentation", () => {
   const exported = buildWebsiteHtml(completeDraft());
   assert.doesNotMatch(exported, /data-preview-target|data-preview-occurrence|preview-edit-trigger|navigate-to-editor/);
+});
+
+test("text-list editor targets are the visible list wrappers", () => {
+  const html = buildWebsiteHtml(completeDraft(), { preview: true, previewInstanceId: "lists", parentOrigin: "*", previewRevision: 0, renderGeneration: 1 });
+  const dom = new JSDOM(html);
+  const heroItems = [...dom.window.document.querySelectorAll(".hero-notes > span")];
+  const introItems = [...dom.window.document.querySelectorAll(".plain-list > li")];
+  assert.ok(heroItems.length > 0); assert.ok(introItems.length > 0);
+  assert.ok([...heroItems, ...introItems].every((element) => element.hasAttribute("data-preview-target")));
+  assert.equal(dom.window.document.querySelector(".hero-notes > span > .preview-edit-trigger, .plain-list > li > .preview-edit-trigger"), null);
+  dom.window.close();
 });

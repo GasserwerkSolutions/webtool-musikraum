@@ -39,6 +39,7 @@ export class PreviewRuntime {
   private instanceIdValue = "";
   private renderGenerationValue = 0;
   private appliedRevisionValue = 0;
+  private processedRevisionValue = 0;
   private desiredRevisionValue = 0;
   private fullRenderRevision = 0;
   private ready = false;
@@ -84,8 +85,9 @@ export class PreviewRuntime {
       this.clearReadyTimer();
       this.ready = true;
       this.appliedRevisionValue = ready.revision;
+      this.processedRevisionValue = ready.revision;
       this.pendingMutations = this.pendingMutations.filter((mutation) => mutation.revision > ready.revision);
-      if (this.desiredRevisionValue > this.appliedRevisionValue) this.scheduleFlush(0);
+      if (this.desiredRevisionValue > this.processedRevisionValue) this.scheduleFlush(0);
       return true;
     }
     const result = parseUpdateResult(event.data, this.instanceIdValue, this.renderGenerationValue);
@@ -99,7 +101,8 @@ export class PreviewRuntime {
       return true;
     }
     this.appliedRevisionValue = result.revision;
-    if (this.desiredRevisionValue > this.appliedRevisionValue || this.pendingMutations.length) this.scheduleFlush(0);
+    this.processedRevisionValue = result.revision;
+    if (this.desiredRevisionValue > this.processedRevisionValue || this.pendingMutations.length) this.scheduleFlush(0);
     return true;
   }
 
@@ -118,9 +121,9 @@ export class PreviewRuntime {
 
   private flushPending(): void {
     if (this.destroyed || !this.ready || this.inFlight) return;
-    const mutations = this.pendingMutations.filter((mutation) => mutation.revision > this.appliedRevisionValue);
+    const mutations = this.pendingMutations.filter((mutation) => mutation.revision > this.processedRevisionValue);
     if (!mutations.length) {
-      if (this.desiredRevisionValue > this.appliedRevisionValue) this.startFullRender(1);
+      if (this.desiredRevisionValue > this.processedRevisionValue) this.startFullRender(1);
       return;
     }
     const revision = Math.max(...mutations.map((mutation) => mutation.revision));
@@ -140,6 +143,12 @@ export class PreviewRuntime {
     }
     if (plan.kind === "full") {
       this.startFullRender(1);
+      return;
+    }
+    if (plan.kind === "noop") {
+      this.pendingMutations = this.pendingMutations.filter((mutation) => mutation.revision > plan.revision);
+      this.processedRevisionValue = plan.revision;
+      if (this.desiredRevisionValue > this.processedRevisionValue || this.pendingMutations.length) this.scheduleFlush(0);
       return;
     }
     this.pendingMutations = this.pendingMutations.filter((mutation) => mutation.revision > plan.revision);
