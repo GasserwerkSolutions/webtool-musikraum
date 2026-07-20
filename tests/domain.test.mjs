@@ -7,8 +7,10 @@ test("creates a focused Musikraum draft", () => {
   const draft = createDefaultDraft("2026-07-19T12:00:00.000Z");
   assert.equal(draft.schemaVersion, 1);
   assert.equal(draft.site.name, "Musikraum");
+  assert.equal(draft.heroPoints.length, 3);
+  assert.equal(draft.introPoints.length, 3);
   assert.equal(draft.offers.length, 3);
-  assert.deepEqual(Object.keys(draft).sort(), ["copy", "createdAt", "draftId", "layout", "offers", "schemaVersion", "site", "theme", "updatedAt"]);
+  assert.deepEqual(Object.keys(draft).sort(), ["copy", "createdAt", "draftId", "heroPoints", "introPoints", "layout", "offers", "schemaVersion", "site", "theme", "updatedAt"]);
 });
 
 test("normalizes section order, visibility and safe values", () => {
