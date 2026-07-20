@@ -2,6 +2,7 @@ import type { DraftRepository } from "./persistence.js";
 import type { PreviewRuntime } from "./preview-runtime.js";
 import type { BuilderStore } from "./store.js";
 import type { PreviewScrollState } from "./preview-contract.js";
+import type { ExportPreflightController, ExportPreparationState } from "./export-preflight.js";
 
 export type UiContext = {
   store: BuilderStore;
@@ -25,11 +26,15 @@ export type UiContext = {
   offerList: HTMLElement;
   structureList: HTMLElement;
   contentOverviewList: HTMLElement;
+  readinessSummary: HTMLElement;
   readinessList: HTMLElement;
+  exportStatus: HTMLElement;
   textItemTemplate: HTMLTemplateElement;
   offerTemplate: HTMLTemplateElement;
   previewTimer: ReturnType<typeof setTimeout> | null;
   previewRuntime: PreviewRuntime | null;
+  exportController: ExportPreflightController | null;
+  exportState: ExportPreparationState;
   suppressPreview: boolean;
   previewInstanceId: string;
   previewScroll: PreviewScrollState | null;
@@ -43,7 +48,42 @@ function requiredElement<T extends Element>(id: string): T {
 }
 
 export function createUiContext(store: BuilderStore, repository: DraftRepository): UiContext {
-  return { store, repository, surfaceCard: requiredElement("surfaceCard"), workspace: document.querySelector(".workspace") as HTMLElement, controlSurface: document.querySelector(".control-surface") as HTMLElement, surfaceStage: requiredElement("surfaceStage"), sidebarToggle: requiredElement("sidebarToggle"), sidebarResizer: requiredElement("sidebarResizer"), previewFrame: requiredElement("previewFrame"), previewHint: requiredElement("previewHint"), saveStatus: requiredElement("saveStatus"), panelStatus: requiredElement("panelStatus"), undoButton: requiredElement("undoButton"), redoButton: requiredElement("redoButton"), backupInput: requiredElement("backupInput"), announcer: requiredElement("editorAnnouncer"), heroPointList: requiredElement("heroPointList"), introPointList: requiredElement("introPointList"), offerList: requiredElement("offerList"), structureList: requiredElement("structureList"), contentOverviewList: requiredElement("contentOverviewList"), readinessList: requiredElement("readinessList"), textItemTemplate: requiredElement("textItemTemplate"), offerTemplate: requiredElement("offerTemplate"), previewTimer: null, previewRuntime: null, suppressPreview: false, previewInstanceId: "", previewScroll: null, volatileStorage: false };
+  return {
+    store,
+    repository,
+    surfaceCard: requiredElement("surfaceCard"),
+    workspace: document.querySelector(".workspace") as HTMLElement,
+    controlSurface: document.querySelector(".control-surface") as HTMLElement,
+    surfaceStage: requiredElement("surfaceStage"),
+    sidebarToggle: requiredElement("sidebarToggle"),
+    sidebarResizer: requiredElement("sidebarResizer"),
+    previewFrame: requiredElement("previewFrame"),
+    previewHint: requiredElement("previewHint"),
+    saveStatus: requiredElement("saveStatus"),
+    panelStatus: requiredElement("panelStatus"),
+    undoButton: requiredElement("undoButton"),
+    redoButton: requiredElement("redoButton"),
+    backupInput: requiredElement("backupInput"),
+    announcer: requiredElement("editorAnnouncer"),
+    heroPointList: requiredElement("heroPointList"),
+    introPointList: requiredElement("introPointList"),
+    offerList: requiredElement("offerList"),
+    structureList: requiredElement("structureList"),
+    contentOverviewList: requiredElement("contentOverviewList"),
+    readinessSummary: requiredElement("readinessSummary"),
+    readinessList: requiredElement("readinessList"),
+    exportStatus: requiredElement("exportStatus"),
+    textItemTemplate: requiredElement("textItemTemplate"),
+    offerTemplate: requiredElement("offerTemplate"),
+    previewTimer: null,
+    previewRuntime: null,
+    exportController: null,
+    exportState: { status: "idle" },
+    suppressPreview: false,
+    previewInstanceId: "",
+    previewScroll: null,
+    volatileStorage: false,
+  };
 }
 
 export function getAtPath(object: unknown, path: string): unknown { return path.split(".").reduce<unknown>((value, key) => value && typeof value === "object" ? (value as Record<string, unknown>)[key] : undefined, object); }

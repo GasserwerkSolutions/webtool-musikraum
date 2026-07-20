@@ -2,9 +2,9 @@ import { PRESETS, createId, normalizeDraft, slugify } from "./domain.js";
 import { replaceWithFreshDraft, replaceWithImportedDraft } from "./persistence.js";
 import { EDITOR_FIELD_REGISTRY } from "./editor-registry.js";
 import { isPreviewTargetShape } from "./preview-contract.js";
-import { buildWebsiteHtml, MUSICRAUM_HERO_URL } from "./website.js";
+import { evaluateReadiness } from "./readiness.js";
 import { inputValue, setAtPath } from "./ui-shared.js";
-import { bindStaticInputs, renderContentOverview, renderDynamicControls, renderOffers, renderPreview, renderStructure, setViewport, showPanel, showToast, syncPresetInputs, updateReadiness } from "./ui-render.js";
+import { bindStaticInputs, renderContentOverview, renderDynamicControls, renderExportState, renderOffers, renderPreview, renderStructure, setViewport, showPanel, showToast, syncPresetInputs, updateReadiness } from "./ui-render.js";
 import { handleTextListAction, handleTextListInput } from "./text-list-actions.js";
 import { ensureEditorOpen } from "./sidebar.js";
 import { navigateToEditorTarget } from "./preview-navigation.js";
@@ -55,7 +55,7 @@ export function handleClick(context, event) {
     if (action === "remove-offer")
         removeOffer(context, actionButton.closest("[data-offer-card]")?.dataset.offerId ?? "");
     if (action === "export")
-        void exportHtml(context);
+        void handleExport(context);
     if (action === "download-backup")
         downloadBackup(context);
     if (action === "restore-backup")
@@ -148,31 +148,32 @@ function applyPreset(context, name) {
     context.store.mutate((draft) => { draft.theme.preset = name; draft.theme.primary = preset.primary; draft.theme.accent = preset.accent; }, { intent: { type: "set-theme" }, history: { label: `Farbwelt „${presetLabel(name)}“ gewählt`, target: { kind: "panel", panel: "design" } } });
     syncPresetInputs(context, name);
 }
-async function exportHtml(context) {
-    const buttons = [...document.querySelectorAll('[data-action="export"]')];
-    const labels = buttons.map((button) => button.textContent ?? "");
-    buttons.forEach((button) => { button.disabled = true; button.textContent = "Export wird vorbereitet …"; });
-    let heroImageUrl = MUSICRAUM_HERO_URL;
-    let embedded = true;
-    try {
-        heroImageUrl = await fetchAsDataUrl(MUSICRAUM_HERO_URL);
+async function handleExport(context) {
+    ensureEditorOpen(context);
+    showPanel(context, "publish");
+    const readiness = evaluateReadiness(context.store.snapshot);
+    if (!readiness.ready) {
+        showToast(`${readiness.errorCount} ${readiness.errorCount === 1 ? "Blocker muss" : "Blocker müssen"} vor dem Export behoben werden.`);
+        return;
     }
-    catch (error) {
-        embedded = false;
-        console.warn("Das Titelbild konnte nicht eingebettet werden.", error);
+    const controller = context.exportController;
+    if (!controller) {
+        showToast("Die Exportvorbereitung ist noch nicht verfügbar.");
+        return;
     }
-    try {
-        const html = buildWebsiteHtml(context.store.snapshot, { heroImageUrl });
-        downloadBlob(new Blob([html], { type: "text/html;charset=utf-8" }), `${slugify(context.store.snapshot.site.name || "musikraum")}.html`);
-        showToast(embedded ? "Website fertig: Eine vollständige HTML-Datei wurde heruntergeladen." : "Website exportiert. Das Titelbild benötigt beim Öffnen eine Internetverbindung.");
+    const downloaded = controller.download();
+    if (downloaded) {
+        showToast(downloaded.imageEmbedded ? "Website fertig: Die vorbereitete HTML-Datei wurde heruntergeladen." : "Website heruntergeladen. Das Titelbild benötigt beim Öffnen eine Internetverbindung.");
+        return;
     }
-    finally {
-        buttons.forEach((button, index) => { button.disabled = false; button.textContent = labels[index] ?? "HTML exportieren"; });
-    }
+    const state = await controller.prepare();
+    renderExportState(context, state);
+    if (state.status === "ready")
+        showToast("Export vorbereitet. Prüfe die Angaben und klicke danach auf „HTML-Datei herunterladen“.");
+    else if (state.status === "failed" && readiness.ready)
+        showToast(state.message);
 }
-async function fetchAsDataUrl(url) { const response = await fetch(url); if (!response.ok)
-    throw new Error(`ASSET_FETCH_FAILED:${response.status}`); const blob = await response.blob(); return await new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result)); reader.onerror = () => reject(reader.error ?? new Error("ASSET_READ_FAILED")); reader.readAsDataURL(blob); }); }
-function downloadBlob(blob, filename) { const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.href = url; link.download = filename; document.body.appendChild(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 0); }
+function downloadBlob(blob, filename) { const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.href = url; link.download = filename; document.body.appendChild(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 1_000); }
 function downloadBackup(context) { const name = slugify(context.store.snapshot.site.name || "musikraum"); downloadBlob(new Blob([JSON.stringify(context.store.snapshot, null, 2)], { type: "application/json;charset=utf-8" }), `${name}-sicherung.json`); showToast("Sicherung heruntergeladen. Bewahre die JSON-Datei gut auf."); }
 async function restoreBackup(context, file) {
     try {
