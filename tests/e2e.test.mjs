@@ -37,7 +37,7 @@ test("real browser layout, live editing and sidebar contract", { timeout: 90000 
 
 
     await page.click('[data-viewport="desktop"]'); await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 450)));
-    await preview.evaluate(() => scrollTo(0, document.querySelector('#geschichte')?.offsetTop ?? 700));
+    await preview.evaluate(() => { const root = document.documentElement; const previous = root.style.scrollBehavior; root.style.scrollBehavior = 'auto'; scrollTo(0, document.querySelector('#angebote')?.offsetTop ?? 700); root.style.scrollBehavior = previous; });
     const stableScroll = await preview.evaluate(() => scrollY); const stableSrcdoc = await page.$eval('#previewFrame', (frame) => frame.getAttribute('srcdoc'));
     await page.click('[data-panel-target="site"]');
     const stableName = `Musikraum ${Date.now()}`;
