@@ -5,6 +5,7 @@ export const PREVIEW_PROTOCOL_VERSION = 2;
 const PANELS = new Set(["site", "hero", "content", "services", "structure", "contact", "design", "publish"]);
 const FIELDS = new Set(Object.keys(EDITOR_FIELD_REGISTRY));
 const TEXT_LISTS = new Set(["heroPoints", "introPoints"]);
+const SECTIONS = new Set(["intro", "why", "offers", "story", "contact"]);
 const REGIONS = new Set(["header", "hero", "intro", "why", "offers", "story", "contact", "footer"]);
 const FAILURE_REASONS = new Set(["stale-revision", "revision-gap", "unknown-target", "ambiguous-target", "invalid-region", "conflicting-operations", "invalid-operation", "internal-error"]);
 function record(value) { return value !== null && typeof value === "object" && !Array.isArray(value) ? value : null; }
@@ -30,6 +31,8 @@ export function isPreviewTargetShape(value) {
         return typeof target.offerId === "string" && (target.field === "title" || target.field === "text");
     if (target.kind === "text-item")
         return typeof target.list === "string" && TEXT_LISTS.has(target.list) && typeof target.itemId === "string";
+    if (target.kind === "section")
+        return typeof target.section === "string" && SECTIONS.has(target.section);
     return false;
 }
 export function isPreviewRegion(value) { return typeof value === "string" && REGIONS.has(value); }
@@ -83,5 +86,7 @@ export function panelForTarget(target) {
         return "services";
     if (target.kind === "text-item")
         return target.list === "heroPoints" ? "hero" : "content";
+    if (target.kind === "section")
+        return "structure";
     return target.panel;
 }
