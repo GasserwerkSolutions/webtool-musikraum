@@ -116,6 +116,7 @@ test("readiness blockers prevent asset fetching and HTML generation", async () =
   assert.match(state.message, /Blocker/);
   assert.equal(fetched, 0);
   assert.equal(fixture.builds.length, 0);
+  assert.equal(fixture.controller.activeController, null);
   fixture.controller.destroy();
 });
 
@@ -133,4 +134,28 @@ test("asset timeout is an asset failure while parent abort remains a generation 
   const operation = fetchPinnedHeroImage((_url, options) => new Promise((_resolve, reject) => options.signal.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")), { once: true })), controller.signal, { timeoutMs: 100 });
   controller.abort();
   await assert.rejects(() => operation, (error) => error instanceof DOMException && error.name === "AbortError");
+});
+
+test("repeated panel activation keeps one in-flight generation", async () => {
+  let resolveFetch;
+  const fixture = controllerFixture({ fetchAsset: () => new Promise((resolve) => { resolveFetch = resolve; }) });
+  fixture.controller.setPanelVisible(true);
+  await wait(10);
+  assert.equal(fixture.controller.generation, 1);
+  fixture.controller.setPanelVisible(true);
+  await wait(10);
+  assert.equal(fixture.controller.generation, 1);
+  resolveFetch(imageResponse());
+  await wait(20);
+  assert.equal(fixture.controller.state.status, "ready");
+  fixture.controller.destroy();
+});
+
+test("synchronous asset loader failures remain current-generation asset errors", async () => {
+  const fixture = controllerFixture({ fetchAsset: () => { throw new Error("synchronous fetch failure"); } });
+  const state = await fixture.controller.prepare();
+  assert.equal(state.status, "ready");
+  assert.equal(state.result.imageEmbedded, false);
+  assert.equal(fixture.controller.activeController, null);
+  fixture.controller.destroy();
 });
