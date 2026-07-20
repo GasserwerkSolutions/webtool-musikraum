@@ -120,14 +120,14 @@
 
   <template id="textItemTemplate">
     <article class="item-card item-card--compact" data-text-item-card>
-      <div class="item-card__topline"><strong data-text-item-number>Punkt</strong><button class="icon-button" type="button" data-action="remove-text-item" aria-label="Punkt entfernen">×</button></div>
+      <div class="item-card__topline"><strong data-text-item-number>Punkt</strong><div class="reorder-actions" role="group" aria-label="Reihenfolge ändern"><button class="icon-button icon-button--move" type="button" data-reorder-direction="up">↑</button><button class="reorder-handle" type="button" data-reorder-handle><span aria-hidden="true">⠿</span></button><button class="icon-button icon-button--move" type="button" data-reorder-direction="down">↓</button></div><button class="icon-button" type="button" data-action="remove-text-item" aria-label="Punkt entfernen">×</button></div>
       <label class="field"><span>Text</span><input type="text" data-text-item-field placeholder="Kurze Aussage"></label>
     </article>
   </template>
 
   <template id="offerTemplate">
     <article class="item-card" data-offer-card>
-      <div class="item-card__topline"><strong data-offer-number>Klangmoment</strong><button class="icon-button" type="button" data-action="remove-offer" aria-label="Klangmoment entfernen">×</button></div>
+      <div class="item-card__topline"><strong data-offer-number>Klangmoment</strong><div class="reorder-actions" role="group" aria-label="Reihenfolge ändern"><button class="icon-button icon-button--move" type="button" data-reorder-direction="up">↑</button><button class="reorder-handle" type="button" data-reorder-handle><span aria-hidden="true">⠿</span></button><button class="icon-button icon-button--move" type="button" data-reorder-direction="down">↓</button></div><button class="icon-button" type="button" data-action="remove-offer" aria-label="Klangmoment entfernen">×</button></div>
       <label class="field"><span>Titel</span><input type="text" data-offer-field="title" placeholder="Viele Instrumente"></label>
       <label class="field"><span>Beschreibung</span><textarea rows="4" data-offer-field="text" placeholder="Was können Menschen bei dir erleben?"></textarea></label>
     </article>
