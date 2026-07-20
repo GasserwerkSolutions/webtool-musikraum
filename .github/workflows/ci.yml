@@ -23,16 +23,12 @@ jobs:
         run: npm run typecheck
       - name: Build browser assets
         run: npm run build
-      - name: Overview deterministic model
-        run: node --test --test-name-pattern="deterministic completeness" tests/content-overview.test.mjs
-      - name: Overview completeness states
-        run: node --test --test-name-pattern="required, optional and hidden" tests/content-overview.test.mjs
-      - name: Overview stable dynamic targets
-        run: node --test --test-name-pattern="dynamic targets remain stable" tests/content-overview.test.mjs
+      - name: Content overview tests
+        run: node --test tests/content-overview.test.mjs
       - name: Preview target tests
         run: node --test tests/preview-targets.test.mjs
       - name: Existing unit and DOM tests
-        run: node --test $(find tests -maxdepth 1 -name '*.test.mjs' ! -name 'e2e.test.mjs' ! -name 'content-overview.test.mjs' ! -name 'preview-targets.test.mjs' -print | sort)
+        run: npm test -- --test-name-pattern="^(?!real browser layout)"
       - name: Chromium acceptance
         run: node --test tests/e2e.test.mjs
       - name: Compiled assets are current
