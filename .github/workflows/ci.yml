@@ -19,5 +19,13 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run check
-      - run: git diff --exit-code -- assets
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Build browser assets
+        run: npm run build
+      - name: Logic and DOM tests
+        run: node --test $(find tests -name '*.test.mjs' ! -name 'e2e.test.mjs' -print)
+      - name: Chromium acceptance
+        run: node --test tests/e2e.test.mjs
+      - name: Compiled assets are current
+        run: git diff --exit-code -- assets
