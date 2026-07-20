@@ -1,0 +1,254 @@
+name: PR4 Development Build
+
+on:
+  push:
+    branches:
+      - feature/content-overview-direct-editing
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/content-overview-direct-editing
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Integrate overview and complete preview targets
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_once(source: str, old: str, new: str, label: str) -> str:
+              if old not in source:
+                  if new in source:
+                      return source
+                  raise SystemExit(f'{label} replacement failed')
+              return source.replace(old, new, 1)
+
+          index_path = Path('index.html')
+          index = index_path.read_text()
+          index = index.replace('<button class="surface-nav__item" type="button" data-panel-target="publish">Fertig</button>', '<button class="surface-nav__item" type="button" data-panel-target="publish">Übersicht</button>')
+          old_publish = '<div class="panel__header"><p class="eyebrow">Prüfen und mitnehmen</p><h2 id="panel-publish-title">Deine Website ist bereit</h2><p>Prüfe die wichtigsten Inhalte. Danach kannst du die Website als einzelne HTML-Datei herunterladen oder deinen Entwurf sichern.</p></div>\n          <div id="readinessList" class="readiness-list"></div>'
+          new_publish = '<div class="panel__header"><p class="eyebrow">Alles an einem Ort</p><h2 id="panel-publish-title">Inhaltsübersicht</h2><p>Sieh sofort, welche Inhalte vollständig, optional leer, unvollständig oder ausgeblendet sind. Jeder Eintrag führt direkt zum gleichen Bearbeitungsziel wie die Vorschau.</p></div>\n          <div id="contentOverviewList" class="content-overview"></div>\n          <div class="overview-subheading"><h3>Kurzer Abschlusscheck</h3><p>Diese einfache Prüfung bleibt bis zum vollständigen Readiness-Preflight in PR 5 bestehen.</p></div>\n          <div id="readinessList" class="readiness-list"></div>'
+          index = replace_once(index, old_publish, new_publish, 'publish overview')
+          index_path.write_text(index)
+
+          website_path = Path('src/website.ts')
+          website = website_path.read_text()
+          website = website.replace('import { PREVIEW_CHANNEL, PREVIEW_PROTOCOL_VERSION, type EditorPanel, type PreviewScrollState, type PreviewTarget, type StaticEditableField, type TextListKey } from "./preview-contract.js";', 'import { EDITOR_FIELD_REGISTRY, PREVIEW_CHANNEL, PREVIEW_PROTOCOL_VERSION, type EditorPanel, type PreviewScrollState, type PreviewTarget, type StaticEditableField, type TextListKey } from "./preview-contract.js";')
+          website = replace_once(website,
+            '  const primaryAction = firstActionKey ? previewAction(draft.copy.heroPrimaryAction, "copy.heroPrimaryAction", `#${SECTION_META[firstActionKey].id}`, "button button-light", options) : "";\n  const secondaryAction = draft.layout.visibility.contact && firstActionKey !== "contact" ? previewAction(draft.copy.heroSecondaryAction, "copy.heroSecondaryAction", "#kontakt", "button button-ghost", options) : "";',
+            '  const primaryAction = firstActionKey ? previewAction(draft.copy.heroPrimaryAction, "copy.heroPrimaryAction", `#${SECTION_META[firstActionKey].id}`, "button button-light", "hero-primary-action", options) : "";\n  const secondaryAction = draft.layout.visibility.contact && firstActionKey !== "contact" ? previewAction(draft.copy.heroSecondaryAction, "copy.heroSecondaryAction", "#kontakt", "button button-ghost", "hero-secondary-action", options) : "";',
+            'hero actions')
+          website = replace_once(website,
+            '  const nav = visibleOrder.map((key) => { const label = draft.copy[NAV_COPY_KEYS[key]].trim(); return label ? `<a href="#${SECTION_META[key].id}">${escapeHtml(label)}</a>` : ""; }).join("");',
+            '  const nav = visibleOrder.map((key) => { const field = `copy.${NAV_COPY_KEYS[key]}` as StaticEditableField; const label = draft.copy[NAV_COPY_KEYS[key]].trim(); return label ? previewNavigationLink(label, field, `#${SECTION_META[key].id}`, `header-nav-${key}`, options) : ""; }).join("");',
+            'navigation targets')
+          website = replace_once(website,
+            '  const brand = `<span class="brand-mark" aria-hidden="true"><img src="${HARFE_FAVICON}" alt="" style="display:block;width:100%;height:100%;object-fit:contain;border-radius:inherit"></span><span><strong>${editable(draft.site.name, "site.name", options)}</strong><small>${editable(draft.site.tagline, "site.tagline", options)}</small></span>`;',
+            '  const brand = `<span class="brand-mark" aria-hidden="true"><img src="${HARFE_FAVICON}" alt="" style="display:block;width:100%;height:100%;object-fit:contain;border-radius:inherit"></span><span><strong>${editable(draft.site.name, "site.name", "header-brand-name", options)}</strong><small>${editable(draft.site.tagline, "site.tagline", "header-brand-tagline", options)}</small></span>`;',
+            'header brand')
+          website = website.replace('${options.preview ? `<div class="brand"${previewTargetAttr(options, { kind: "panel", panel: "site" })}>${brand}</div>` : `<a class="brand" href="#top">${brand}</a>`}', '${options.preview ? `<div class="brand">${brand}</div>` : `<a class="brand" href="#top">${brand}</a>`}')
+          website = website.replace('${editable(draft.copy.heroLabel, "copy.heroLabel", options)}', '${editable(draft.copy.heroLabel, "copy.heroLabel", "hero-label", options)}')
+          website = website.replace('${editable(draft.copy.heroTitle, "copy.heroTitle", options)}', '${editable(draft.copy.heroTitle, "copy.heroTitle", "hero-title", options)}')
+          website = website.replace('${editable(draft.copy.heroSubtitle, "copy.heroSubtitle", options)}', '${editable(draft.copy.heroSubtitle, "copy.heroSubtitle", "hero-subtitle", options)}')
+          old_footer = '  <footer class="site-footer"${previewSectionAttr(options, "footer", "site")}${previewRegionAttr(options, "footer")}><div class="container footer-grid"><div><strong>${editable(draft.site.name, "site.name", options)}</strong><p>${editable(draft.site.tagline, "site.tagline", options)}</p></div><div class="footer-contact">${address ? `<span class="footer-address">${addressParts(draft, options)}</span>` : ""}${email ? `<span class="footer-email">${previewLink(draft.site.email, "site.email", mailtoHref, options)}</span>` : ""}</div><p data-preview-no-action>© ${new Date().getFullYear()} ${escapeHtml(draft.site.name)}</p></div></footer>'
+          new_footer = '  <footer class="site-footer"${previewSectionAttr(options, "footer", "site")}${previewRegionAttr(options, "footer")}><div class="container footer-grid"><div><strong>${editable(draft.site.name, "site.name", "footer-brand-name", options)}</strong><p>${editable(draft.site.tagline, "site.tagline", "footer-brand-tagline", options)}</p></div><div class="footer-contact">${address ? `<span class="footer-address">${addressParts(draft, "footer-address", options)}</span>` : ""}${email ? `<span class="footer-email">${previewLink(draft.site.email, "site.email", mailtoHref, "preview-inline-link", "footer-email", options)}</span>` : ""}</div><p data-preview-no-action>© ${new Date().getFullYear()} ${options.preview ? editable(draft.site.name, "site.name", "footer-copyright-name", options) : escapeHtml(draft.site.name)}</p></div></footer>'
+          website = replace_once(website, old_footer, new_footer, 'footer targets')
+
+          replacements = {
+            '${editable(copy.introLabel, "copy.introLabel", options)}': '${editable(copy.introLabel, "copy.introLabel", "intro-label", options)}',
+            '${editable(copy.introTitle, "copy.introTitle", options)}': '${editable(copy.introTitle, "copy.introTitle", "intro-title", options)}',
+            '${editable(copy.introQuote, "copy.introQuote", options)}': '${editable(copy.introQuote, "copy.introQuote", "intro-quote", options)}',
+            '${editable(copy.introText, "copy.introText", options)}': '${editable(copy.introText, "copy.introText", "intro-text", options)}',
+            '${editable(copy.whyLabel, "copy.whyLabel", options)}': '${editable(copy.whyLabel, "copy.whyLabel", "why-label", options)}',
+            '${editable(copy.whyTitle, "copy.whyTitle", options)}': '${editable(copy.whyTitle, "copy.whyTitle", "why-title", options)}',
+            '${editable(copy.whyText, "copy.whyText", options)}': '${editable(copy.whyText, "copy.whyText", "why-text", options)}',
+            '${editable(copy.offersLabel, "copy.offersLabel", options)}': '${editable(copy.offersLabel, "copy.offersLabel", "offers-label", options)}',
+            '${editable(copy.offersTitle, "copy.offersTitle", options)}': '${editable(copy.offersTitle, "copy.offersTitle", "offers-title", options)}',
+            '${editable(copy.offersIntro, "copy.offersIntro", options)}': '${editable(copy.offersIntro, "copy.offersIntro", "offers-intro", options)}',
+            '${editable(copy.storyLabel, "copy.storyLabel", options)}': '${editable(copy.storyLabel, "copy.storyLabel", "story-label", options)}',
+            '${editable(copy.storyTitle, "copy.storyTitle", options)}': '${editable(copy.storyTitle, "copy.storyTitle", "story-title", options)}',
+            '${editable(copy.storyText, "copy.storyText", options)}': '${editable(copy.storyText, "copy.storyText", "story-text", options)}',
+            '${editable(copy.contactLabel, "copy.contactLabel", options)}': '${editable(copy.contactLabel, "copy.contactLabel", "contact-label", options)}',
+            '${editable(copy.contactTitle, "copy.contactTitle", options)}': '${editable(copy.contactTitle, "copy.contactTitle", "contact-title", options)}',
+            '${editable(copy.contactText, "copy.contactText", options)}': '${editable(copy.contactText, "copy.contactText", "contact-text", options)}',
+          }
+          for old, new in replacements.items():
+              website = website.replace(old, new)
+          website = website.replace('`${editableOffer(offer.title, offer.id, "title", options)}`', '`${editableOffer(offer.title, offer.id, "title", `offer-${offer.id}-title`, options)}`')
+          website = website.replace('${editableOffer(offer.title, offer.id, "title", options)}', '${editableOffer(offer.title, offer.id, "title", `offer-${offer.id}-title`, options)}')
+          website = website.replace('${editableOffer(offer.text, offer.id, "text", options)}', '${editableOffer(offer.text, offer.id, "text", `offer-${offer.id}-text`, options)}')
+          old_links = '  const previewLinks = options.preview ? `${email && emailLabel ? `<button class="button button-light" type="button"${previewTargetAttr(options, { kind: "field", field: "copy.contactEmailAction" })}>${escapeHtml(emailLabel)}</button>` : ""}${phone && phoneLabel ? `<button class="button button-ghost" type="button"><span${previewTargetAttr(options, { kind: "field", field: "site.phone" })}>${escapeHtml(draft.site.phone)}</span>${phoneAction ? ` <span${previewTargetAttr(options, { kind: "field", field: "copy.contactPhoneAction" })}>${escapeHtml(phoneAction)}</span>` : ""}</button>` : ""}${instagram && instagramLabel ? `<button class="button button-ghost" type="button"${previewTargetAttr(options, { kind: "field", field: "copy.contactInstagramAction" })}>${escapeHtml(instagramLabel)}</button>` : ""}` : contactLinks;'
+          new_links = '  const previewLinks = options.preview ? `${email && emailLabel ? previewLink(emailLabel, "copy.contactEmailAction", buildMailtoHref(email, draft.site.name), "button button-light", "contact-email-action", options) : ""}${phone && phoneLabel ? `<span class="button button-ghost preview-composite-action">${editable(draft.site.phone, "site.phone", "contact-phone-number", options)}${phoneAction ? ` ${editable(phoneAction, "copy.contactPhoneAction", "contact-phone-action", options)}` : ""}</span>` : ""}${instagram && instagramLabel ? previewLink(instagramLabel, "copy.contactInstagramAction", instagram, "button button-ghost", "contact-instagram-action", options) : ""}` : contactLinks;'
+          website = replace_once(website, old_links, new_links, 'contact actions')
+          website = website.replace('${address ? `<p class="address">${addressParts(draft, options)}</p>` : ""}', '${address ? `<p class="address">${addressParts(draft, "contact-address", options)}</p>` : ""}')
+
+          old_helpers = '''function renderTextList(items: readonly MusicraumTextItem[], list: TextListKey, tag: "span" | "li", options: BuildOptions): string { return items.filter((item) => item.text.trim()).map((item) => `<${tag}>${editableTextItem(item.text, list, item.id, options)}</${tag}>`).join(""); }
+          function buildMailtoHref(email: string, siteName: string): string { return `mailto:${encodeURIComponent(email)}?${new URLSearchParams({ subject: `Anfrage ${siteName}` }).toString()}`; }
+          function previewTargetAttr(options: BuildOptions, target: PreviewTarget): string { return options.preview ? ` data-preview-target="${escapeAttr(JSON.stringify(target))}"` : ""; }
+          function previewSectionAttr(options: BuildOptions, section: string, panel: EditorPanel): string { return options.preview ? ` data-preview-section="${escapeAttr(section)}" data-preview-panel="${panel}"` : ""; }
+          function previewRegionAttr(options: BuildOptions, region: string): string { return options.preview ? ` data-preview-region="${escapeAttr(region)}"` : ""; }
+          function editable(value: string, field: StaticEditableField, options: BuildOptions): string { return options.preview ? `<button class="preview-edit-trigger" type="button"${previewTargetAttr(options, { kind: "field", field })}>${escapeHtml(value)}</button>` : escapeHtml(value); }
+          function editableOffer(value: string, offerId: string, field: "title" | "text", options: BuildOptions): string { return options.preview ? `<button class="preview-edit-trigger" type="button"${previewTargetAttr(options, { kind: "offer", offerId, field })}>${escapeHtml(value)}</button>` : escapeHtml(value); }
+          function editableTextItem(value: string, list: TextListKey, itemId: string, options: BuildOptions): string { return options.preview ? `<button class="preview-edit-trigger" type="button"${previewTargetAttr(options, { kind: "text-item", list, itemId })}>${escapeHtml(value)}</button>` : escapeHtml(value); }
+          function previewAction(value: string, field: StaticEditableField, href: string, classes: string, options: BuildOptions): string { return options.preview ? `<button class="${classes} preview-action" type="button"${previewTargetAttr(options, { kind: "field", field })}>${escapeHtml(value)}</button>` : `<a class="${classes}" href="${href}">${escapeHtml(value)}</a>`; }
+          function previewLink(value: string, field: StaticEditableField, href: string, options: BuildOptions): string { return options.preview ? `<button class="preview-edit-trigger preview-inline-link" type="button"${previewTargetAttr(options, { kind: "field", field })}>${escapeHtml(value)}</button>` : `<a href="${escapeAttr(href)}">${escapeHtml(value)}</a>`; }
+          function addressParts(draft: MusicraumDraft, options: BuildOptions): string { const street = draft.site.address ? editable(draft.site.address, "site.address", options) : ""; const postal = draft.site.postalCode ? editable(draft.site.postalCode, "site.postalCode", options) : ""; const city = draft.site.city ? editable(draft.site.city, "site.city", options) : ""; return [street, [postal, city].filter(Boolean).join(" ")].filter(Boolean).join(", "); }'''.replace('          ', '')
+          new_helpers = '''function renderTextList(items: readonly MusicraumTextItem[], list: TextListKey, tag: "span" | "li", options: BuildOptions): string { return items.filter((item) => item.text.trim()).map((item) => `<${tag}>${editableTextItem(item.text, list, item.id, `${list}-${item.id}`, options)}</${tag}>`).join(""); }
+          function buildMailtoHref(email: string, siteName: string): string { return `mailto:${encodeURIComponent(email)}?${new URLSearchParams({ subject: `Anfrage ${siteName}` }).toString()}`; }
+          function previewTargetAttr(options: BuildOptions, target: PreviewTarget, occurrence: string, interactive = false): string {
+            if (!options.preview) return "";
+            const accessibleName = `${previewTargetLabel(target)} bearbeiten`;
+            return ` data-preview-target="${escapeAttr(JSON.stringify(target))}" data-preview-occurrence="${escapeAttr(occurrence)}" aria-label="${escapeAttr(accessibleName)}"${interactive ? "" : ' tabindex="0" role="button"'}`;
+          }
+          function previewTargetLabel(target: PreviewTarget): string {
+            if (target.kind === "field") return EDITOR_FIELD_REGISTRY[target.field].label;
+            if (target.kind === "offer") return target.field === "title" ? "Klangmoment-Titel" : "Klangmoment-Beschreibung";
+            if (target.kind === "text-item") return target.list === "heroPoints" ? "Punkt im Titelbild" : "Punkt über Franz";
+            return "Bearbeitungsbereich";
+          }
+          function previewSectionAttr(options: BuildOptions, section: string, panel: EditorPanel): string { return options.preview ? ` data-preview-section="${escapeAttr(section)}" data-preview-panel="${panel}"` : ""; }
+          function previewRegionAttr(options: BuildOptions, region: string): string { return options.preview ? ` data-preview-region="${escapeAttr(region)}"` : ""; }
+          function editable(value: string, field: StaticEditableField, occurrence: string, options: BuildOptions): string { return options.preview ? `<span class="preview-edit-trigger"${previewTargetAttr(options, { kind: "field", field }, occurrence)}>${escapeHtml(value)}</span>` : escapeHtml(value); }
+          function editableOffer(value: string, offerId: string, field: "title" | "text", occurrence: string, options: BuildOptions): string { return options.preview ? `<span class="preview-edit-trigger"${previewTargetAttr(options, { kind: "offer", offerId, field }, occurrence)}>${escapeHtml(value)}</span>` : escapeHtml(value); }
+          function editableTextItem(value: string, list: TextListKey, itemId: string, occurrence: string, options: BuildOptions): string { return options.preview ? `<span class="preview-edit-trigger"${previewTargetAttr(options, { kind: "text-item", list, itemId }, occurrence)}>${escapeHtml(value)}</span>` : escapeHtml(value); }
+          function previewAction(value: string, field: StaticEditableField, href: string, classes: string, occurrence: string, options: BuildOptions): string { return options.preview ? `<button class="${classes} preview-action" type="button"${previewTargetAttr(options, { kind: "field", field }, occurrence, true)}>${escapeHtml(value)}</button>` : `<a class="${classes}" href="${href}">${escapeHtml(value)}</a>`; }
+          function previewLink(value: string, field: StaticEditableField, href: string, classes: string, occurrence: string, options: BuildOptions): string { return options.preview ? `<a class="${classes}" href="${escapeAttr(href)}"${previewTargetAttr(options, { kind: "field", field }, occurrence, true)}>${escapeHtml(value)}</a>` : `<a class="${classes}" href="${escapeAttr(href)}">${escapeHtml(value)}</a>`; }
+          function previewNavigationLink(value: string, field: StaticEditableField, href: string, occurrence: string, options: BuildOptions): string { return options.preview ? `<a href="${href}"${previewTargetAttr(options, { kind: "field", field }, occurrence, true)}>${escapeHtml(value)}</a>` : `<a href="${href}">${escapeHtml(value)}</a>`; }
+          function addressParts(draft: MusicraumDraft, prefix: string, options: BuildOptions): string { const street = draft.site.address ? editable(draft.site.address, "site.address", `${prefix}-street`, options) : ""; const postal = draft.site.postalCode ? editable(draft.site.postalCode, "site.postalCode", `${prefix}-postal-code`, options) : ""; const city = draft.site.city ? editable(draft.site.city, "site.city", `${prefix}-city`, options) : ""; return [street, [postal, city].filter(Boolean).join(" ")].filter(Boolean).join(", "); }'''.replace('          ', '')
+          website = replace_once(website, old_helpers, new_helpers, 'preview helper block')
+          website = website.replace('.preview-edit-trigger{all:unset;display:inline;', '.preview-edit-trigger{display:inline;')
+          website = website.replace('.preview-inline-link{text-decoration:underline}.preview-action{cursor:pointer}[data-preview-panel]{cursor:default}', '.preview-inline-link{text-decoration:underline}.preview-action{cursor:pointer}.preview-composite-action{gap:.35em}[data-preview-target]:focus-visible,[data-preview-target]:hover{outline:2px solid #d6b96f;outline-offset:4px;background:rgba(214,185,111,.14)}[data-preview-panel]{cursor:default}')
+          website_path.write_text(website)
+
+          css_path = Path('layout-overrides.css')
+          css = css_path.read_text()
+          marker = '/* PR4 content overview */'
+          if marker not in css:
+              css += '''\n\n/* PR4 content overview */
+          .content-overview{display:grid;gap:22px;margin-bottom:28px}.content-overview__group{display:grid;gap:10px}.content-overview__group h3,.overview-subheading h3{margin:0;font-size:1rem}.content-overview__entries{display:grid;gap:8px}.content-overview__entry{width:100%;min-height:58px;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:11px 13px;border:1px solid rgba(64,59,52,.14);border-radius:12px;background:#fff;text-align:left;color:inherit;cursor:pointer}.content-overview__entry:hover,.content-overview__entry:focus-visible{border-color:rgba(88,114,113,.55);box-shadow:0 0 0 3px rgba(88,114,113,.12)}.content-overview__copy{min-width:0;display:grid;gap:3px}.content-overview__copy strong,.content-overview__copy small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.content-overview__copy small{color:#756c62}.content-overview__status{flex:0 0 auto;padding:4px 8px;border-radius:999px;background:rgba(64,59,52,.08);font-size:.74rem;font-weight:800}.content-overview__entry.is-complete .content-overview__status{background:rgba(70,128,91,.14);color:#285b3a}.content-overview__entry.is-incomplete .content-overview__status{background:rgba(171,82,62,.14);color:#7a2f20}.content-overview__entry.is-hidden{opacity:.68}.content-overview__entry.is-optional-empty .content-overview__status{background:rgba(88,114,113,.12);color:#405f5e}.overview-subheading{margin:30px 0 12px}.overview-subheading p{margin:4px 0 0;color:#756c62;font-size:.9rem}@media(max-width:560px){.content-overview__entry{align-items:flex-start;flex-direction:column}.content-overview__status{align-self:flex-start}.content-overview__copy strong,.content-overview__copy small{white-space:normal}}\n'''.replace('          ', '')
+          css_path.write_text(css)
+
+          Path('tests/content-overview.test.mjs').write_text('''import test from "node:test";
+          import assert from "node:assert/strict";
+          import { createDefaultDraft } from "../assets/domain.js";
+          import { buildContentOverview } from "../assets/content-overview.js";
+
+          function entries(draft) { return buildContentOverview(draft).flatMap((group) => group.entries); }
+
+          test("content overview exposes deterministic completeness and editor targets", () => {
+            const draft = createDefaultDraft();
+            const first = entries(draft); const second = entries(draft);
+            assert.deepEqual(first.map((entry) => entry.id), second.map((entry) => entry.id));
+            assert.ok(first.length > 40); assert.ok(first.every((entry) => ["complete", "optional-empty", "incomplete", "hidden"].includes(entry.status)));
+            assert.ok(first.every((entry) => entry.target && typeof entry.target.kind === "string"));
+          });
+
+          test("overview reflects required, optional and hidden content", () => {
+            const draft = createDefaultDraft(); draft.copy.heroTitle = ""; draft.site.tagline = ""; draft.layout.visibility.contact = false;
+            const overview = entries(draft); const byId = new Map(overview.map((entry) => [entry.id, entry]));
+            assert.equal(byId.get("field:copy.heroTitle")?.status, "incomplete");
+            assert.equal(byId.get("field:site.tagline")?.status, "optional-empty");
+            assert.equal(byId.get("field:copy.contactTitle")?.status, "hidden");
+          });
+
+          test("dynamic targets remain stable when collections move", () => {
+            const draft = createDefaultDraft(); const id = draft.offers[1].id; const before = entries(draft).find((entry) => entry.id === `offer-title:${id}`)?.target;
+            const [moved] = draft.offers.splice(1, 1); draft.offers.unshift(moved);
+            const after = entries(draft).find((entry) => entry.id === `offer-title:${id}`)?.target;
+            assert.deepEqual(after, before);
+          });
+          '''.replace('          ', ''))
+
+          Path('tests/preview-targets.test.mjs').write_text('''import test from "node:test";
+          import assert from "node:assert/strict";
+          import { JSDOM } from "jsdom";
+          import { createDefaultDraft } from "../assets/domain.js";
+          import { EDITOR_FIELD_REGISTRY } from "../assets/editor-registry.js";
+          import { buildWebsiteHtml } from "../assets/website.js";
+
+          function completeDraft() {
+            const draft = createDefaultDraft();
+            for (const field of Object.keys(EDITOR_FIELD_REGISTRY)) {
+              const [group, key] = field.split('.');
+              if (field === 'site.email') draft.site.email = 'franz@example.test';
+              else if (field === 'site.phone') draft.site.phone = '+41321234567';
+              else if (field === 'site.instagram') draft.site.instagram = 'https://instagram.com/musikraum';
+              else if (!draft[group][key]) draft[group][key] = `Inhalt ${field}`;
+            }
+            for (const section of draft.layout.order) draft.layout.visibility[section] = true;
+            return draft;
+          }
+
+          test("preview targets have unique occurrences and no nested editor targets", () => {
+            const html = buildWebsiteHtml(completeDraft(), { preview: true, previewInstanceId: 'targets', parentOrigin: '*', previewRevision: 0, renderGeneration: 1 });
+            const dom = new JSDOM(html); const targets = [...dom.window.document.querySelectorAll('[data-preview-target]')];
+            assert.ok(targets.length > 40);
+            const pairs = targets.map((element) => `${element.getAttribute('data-preview-target')}|${element.getAttribute('data-preview-occurrence')}`);
+            assert.equal(new Set(pairs).size, pairs.length);
+            assert.ok(targets.every((element) => element.getAttribute('data-preview-occurrence')));
+            assert.ok(targets.every((element) => !element.querySelector('[data-preview-target]')));
+            for (const element of targets) {
+              if (element.matches('a,button')) continue;
+              assert.equal(element.getAttribute('role'), 'button'); assert.equal(element.getAttribute('tabindex'), '0');
+            }
+            dom.window.close();
+          });
+
+          test("every registered field has a direct preview target in a complete draft", () => {
+            const html = buildWebsiteHtml(completeDraft(), { preview: true, previewInstanceId: 'coverage', parentOrigin: '*', previewRevision: 0, renderGeneration: 1 });
+            const dom = new JSDOM(html); const fields = new Set([...dom.window.document.querySelectorAll('[data-preview-target]')].map((element) => { try { const target = JSON.parse(element.getAttribute('data-preview-target')); return target.kind === 'field' ? target.field : null; } catch { return null; } }).filter(Boolean));
+            assert.deepEqual([...Object.keys(EDITOR_FIELD_REGISTRY).filter((field) => fields.has(field))].sort(), Object.keys(EDITOR_FIELD_REGISTRY).sort());
+            dom.window.close();
+          });
+
+          test("space activates non-interactive preview targets while export stays clean", async () => {
+            const preview = buildWebsiteHtml(completeDraft(), { preview: true, previewInstanceId: 'keyboard', parentOrigin: '*', previewRevision: 0, renderGeneration: 1 });
+            const dom = new JSDOM(preview, { url: 'https://preview.test', runScripts: 'dangerously', pretendToBeVisual: true }); const messages = [];
+            dom.window.addEventListener('message', (event) => { if (event.data?.action === 'navigate-to-editor') messages.push(event.data); });
+            const target = dom.window.document.querySelector('h1 [data-preview-target]'); target.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }));
+            await new Promise((resolve) => dom.window.setTimeout(resolve, 10)); assert.equal(messages.at(-1)?.target?.field, 'copy.heroTitle'); dom.window.close();
+            const exported = buildWebsiteHtml(completeDraft());
+            assert.doesNotMatch(exported, /data-preview-target|data-preview-occurrence|preview-edit-trigger|navigate-to-editor/);
+          });
+          '''.replace('          ', ''))
+
+          browser_path = Path('tests/browser.test.mjs')
+          browser = browser_path.read_text().replace('h1 > button.preview-edit-trigger[type="button"]', 'h1 > .preview-edit-trigger[role="button"][tabindex="0"]')
+          browser_path.write_text(browser)
+
+          e2e_path = Path('tests/e2e.test.mjs')
+          e2e = e2e_path.read_text()
+          anchor = '    const exportedPage = await browser.newPage();'
+          addition = '''    await page.click('[data-panel-target="publish"]');
+              assert.ok(await page.$$eval('#contentOverviewList [data-editor-target]', (entries) => entries.length > 40));
+              await page.click('#contentOverviewList [data-editor-target*="copy.heroTitle"]');
+              await page.waitForFunction(() => document.activeElement?.getAttribute('data-bind') === 'copy.heroTitle');
+              await page.click('[data-panel-target="site"]'); preview = await waitForPreview(page); await preview.focus('h1 [data-preview-target]'); await page.keyboard.press('Space');
+              await page.waitForFunction(() => document.activeElement?.getAttribute('data-bind') === 'copy.heroTitle');
+
+          '''.replace('              ', '    ')
+          if addition.strip() not in e2e:
+              e2e = replace_once(e2e, anchor, addition + anchor, 'Chromium overview acceptance')
+          e2e_path.write_text(e2e)
+          PY
+      - name: Typecheck and test
+        run: npm run check
+      - name: Commit implementation and assets
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html layout-overrides.css src tests assets
+          if ! git diff --cached --quiet; then
+            git commit -m "Complete content overview and preview target coverage"
+            git push origin HEAD:feature/content-overview-direct-editing
+          fi
