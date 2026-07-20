@@ -21,12 +21,21 @@ function fixture() {
   const message = (data) => ({ source: contentWindow, origin: "null", data });
   const ready = () => runtime.handleMessage(message({ channel: PREVIEW_CHANNEL, version: PREVIEW_PROTOCOL_VERSION, instanceId: runtime.instanceId, renderGeneration: runtime.renderGeneration, revision: store.revision, action: "ready" }));
   const close = () => { unsubscribe(); runtime.destroy(); globalThis.DOMParser = previousParser; dom.window.close(); };
-  return { store, runtime, sent, srcdocs, message, ready, close };
+  return { store, runtime, sent, srcdocs, contentWindow, message, ready, close };
 }
 
 function setHeroTitle(store, value) {
   return store.mutate((draft) => { draft.copy.heroTitle = value; }, { intent: { type: "set-field", field: "copy.heroTitle" }, history: { label: "Haupttitel geändert" } });
 }
+
+test("accepts messages only from the active opaque-origin iframe", () => {
+  const { runtime, contentWindow, close } = fixture(); runtime.start();
+  const data = { channel: PREVIEW_CHANNEL, version: PREVIEW_PROTOCOL_VERSION, instanceId: runtime.instanceId, renderGeneration: runtime.renderGeneration, revision: 0, action: "ready" };
+  assert.equal(runtime.handleMessage({ source: {}, origin: "null", data }), false);
+  assert.equal(runtime.handleMessage({ source: contentWindow, origin: "https://preview.test", data }), false);
+  assert.equal(runtime.handleMessage({ source: contentWindow, origin: "null", data }), true);
+  assert.equal(runtime.appliedRevision, 0); close();
+});
 
 test("coalesces rapid mutations and permits exactly one in-flight request", async () => {
   const { store, runtime, sent, srcdocs, message, ready, close } = fixture();
