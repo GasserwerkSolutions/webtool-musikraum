@@ -54,6 +54,16 @@ test("coalesces rapid mutations and permits exactly one in-flight request", asyn
   assert.equal(runtime.appliedRevision, 3); close();
 });
 
+test("duplicate ready messages cannot rewind an applied patch revision", async () => {
+  const { store, runtime, sent, srcdocs, message, ready, close } = fixture();
+  runtime.start(); assert.equal(ready(), true); const initialInstance = runtime.instanceId; const initialGeneration = runtime.renderGeneration;
+  setHeroTitle(store, "Gepatchter Stand"); await wait(70); const request = sent[0];
+  runtime.handleMessage(message({ channel: PREVIEW_CHANNEL, version: PREVIEW_PROTOCOL_VERSION, instanceId: initialInstance, renderGeneration: initialGeneration, revision: 1, action: "update-result", requestId: request.requestId, success: true }));
+  assert.equal(runtime.appliedRevision, 1); assert.equal(srcdocs.length, 1);
+  assert.equal(runtime.handleMessage(message({ channel: PREVIEW_CHANNEL, version: PREVIEW_PROTOCOL_VERSION, instanceId: initialInstance, renderGeneration: initialGeneration, revision: 0, action: "ready" })), true);
+  await wait(20); assert.equal(runtime.appliedRevision, 1); assert.equal(runtime.instanceId, initialInstance); assert.equal(srcdocs.length, 1); close();
+});
+
 test("patch timeout rebuilds the newest draft and ignores the expired response", async () => {
   const { store, runtime, sent, srcdocs, message, ready, close } = fixture();
   runtime.start(); ready(); const expiredInstance = runtime.instanceId; const expiredGeneration = runtime.renderGeneration;
