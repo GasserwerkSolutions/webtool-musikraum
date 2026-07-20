@@ -33,10 +33,10 @@ jobs:
           script = "\n".join(line[10:] if line.startswith("          ") else line for line in block.splitlines())
           exec(compile(script, 'preview-stability-integrate.py', 'exec'))
           PYTHON
-      - name: Typecheck
-        run: npm run typecheck
-      - name: Build browser assets
-        run: npm run build
+      - name: Typecheck and build
+        run: |
+          npm run typecheck
+          npm run build
       - name: Commit integrated sources and assets
         run: |
           git config user.name "github-actions[bot]"
@@ -48,8 +48,14 @@ jobs:
           fi
       - name: Planner and runtime regressions
         run: node --test tests/preview-update-planner.test.mjs tests/preview-runtime.test.mjs
-      - name: Preview target regressions
-        run: node --test tests/preview-targets.test.mjs
+      - name: Target uniqueness and roles
+        run: node --test --test-name-pattern="unique occurrences" tests/preview-targets.test.mjs
+      - name: Visible field coverage
+        run: node --test --test-name-pattern="visibly rendered field" tests/preview-targets.test.mjs
+      - name: Target keyboard and export
+        run: node --test --test-name-pattern="space activates" tests/preview-targets.test.mjs
+      - name: Text-list wrapper targets
+        run: node --test --test-name-pattern="visible list wrappers" tests/preview-targets.test.mjs
       - name: Existing unit and DOM tests
         run: node --test $(find tests -maxdepth 1 -name '*.test.mjs' ! -name 'e2e.test.mjs' ! -name 'preview-update-planner.test.mjs' ! -name 'preview-runtime.test.mjs' ! -name 'preview-targets.test.mjs' -print | sort)
       - name: Chromium acceptance
