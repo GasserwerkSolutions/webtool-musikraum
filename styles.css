@@ -106,7 +106,7 @@ button { color: inherit; }
 }
 .button:hover { transform: translateY(-1px); border-color: #bcb5ad; box-shadow: 0 8px 20px rgba(34, 27, 22, .08); }
 .button:disabled { opacity: .45; cursor: default; transform: none; box-shadow: none; }
-.button:focus-visible, .surface-nav__item:focus-visible, .preset-card:focus-visible, .viewport-switch__button:focus-visible, .icon-button:focus-visible {
+.button:focus-visible, .surface-nav__item:focus-visible, .preset-card:focus-visible, .size-card:focus-visible, .viewport-switch__button:focus-visible, .icon-button:focus-visible {
   outline: 3px solid rgba(124, 92, 77, .28);
   outline-offset: 2px;
 }
@@ -284,6 +284,33 @@ button { color: inherit; }
 .preset-card--night { background: linear-gradient(135deg, #f8f5ee 0 55%, #252c2b 55%); }
 .preset-card[class*="preset-card--"] span { color: #57514b; }
 
+.design-group { display: grid; gap: 0; margin-bottom: 6px; }
+.design-group__title { margin: 0 0 10px; font-size: 15px; }
+.font-card { min-height: 88px; }
+.font-card--klassisch strong { font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif; }
+.font-card--klar strong { font-family: Arial, "Helvetica Neue", Helvetica, sans-serif; }
+.font-card--elegant strong { font-family: Georgia, "Palatino Linotype", Palatino, "Times New Roman", serif; }
+.font-card--modern strong { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+.size-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 10px; margin-bottom: 20px; }
+.size-card {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 4px;
+  padding: 12px 8px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--paper);
+  cursor: pointer;
+}
+.size-card strong { line-height: 1; }
+.size-card span { font-size: 12px; color: var(--muted); }
+.size-card.is-active { border-color: var(--accent); box-shadow: inset 0 0 0 2px rgba(124, 92, 77, .12); }
+.size-card--kompakt strong { font-size: 14px; }
+.size-card--normal strong { font-size: 17px; }
+.size-card--gross strong { font-size: 21px; }
+.size-card--sehr-gross strong { font-size: 26px; }
+
 .structure-list { display: grid; gap: 10px; }
 .structure-row { display: grid; grid-template-columns: minmax(0,1fr) auto auto; gap: 14px; align-items: center; padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--paper); box-shadow: 0 6px 18px rgba(40,32,24,.04); }
 .structure-row__copy { display: grid; gap: 3px; }
@@ -386,6 +413,7 @@ button { color: inherit; }
   .surface-card { padding: 18px 14px 24px; }
   .panel__header--action { display: grid; }
   .field-grid, .preset-grid { grid-template-columns: 1fr; }
+  .size-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
   .structure-row { grid-template-columns: 1fr auto; }
   .structure-row__copy { grid-column: 1 / -1; }
   .preview-toolbar { align-items: flex-start; }

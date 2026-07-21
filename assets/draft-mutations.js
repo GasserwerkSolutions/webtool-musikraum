@@ -61,7 +61,7 @@ export function createDraftEffect(before, after, intent) {
         return { type: "section-move", section: intent.section, previousIndex, nextIndex };
     }
     if (intent.type === "set-theme") {
-        const changed = ["preset", "primary", "accent"].filter((key) => before.theme[key] !== after.theme[key]);
+        const changed = ["preset", "primary", "accent", "font", "fontSize"].filter((key) => before.theme[key] !== after.theme[key]);
         if (!changed.length)
             throw new Error("INVALID_THEME_SET");
         const expected = copyDraft(before);

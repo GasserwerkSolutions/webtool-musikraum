@@ -53,7 +53,7 @@ export function planPreviewUpdate(mutations, draft, renderOptions) {
         if (effect.type === "section-move" || effect.type === "section-visibility")
             return { kind: "full", revision, reason: "layout" };
         if (effect.type === "theme-set") {
-            if (effect.changed.includes("preset"))
+            if (effect.changed.some((key) => key !== "primary" && key !== "accent"))
                 return { kind: "full", revision, reason: "metadata" };
             patchTheme = true;
             continue;

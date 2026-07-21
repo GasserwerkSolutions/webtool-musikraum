@@ -27,7 +27,7 @@ export type DraftEffect =
   | { type: "collection-move"; collection: ContentCollection; itemId: string; previousIndex: number; nextIndex: number }
   | { type: "section-visibility"; section: SectionKey; previousVisible: boolean; nextVisible: boolean }
   | { type: "section-move"; section: SectionKey; previousIndex: number; nextIndex: number }
-  | { type: "theme-set"; changed: readonly ("preset" | "primary" | "accent")[] }
+  | { type: "theme-set"; changed: readonly ("preset" | "primary" | "accent" | "font" | "fontSize")[] }
   | { type: "draft-replace"; reason: "import" | "reset" | "recovery" };
 export type DraftMutation = { revision: number; source: DraftMutationSource; effect: DraftEffect; history: HistoryDescriptor; occurredAt: number };
 export type DraftMutationEvent = { draft: Readonly<MusicraumDraft>; mutation: DraftMutation };
@@ -73,7 +73,7 @@ export function createDraftEffect(before: Readonly<MusicraumDraft>, after: Reado
     return { type: "section-move", section: intent.section, previousIndex, nextIndex };
   }
   if (intent.type === "set-theme") {
-    const changed = (["preset", "primary", "accent"] as const).filter((key) => before.theme[key] !== after.theme[key]);
+    const changed = (["preset", "primary", "accent", "font", "fontSize"] as const).filter((key) => before.theme[key] !== after.theme[key]);
     if (!changed.length) throw new Error("INVALID_THEME_SET");
     const expected = copyDraft(before); expected.theme = { ...after.theme }; assertExpectedDraft(expected, after, "UNEXPECTED_THEME_CHANGE");
     return { type: "theme-set", changed };

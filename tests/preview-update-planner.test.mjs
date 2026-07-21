@@ -55,6 +55,8 @@ test("normal fields stay incremental while layout and preset changes require a c
   assert.deepEqual(planPreviewUpdate([mutation(3, { type: "field-set", field: "site.phone", previousPresence: "present", nextPresence: "present" })], draft, { ...renderOptions, revision: 3 }), { kind: "noop", revision: 3 });
   assert.equal(planPreviewUpdate([mutation(4, { type: "section-move", section: "why", previousIndex: 1, nextIndex: 0 })], draft, { ...renderOptions, revision: 4 }).kind, "full");
   assert.equal(planPreviewUpdate([mutation(5, { type: "theme-set", changed: ["preset", "primary", "accent"] })], draft, { ...renderOptions, revision: 5 }).kind, "full");
+  assert.equal(planPreviewUpdate([mutation(6, { type: "theme-set", changed: ["font"] })], draft, { ...renderOptions, revision: 6 }).kind, "full");
+  assert.equal(planPreviewUpdate([mutation(7, { type: "theme-set", changed: ["fontSize"] })], draft, { ...renderOptions, revision: 7 }).kind, "full");
 }));
 
 test("direct color changes use a theme patch", () => withDom(() => {

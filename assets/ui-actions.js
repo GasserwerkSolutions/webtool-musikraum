@@ -1,10 +1,10 @@
-import { PRESETS, createId, normalizeDraft, slugify } from "./domain.js";
+import { FONT_PRESETS, FONT_SIZES, PRESETS, createId, normalizeDraft, slugify } from "./domain.js";
 import { replaceWithFreshDraft, replaceWithImportedDraft } from "./persistence.js";
 import { EDITOR_FIELD_REGISTRY } from "./editor-registry.js";
 import { isPreviewTargetShape } from "./preview-contract.js";
 import { evaluateReadiness } from "./readiness.js";
 import { inputValue, setAtPath } from "./ui-shared.js";
-import { bindStaticInputs, renderContentOverview, renderDynamicControls, renderExportState, renderOffers, renderPreview, renderStructure, setViewport, showPanel, showToast, syncPresetInputs, updateReadiness } from "./ui-render.js";
+import { bindStaticInputs, renderContentOverview, renderDynamicControls, renderExportState, renderFontControls, renderOffers, renderPreview, renderStructure, setViewport, showPanel, showToast, syncPresetInputs, updateReadiness } from "./ui-render.js";
 import { handleTextListAction, handleTextListInput } from "./text-list-actions.js";
 import { ensureEditorOpen } from "./sidebar.js";
 import { navigateToEditorTarget } from "./preview-navigation.js";
@@ -40,6 +40,16 @@ export function handleClick(context, event) {
     const presetButton = target.closest("[data-preset]");
     if (presetButton) {
         applyPreset(context, presetButton.dataset.preset);
+        return;
+    }
+    const fontButton = target.closest("[data-font]");
+    if (fontButton) {
+        applyFontPreset(context, fontButton.dataset.font);
+        return;
+    }
+    const fontSizeButton = target.closest("[data-font-size]");
+    if (fontSizeButton) {
+        applyFontSize(context, fontSizeButton.dataset.fontSize);
         return;
     }
     if (handleReorderClick(context, target))
@@ -147,6 +157,22 @@ function applyPreset(context, name) {
     context.store.flushHistoryGroup();
     context.store.mutate((draft) => { draft.theme.preset = name; draft.theme.primary = preset.primary; draft.theme.accent = preset.accent; }, { intent: { type: "set-theme" }, history: { label: `Farbwelt „${presetLabel(name)}“ gewählt`, target: { kind: "panel", panel: "design" } } });
     syncPresetInputs(context, name);
+}
+function applyFontPreset(context, name) {
+    const font = FONT_PRESETS[name];
+    if (!font)
+        return;
+    context.store.flushHistoryGroup();
+    context.store.mutate((draft) => { draft.theme.font = name; }, { intent: { type: "set-theme" }, history: { label: `Schriftart „${font.label}“ gewählt`, target: { kind: "panel", panel: "design" } } });
+    renderFontControls(context);
+}
+function applyFontSize(context, name) {
+    const size = FONT_SIZES[name];
+    if (!size)
+        return;
+    context.store.flushHistoryGroup();
+    context.store.mutate((draft) => { draft.theme.fontSize = name; }, { intent: { type: "set-theme" }, history: { label: `Schriftgrösse „${size.label}“ gewählt`, target: { kind: "panel", panel: "design" } } });
+    renderFontControls(context);
 }
 async function handleExport(context) {
     ensureEditorOpen(context);

@@ -13,6 +13,7 @@ Ein bewusst einfaches, persönliches Website-Werkzeug für Franz Gasser. Datenmo
 - Reihenfolge und Sichtbarkeit der Inhaltsbereiche
 - Kontaktangaben, Abschluss-Texte und Kontakt-CTA-Beschriftungen
 - vier kuratierte Farbwelten
+- vier Schriftarten zur Auswahl (Klassisch, Klar/Arial, Elegant/Georgia, Modern) und vier Schriftgrössen (Kompakt bis Sehr gross)
 - responsive Live-Vorschau für Desktop, Tablet und Mobiltelefon
 - direkte Bearbeitung: Ein Klick auf sichtbaren Inhalt öffnet das zugehörige Feld
 - falt- und per Maus, Touch oder Tastatur grössenveränderbare Bearbeitungsfläche
@@ -26,7 +27,7 @@ Der Entwurf besteht nur aus Website-Angaben, Texten, Listen, Klangmomenten, Bere
 
 ## Datenmodell und Kompatibilität
 
-Bestehende Entwürfe und Sicherungen der ersten Schema-Version bleiben kompatibel. Fehlen die neueren Listen oder Textfelder, ergänzt die Normalisierung die bisherigen Musikraum-Standardwerte. Eine ausdrücklich leere Liste bleibt dagegen leer. Hero- und Intro-Punktlisten werden auf höchstens sechs Einträge begrenzt; Klangmomente auf höchstens zwölf.
+Bestehende Entwürfe und Sicherungen der ersten Schema-Version bleiben kompatibel. Fehlen die neueren Listen oder Textfelder, ergänzt die Normalisierung die bisherigen Musikraum-Standardwerte. Ältere Entwürfe ohne Schrift-Angaben erhalten die Standardschrift „Klassisch“ in der Grösse „Normal“; die Schriftarten verwenden ausschliesslich systemeigene Schriften, damit der Export ohne Internetverbindung funktioniert. Eine ausdrücklich leere Liste bleibt dagegen leer. Hero- und Intro-Punktlisten werden auf höchstens sechs Einträge begrenzt; Klangmomente auf höchstens zwölf.
 
 ## Bewusste Grenze
 

@@ -2,6 +2,8 @@ export const SCHEMA_VERSION = 1 as const;
 export const ACTIVE_DRAFT_POINTER_KEY = "musikraum-website-werkzeug-active-draft";
 
 export type ThemePresetName = "musikraum" | "waldton" | "holzklang" | "nachtklang";
+export type FontPresetName = "klassisch" | "klar" | "elegant" | "modern";
+export type FontSizeName = "kompakt" | "normal" | "gross" | "sehr-gross";
 export type SectionKey = "intro" | "why" | "offers" | "story" | "contact";
 export type MusicraumTextItem = { id: string; text: string };
 export type MusicraumOffer = { id: string; title: string; text: string };
@@ -25,15 +27,29 @@ export type MusicraumDraft = {
   introPoints: MusicraumTextItem[];
   offers: MusicraumOffer[];
   layout: { order: SectionKey[]; visibility: Record<SectionKey, boolean> };
-  theme: { preset: ThemePresetName; primary: string; accent: string };
+  theme: { preset: ThemePresetName; primary: string; accent: string; font: FontPresetName; fontSize: FontSizeName };
 };
 
 export const PRESETS = {
-  musikraum: { primary: "#403b34", accent: "#587271", bg: "#f6e4c2", surface: "#fff3dd", text: "#2f2b25", display: "Iowan Old Style, Palatino Linotype, Palatino, Georgia, serif", body: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", radius: "12px" },
-  waldton: { primary: "#3f514e", accent: "#b89a63", bg: "#edf1e9", surface: "#fbfcf8", text: "#24302d", display: "Iowan Old Style, Palatino Linotype, Palatino, Georgia, serif", body: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", radius: "10px" },
-  holzklang: { primary: "#5d4938", accent: "#8b6f47", bg: "#efe2cf", surface: "#fff9ef", text: "#302820", display: "Iowan Old Style, Palatino Linotype, Palatino, Georgia, serif", body: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", radius: "16px" },
-  nachtklang: { primary: "#252c2b", accent: "#c4a96d", bg: "#e7e2d7", surface: "#f8f5ee", text: "#202322", display: "Iowan Old Style, Palatino Linotype, Palatino, Georgia, serif", body: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", radius: "6px" },
-} satisfies Record<ThemePresetName, { primary: string; accent: string; bg: string; surface: string; text: string; display: string; body: string; radius: string }>;
+  musikraum: { primary: "#403b34", accent: "#587271", bg: "#f6e4c2", surface: "#fff3dd", text: "#2f2b25", radius: "12px" },
+  waldton: { primary: "#3f514e", accent: "#b89a63", bg: "#edf1e9", surface: "#fbfcf8", text: "#24302d", radius: "10px" },
+  holzklang: { primary: "#5d4938", accent: "#8b6f47", bg: "#efe2cf", surface: "#fff9ef", text: "#302820", radius: "16px" },
+  nachtklang: { primary: "#252c2b", accent: "#c4a96d", bg: "#e7e2d7", surface: "#f8f5ee", text: "#202322", radius: "6px" },
+} satisfies Record<ThemePresetName, { primary: string; accent: string; bg: string; surface: string; text: string; radius: string }>;
+
+export const FONT_PRESETS = {
+  klassisch: { label: "Klassisch", display: "Iowan Old Style, Palatino Linotype, Palatino, Georgia, serif", body: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" },
+  klar: { label: "Klar", display: "Arial, 'Helvetica Neue', Helvetica, sans-serif", body: "Arial, 'Helvetica Neue', Helvetica, sans-serif" },
+  elegant: { label: "Elegant", display: "Georgia, 'Palatino Linotype', Palatino, 'Times New Roman', serif", body: "Georgia, 'Palatino Linotype', Palatino, 'Times New Roman', serif" },
+  modern: { label: "Modern", display: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", body: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" },
+} satisfies Record<FontPresetName, { label: string; display: string; body: string }>;
+
+export const FONT_SIZES = {
+  kompakt: { label: "Kompakt", scale: 92 },
+  normal: { label: "Normal", scale: 100 },
+  gross: { label: "Gross", scale: 110 },
+  "sehr-gross": { label: "Sehr gross", scale: 122 },
+} satisfies Record<FontSizeName, { label: string; scale: number }>;
 
 export function createId(prefix: string): string {
   const id = globalThis.crypto?.randomUUID?.();
@@ -64,6 +80,6 @@ export function createDefaultDraft(now = new Date().toISOString()): MusicraumDra
       { id: "offer-begleitung", title: "Warm begleitet", text: "Franz öffnet einen leichten Zugang zu Klang und Rhythmus. Vorkenntnisse oder Notenlesen brauchst du nicht." },
     ],
     layout: { order: ["intro", "why", "offers", "story", "contact"], visibility: { intro: true, why: true, offers: true, story: true, contact: true } },
-    theme: { preset: "musikraum", primary: PRESETS.musikraum.primary, accent: PRESETS.musikraum.accent },
+    theme: { preset: "musikraum", primary: PRESETS.musikraum.primary, accent: PRESETS.musikraum.accent, font: "klassisch", fontSize: "normal" },
   };
 }

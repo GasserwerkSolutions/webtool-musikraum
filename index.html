@@ -32,7 +32,7 @@
         <button class="surface-nav__item" type="button" data-panel-target="services" aria-label="Klangmomente"><span aria-hidden="true">Klang<wbr>momente</span></button>
         <button class="surface-nav__item" type="button" data-panel-target="structure">Aufbau</button>
         <button class="surface-nav__item" type="button" data-panel-target="contact">Kontakt</button>
-        <button class="surface-nav__item" type="button" data-panel-target="design">Farben</button>
+        <button class="surface-nav__item" type="button" data-panel-target="design">Gestaltung</button>
         <button class="surface-nav__item" type="button" data-panel-target="publish">Fertig</button>
       </nav>
       <button id="sidebarToggle" class="sidebar-toggle" type="button" aria-controls="surfaceStage" aria-expanded="true" title="Bearbeitungsfläche einklappen"><span aria-hidden="true">‹</span><span class="visually-hidden">Bearbeitungsfläche einklappen</span></button>
@@ -96,14 +96,29 @@
         </section>
 
         <section class="panel" data-panel="design" aria-labelledby="panel-design-title" hidden>
-          <div class="panel__header"><p class="eyebrow">Atmosphäre</p><h2 id="panel-design-title">Farbwelt wählen</h2><p>Wähle eine von vier ruhigen Farbwelten. Texte und Aufbau bleiben dabei unverändert.</p></div>
+          <div class="panel__header"><p class="eyebrow">Atmosphäre</p><h2 id="panel-design-title">Farben und Schrift wählen</h2><p>Wähle eine ruhige Farbwelt, eine Schriftart und die Schriftgrösse. Texte und Aufbau bleiben dabei unverändert.</p></div>
+          <div class="design-group"><h3 class="design-group__title">Farbwelt</h3>
           <div class="preset-grid" role="radiogroup" aria-label="Farbwelt">
             <button type="button" class="preset-card preset-card--music" data-preset="musikraum"><strong>Musikraum</strong><span>Warm, ruhig und vertraut</span></button>
             <button type="button" class="preset-card preset-card--forest" data-preset="waldton"><strong>Waldton</strong><span>Gedämpftes Grün</span></button>
             <button type="button" class="preset-card preset-card--wood" data-preset="holzklang"><strong>Holzklang</strong><span>Erde und Wärme</span></button>
             <button type="button" class="preset-card preset-card--night" data-preset="nachtklang"><strong>Nachtklang</strong><span>Dunkler und konzentriert</span></button>
           </div>
-          <div class="field-grid"><label class="field"><span>Dunkle Hauptfarbe</span><input type="color" data-bind="theme.primary"></label><label class="field"><span>Akzentfarbe</span><input type="color" data-bind="theme.accent"></label></div>
+          <div class="field-grid"><label class="field"><span>Dunkle Hauptfarbe</span><input type="color" data-bind="theme.primary"></label><label class="field"><span>Akzentfarbe</span><input type="color" data-bind="theme.accent"></label></div></div>
+          <div class="design-group"><h3 class="design-group__title">Schriftart</h3>
+          <div class="preset-grid" role="radiogroup" aria-label="Schriftart">
+            <button type="button" class="preset-card font-card font-card--klassisch" data-font="klassisch"><strong>Klassisch</strong><span>Ruhige Serifen-Titel, klare Lesetexte</span></button>
+            <button type="button" class="preset-card font-card font-card--klar" data-font="klar"><strong>Klar</strong><span>Arial, schlicht und vertraut</span></button>
+            <button type="button" class="preset-card font-card font-card--elegant" data-font="elegant"><strong>Elegant</strong><span>Georgia, durchgehend mit Serifen</span></button>
+            <button type="button" class="preset-card font-card font-card--modern" data-font="modern"><strong>Modern</strong><span>Serifenlose Systemschrift</span></button>
+          </div></div>
+          <div class="design-group"><h3 class="design-group__title">Schriftgrösse</h3>
+          <div class="size-grid" role="radiogroup" aria-label="Schriftgrösse">
+            <button type="button" class="size-card size-card--kompakt" data-font-size="kompakt"><strong aria-hidden="true">A</strong><span>Kompakt</span></button>
+            <button type="button" class="size-card size-card--normal" data-font-size="normal"><strong aria-hidden="true">A</strong><span>Normal</span></button>
+            <button type="button" class="size-card size-card--gross" data-font-size="gross"><strong aria-hidden="true">A</strong><span>Gross</span></button>
+            <button type="button" class="size-card size-card--sehr-gross" data-font-size="sehr-gross"><strong aria-hidden="true">A</strong><span>Sehr gross</span></button>
+          </div></div>
         </section>
 
         <section class="panel" data-panel="publish" aria-labelledby="panel-publish-title" hidden>
