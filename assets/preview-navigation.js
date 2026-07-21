@@ -59,11 +59,34 @@ function revealTarget(context, target) {
         return;
     }
     target.scrollIntoView({ block: "center", behavior: reducedMotion() ? "auto" : "smooth" });
+    scheduleFocusCorrection(target);
+}
+const FOCUS_CORRECTION_FALLBACK_MS = 350;
+const FOCUS_CORRECTION_WINDOW_MS = 1200;
+function scheduleFocusCorrection(target) {
+    const correct = () => {
+        if (!target.isConnected || !targetStillFocused(target) || targetFullyVisible(target))
+            return;
+        target.scrollIntoView({ block: "center", behavior: "auto" });
+    };
+    requestAnimationFrame(() => requestAnimationFrame(correct));
+    window.setTimeout(correct, FOCUS_CORRECTION_FALLBACK_MS);
     const viewport = window.visualViewport;
-    if (viewport) {
-        const reposition = () => { target.scrollIntoView({ block: "center", behavior: "auto" }); viewport.removeEventListener("resize", reposition); };
-        viewport.addEventListener("resize", reposition, { once: true });
-        setTimeout(() => viewport.removeEventListener("resize", reposition), 1200);
-    }
+    if (!viewport)
+        return;
+    const onViewportChange = () => correct();
+    viewport.addEventListener("resize", onViewportChange);
+    window.setTimeout(() => viewport.removeEventListener("resize", onViewportChange), FOCUS_CORRECTION_WINDOW_MS);
+}
+function targetStillFocused(target) {
+    const active = document.activeElement;
+    return active === target || (active instanceof HTMLElement && target.contains(active));
+}
+function targetFullyVisible(target) {
+    const rect = target.getBoundingClientRect();
+    const viewport = window.visualViewport;
+    const top = viewport ? viewport.offsetTop : 0;
+    const height = viewport ? viewport.height : window.innerHeight;
+    return rect.top >= top && rect.bottom <= top + height;
 }
 function reducedMotion() { return matchMedia("(prefers-reduced-motion: reduce)").matches; }

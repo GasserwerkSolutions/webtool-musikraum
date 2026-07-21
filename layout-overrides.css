@@ -297,11 +297,16 @@ body {
 
 @media (max-width: 700px) {
   .topbar {
-    min-height: 56px;
+    min-height: 58px;
     gap: 8px;
     padding: 7px 9px;
   }
   .brand__mark { width: 34px; height: 34px; }
-  .history-actions .button { width: 34px; min-height: 34px; }
-  .surface-nav { top: 56px; }
+  .topbar .button { min-height: 44px; }
+  .history-actions .button { width: 44px; min-height: 44px; }
+  .topbar .viewport-switch__button,
+  .viewport-switch--topbar .viewport-switch__button { min-height: 44px; min-width: 44px; padding: 8px 9px; font-size: 10.5px; }
+  .icon-button { width: 44px; height: 44px; }
+  .surface-nav { top: var(--mobile-topbar-height, 58px); }
+  .surface-nav__item { min-height: 48px; }
 }

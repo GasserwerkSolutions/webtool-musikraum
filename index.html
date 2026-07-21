@@ -137,6 +137,11 @@
     </section>
   </main>
 
+  <div class="mode-switch" role="group" aria-label="Ansicht wechseln">
+    <button class="mode-switch__button is-active" type="button" data-mode="edit" aria-pressed="true"><span class="mode-switch__check" aria-hidden="true">✓</span><span>Bearbeiten</span></button>
+    <button class="mode-switch__button" type="button" data-mode="preview" aria-pressed="false"><span class="mode-switch__check" aria-hidden="true">✓</span><span>Vorschau</span></button>
+  </div>
+
   <template id="textItemTemplate">
     <article class="item-card item-card--compact" data-text-item-card>
       <div class="item-card__topline"><strong data-text-item-number>Punkt</strong><div class="reorder-actions" role="group" aria-label="Reihenfolge ändern"><button class="icon-button icon-button--move" type="button" data-reorder-direction="up">↑</button><button class="reorder-handle" type="button" data-reorder-handle><span aria-hidden="true">⠿</span></button><button class="icon-button icon-button--move" type="button" data-reorder-direction="down">↓</button></div><button class="icon-button" type="button" data-action="remove-text-item" aria-label="Punkt entfernen">×</button></div>

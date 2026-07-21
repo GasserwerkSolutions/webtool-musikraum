@@ -40,6 +40,8 @@ export function createUiContext(store, repository) {
         previewInstanceId: "",
         previewScroll: null,
         volatileStorage: false,
+        mobileMode: "edit",
+        mobileEditorScroll: 0,
     };
 }
 export function getAtPath(object, path) { return path.split(".").reduce((value, key) => value && typeof value === "object" ? value[key] : undefined, object); }

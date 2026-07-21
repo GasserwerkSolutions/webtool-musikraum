@@ -364,6 +364,40 @@ button { color: inherit; }
 #previewFrame[data-viewport="tablet"] { width: 768px; }
 #previewFrame[data-viewport="mobile"] { width: 390px; }
 
+.mode-switch {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 60;
+  display: none;
+  gap: 8px;
+  padding: 10px 12px;
+  padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--line);
+  background: rgba(255, 254, 250, .96);
+  backdrop-filter: blur(14px);
+}
+.mode-switch__button {
+  flex: 1;
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.mode-switch__check { display: none; font-weight: 900; }
+.mode-switch__button.is-active { border-color: var(--accent-dark); background: var(--accent-dark); color: #fff; }
+.mode-switch__button.is-active .mode-switch__check { display: inline; }
+.mode-switch__button:focus-visible { outline: 3px solid rgba(124, 92, 77, .28); outline-offset: 2px; }
+
 .toast {
   position: fixed;
   right: 20px;
@@ -419,6 +453,31 @@ button { color: inherit; }
   .preview-toolbar { align-items: flex-start; }
   .preview-desk { padding: 12px; }
   #previewFrame { height: 680px; min-height: 680px; border-radius: 12px; }
+  .sidebar-toggle { display: none; }
+  .mode-switch { display: flex; }
+  .toast { right: 12px; bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
+  .workspace.is-mode-edit .control-surface { padding-bottom: calc(86px + env(safe-area-inset-bottom, 0px)); }
+  .workspace.is-mode-edit .preview-area {
+    position: fixed;
+    top: 0;
+    left: -200vw;
+    width: 100vw;
+    height: 70vh;
+    overflow: hidden;
+    visibility: hidden;
+    pointer-events: none;
+  }
+  .workspace.is-mode-preview .control-surface { display: none; }
+  .workspace.is-mode-preview .preview-area {
+    position: fixed;
+    top: var(--mobile-topbar-height, 56px);
+    bottom: var(--mobile-modebar-height, 69px);
+    left: 0;
+    right: 0;
+    min-height: 0;
+  }
+  .workspace.is-mode-preview .preview-desk { height: 100%; padding: 10px; overflow: hidden; }
+  .workspace.is-mode-preview #previewFrame { width: 100%; height: 100%; min-height: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
