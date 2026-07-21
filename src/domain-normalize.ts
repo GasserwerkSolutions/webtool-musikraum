@@ -1,9 +1,11 @@
-import { PRESETS, SCHEMA_VERSION, createDefaultDraft, createId, type MusicraumDraft, type MusicraumOffer, type MusicraumTextItem, type SectionKey, type ThemePresetName } from "./domain-model.js";
+import { PRESETS, SCHEMA_VERSION, createDefaultDraft, createId, type FontPresetName, type FontSizeName, type MusicraumDraft, type MusicraumOffer, type MusicraumTextItem, type SectionKey, type ThemePresetName } from "./domain-model.js";
 import { normalizeHttpUrl } from "./domain-helpers.js";
 import { asBoolean, asRecord, asString, safeColor, safeIso } from "./domain-coerce.js";
 
 const SECTION_KEYS: SectionKey[] = ["intro", "why", "offers", "story", "contact"];
 const PRESET_KEYS: ThemePresetName[] = ["musikraum", "waldton", "holzklang", "nachtklang"];
+const FONT_KEYS: FontPresetName[] = ["klassisch", "klar", "elegant", "modern"];
+const FONT_SIZE_KEYS: FontSizeName[] = ["kompakt", "normal", "gross", "sehr-gross"];
 const MAX_TEXT_ITEMS = 6;
 
 export function normalizeDraft(input: unknown): MusicraumDraft {
@@ -18,6 +20,8 @@ export function normalizeDraft(input: unknown): MusicraumDraft {
   const requestedOrder = Array.isArray(layout.order) ? layout.order.map((value) => asString(value)).filter((value): value is SectionKey => SECTION_KEYS.includes(value as SectionKey)) : [];
   const order = [...new Set(requestedOrder), ...SECTION_KEYS.filter((key) => !requestedOrder.includes(key))];
   const preset = PRESET_KEYS.includes(theme.preset as ThemePresetName) ? theme.preset as ThemePresetName : fallback.theme.preset;
+  const font = FONT_KEYS.includes(theme.font as FontPresetName) ? theme.font as FontPresetName : fallback.theme.font;
+  const fontSize = FONT_SIZE_KEYS.includes(theme.fontSize as FontSizeName) ? theme.fontSize as FontSizeName : fallback.theme.fontSize;
   const usedOfferIds = new Set<string>();
   const offers: MusicraumOffer[] = Array.isArray(source.offers) ? source.offers.slice(0, 12).map((value) => {
     const row = asRecord(value);
@@ -40,7 +44,7 @@ export function normalizeDraft(input: unknown): MusicraumDraft {
     introPoints: normalizeTextItems(source.introPoints, fallback.introPoints, "intro-point"),
     offers,
     layout: { order, visibility: Object.fromEntries(SECTION_KEYS.map((key) => [key, asBoolean(visibility[key], fallback.layout.visibility[key])])) as Record<SectionKey, boolean> },
-    theme: { preset, primary: safeColor(theme.primary, PRESETS[preset].primary), accent: safeColor(theme.accent, PRESETS[preset].accent) },
+    theme: { preset, primary: safeColor(theme.primary, PRESETS[preset].primary), accent: safeColor(theme.accent, PRESETS[preset].accent), font, fontSize },
   };
 }
 

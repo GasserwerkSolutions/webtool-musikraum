@@ -28,7 +28,7 @@ export function bindStaticInputs(context) {
             renderFieldHelp(input, bind, context);
     });
 }
-export function renderDynamicControls(context) { renderTextItems(context, "heroPoints"); renderTextItems(context, "introPoints"); renderOffers(context); renderPresets(context); renderStructure(context); }
+export function renderDynamicControls(context) { renderTextItems(context, "heroPoints"); renderTextItems(context, "introPoints"); renderOffers(context); renderPresets(context); renderFontControls(context); renderStructure(context); }
 export function renderTextItems(context, list) {
     const listElement = list === "heroPoints" ? context.heroPointList : context.introPointList;
     const items = context.store.snapshot[list];
@@ -104,6 +104,11 @@ export function configureReorderControls(item, label, index, count) {
     handle.title = "Ziehen oder Alt + Pfeil hoch/runter";
 }
 export function renderPresets(context) { document.querySelectorAll("[data-preset]").forEach((button) => { const active = button.dataset.preset === context.store.snapshot.theme.preset; button.classList.toggle("is-active", active); button.setAttribute("aria-checked", String(active)); }); }
+export function renderFontControls(context) {
+    const theme = context.store.snapshot.theme;
+    document.querySelectorAll("[data-font]").forEach((button) => { const active = button.dataset.font === theme.font; button.classList.toggle("is-active", active); button.setAttribute("aria-checked", String(active)); });
+    document.querySelectorAll("[data-font-size]").forEach((button) => { const active = button.dataset.fontSize === theme.fontSize; button.classList.toggle("is-active", active); button.setAttribute("aria-checked", String(active)); });
+}
 export function syncPresetInputs(context, name) { const preset = PRESETS[name]; const primary = document.querySelector('[data-bind="theme.primary"]'); const accent = document.querySelector('[data-bind="theme.accent"]'); if (primary)
     primary.value = preset.primary; if (accent)
     accent.value = preset.accent; renderPresets(context); }

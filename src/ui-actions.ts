@@ -1,10 +1,10 @@
-import { PRESETS, createId, normalizeDraft, slugify, type MusicraumDraft, type SectionKey, type ThemePresetName } from "./domain.js";
+import { FONT_PRESETS, FONT_SIZES, PRESETS, createId, normalizeDraft, slugify, type FontPresetName, type FontSizeName, type MusicraumDraft, type SectionKey, type ThemePresetName } from "./domain.js";
 import { replaceWithFreshDraft, replaceWithImportedDraft } from "./persistence.js";
 import { EDITOR_FIELD_REGISTRY, type StaticEditableField } from "./editor-registry.js";
 import { isPreviewTargetShape } from "./preview-contract.js";
 import { evaluateReadiness } from "./readiness.js";
 import { inputValue, setAtPath, type UiContext } from "./ui-shared.js";
-import { bindStaticInputs, renderContentOverview, renderDynamicControls, renderExportState, renderOffers, renderPreview, renderStructure, setViewport, showPanel, showToast, syncPresetInputs, updateReadiness } from "./ui-render.js";
+import { bindStaticInputs, renderContentOverview, renderDynamicControls, renderExportState, renderFontControls, renderOffers, renderPreview, renderStructure, setViewport, showPanel, showToast, syncPresetInputs, updateReadiness } from "./ui-render.js";
 import { handleTextListAction, handleTextListInput } from "./text-list-actions.js";
 import { ensureEditorOpen } from "./sidebar.js";
 import { navigateToEditorTarget } from "./preview-navigation.js";
@@ -24,6 +24,8 @@ export function handleClick(context: UiContext, event: Event): void {
   const panelButton = target.closest<HTMLElement>("[data-panel-target]"); if (panelButton) { ensureEditorOpen(context); showPanel(context, panelButton.dataset.panelTarget ?? "site"); return; }
   const viewportButton = target.closest<HTMLElement>("[data-viewport]"); if (viewportButton) { setViewport(context, viewportButton.dataset.viewport ?? "desktop"); return; }
   const presetButton = target.closest<HTMLElement>("[data-preset]"); if (presetButton) { applyPreset(context, presetButton.dataset.preset as ThemePresetName); return; }
+  const fontButton = target.closest<HTMLElement>("[data-font]"); if (fontButton) { applyFontPreset(context, fontButton.dataset.font as FontPresetName); return; }
+  const fontSizeButton = target.closest<HTMLElement>("[data-font-size]"); if (fontSizeButton) { applyFontSize(context, fontSizeButton.dataset.fontSize as FontSizeName); return; }
   if (handleReorderClick(context, target)) return;
   const actionButton = target.closest<HTMLElement>("[data-action]"); if (!actionButton) return;
   if (handleTextListAction(context, actionButton)) return;
@@ -86,6 +88,16 @@ function applyPreset(context: UiContext, name: ThemePresetName): void {
   const preset = PRESETS[name]; if (!preset) return; context.store.flushHistoryGroup();
   context.store.mutate((draft) => { draft.theme.preset = name; draft.theme.primary = preset.primary; draft.theme.accent = preset.accent; }, { intent: { type: "set-theme" }, history: { label: `Farbwelt „${presetLabel(name)}“ gewählt`, target: { kind: "panel", panel: "design" } } });
   syncPresetInputs(context, name);
+}
+function applyFontPreset(context: UiContext, name: FontPresetName): void {
+  const font = FONT_PRESETS[name]; if (!font) return; context.store.flushHistoryGroup();
+  context.store.mutate((draft) => { draft.theme.font = name; }, { intent: { type: "set-theme" }, history: { label: `Schriftart „${font.label}“ gewählt`, target: { kind: "panel", panel: "design" } } });
+  renderFontControls(context);
+}
+function applyFontSize(context: UiContext, name: FontSizeName): void {
+  const size = FONT_SIZES[name]; if (!size) return; context.store.flushHistoryGroup();
+  context.store.mutate((draft) => { draft.theme.fontSize = name; }, { intent: { type: "set-theme" }, history: { label: `Schriftgrösse „${size.label}“ gewählt`, target: { kind: "panel", panel: "design" } } });
+  renderFontControls(context);
 }
 
 async function handleExport(context: UiContext): Promise<void> {

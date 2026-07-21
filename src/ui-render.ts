@@ -27,7 +27,7 @@ export function bindStaticInputs(context: UiContext): void {
   });
 }
 
-export function renderDynamicControls(context: UiContext): void { renderTextItems(context, "heroPoints"); renderTextItems(context, "introPoints"); renderOffers(context); renderPresets(context); renderStructure(context); }
+export function renderDynamicControls(context: UiContext): void { renderTextItems(context, "heroPoints"); renderTextItems(context, "introPoints"); renderOffers(context); renderPresets(context); renderFontControls(context); renderStructure(context); }
 export function renderTextItems(context: UiContext, list: TextListKey): void {
   const listElement = list === "heroPoints" ? context.heroPointList : context.introPointList; const items = context.store.snapshot[list]; listElement.innerHTML = "";
   document.querySelectorAll<HTMLButtonElement>(`[data-action="add-text-item"][data-list="${list}"]`).forEach((button) => { button.disabled = items.length >= 6; });
@@ -67,6 +67,11 @@ export function configureReorderControls(item: HTMLElement, label: string, index
   handle.disabled = count < 2; handle.setAttribute("aria-label", `${label} ziehen. Alternativ mit Alt und Pfeil hoch oder runter verschieben.`); handle.title = "Ziehen oder Alt + Pfeil hoch/runter";
 }
 export function renderPresets(context: UiContext): void { document.querySelectorAll<HTMLElement>("[data-preset]").forEach((button) => { const active = button.dataset.preset === context.store.snapshot.theme.preset; button.classList.toggle("is-active", active); button.setAttribute("aria-checked", String(active)); }); }
+export function renderFontControls(context: UiContext): void {
+  const theme = context.store.snapshot.theme;
+  document.querySelectorAll<HTMLElement>("[data-font]").forEach((button) => { const active = button.dataset.font === theme.font; button.classList.toggle("is-active", active); button.setAttribute("aria-checked", String(active)); });
+  document.querySelectorAll<HTMLElement>("[data-font-size]").forEach((button) => { const active = button.dataset.fontSize === theme.fontSize; button.classList.toggle("is-active", active); button.setAttribute("aria-checked", String(active)); });
+}
 export function syncPresetInputs(context: UiContext, name: ThemePresetName): void { const preset = PRESETS[name]; const primary = document.querySelector<HTMLInputElement>('[data-bind="theme.primary"]'); const accent = document.querySelector<HTMLInputElement>('[data-bind="theme.accent"]'); if (primary) primary.value = preset.primary; if (accent) accent.value = preset.accent; renderPresets(context); }
 export function renderPreview(context: UiContext): void {
   if (context.previewTimer) { clearTimeout(context.previewTimer); context.previewTimer = null; }

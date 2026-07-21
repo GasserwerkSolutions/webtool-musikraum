@@ -3,6 +3,8 @@ import { normalizeHttpUrl } from "./domain-helpers.js";
 import { asBoolean, asRecord, asString, safeColor, safeIso } from "./domain-coerce.js";
 const SECTION_KEYS = ["intro", "why", "offers", "story", "contact"];
 const PRESET_KEYS = ["musikraum", "waldton", "holzklang", "nachtklang"];
+const FONT_KEYS = ["klassisch", "klar", "elegant", "modern"];
+const FONT_SIZE_KEYS = ["kompakt", "normal", "gross", "sehr-gross"];
 const MAX_TEXT_ITEMS = 6;
 export function normalizeDraft(input) {
     const source = asRecord(input);
@@ -17,6 +19,8 @@ export function normalizeDraft(input) {
     const requestedOrder = Array.isArray(layout.order) ? layout.order.map((value) => asString(value)).filter((value) => SECTION_KEYS.includes(value)) : [];
     const order = [...new Set(requestedOrder), ...SECTION_KEYS.filter((key) => !requestedOrder.includes(key))];
     const preset = PRESET_KEYS.includes(theme.preset) ? theme.preset : fallback.theme.preset;
+    const font = FONT_KEYS.includes(theme.font) ? theme.font : fallback.theme.font;
+    const fontSize = FONT_SIZE_KEYS.includes(theme.fontSize) ? theme.fontSize : fallback.theme.fontSize;
     const usedOfferIds = new Set();
     const offers = Array.isArray(source.offers) ? source.offers.slice(0, 12).map((value) => {
         const row = asRecord(value);
@@ -40,7 +44,7 @@ export function normalizeDraft(input) {
         introPoints: normalizeTextItems(source.introPoints, fallback.introPoints, "intro-point"),
         offers,
         layout: { order, visibility: Object.fromEntries(SECTION_KEYS.map((key) => [key, asBoolean(visibility[key], fallback.layout.visibility[key])])) },
-        theme: { preset, primary: safeColor(theme.primary, PRESETS[preset].primary), accent: safeColor(theme.accent, PRESETS[preset].accent) },
+        theme: { preset, primary: safeColor(theme.primary, PRESETS[preset].primary), accent: safeColor(theme.accent, PRESETS[preset].accent), font, fontSize },
     };
 }
 function normalizeTextItems(value, fallback, prefix) {

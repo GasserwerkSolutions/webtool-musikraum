@@ -62,7 +62,7 @@ export function planPreviewUpdate(mutations: readonly DraftMutation[], draft: Re
     if (effect.type === "draft-replace") return { kind: "full", revision, reason: "draft-replace" };
     if (effect.type === "section-move" || effect.type === "section-visibility") return { kind: "full", revision, reason: "layout" };
     if (effect.type === "theme-set") {
-      if (effect.changed.includes("preset")) return { kind: "full", revision, reason: "metadata" };
+      if (effect.changed.some((key) => key !== "primary" && key !== "accent")) return { kind: "full", revision, reason: "metadata" };
       patchTheme = true;
       continue;
     }

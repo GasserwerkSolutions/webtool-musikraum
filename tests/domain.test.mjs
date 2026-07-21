@@ -22,6 +22,34 @@ test("normalizes section order, visibility and safe values", () => {
   assert.equal(normalized.theme.primary, "#403b34");
 });
 
+test("normalizes font choices and keeps older drafts compatible", () => {
+  const draft = createDefaultDraft();
+  assert.equal(draft.theme.font, "klassisch");
+  assert.equal(draft.theme.fontSize, "normal");
+  const legacy = normalizeDraft({ ...draft, theme: { preset: "waldton", primary: "#3f514e", accent: "#b89a63" } });
+  assert.equal(legacy.theme.font, "klassisch");
+  assert.equal(legacy.theme.fontSize, "normal");
+  const invalid = normalizeDraft({ ...draft, theme: { ...draft.theme, font: "comic-sans", fontSize: "riesig" } });
+  assert.equal(invalid.theme.font, "klassisch");
+  assert.equal(invalid.theme.fontSize, "normal");
+  const chosen = normalizeDraft({ ...draft, theme: { ...draft.theme, font: "klar", fontSize: "sehr-gross" } });
+  assert.equal(chosen.theme.font, "klar");
+  assert.equal(chosen.theme.fontSize, "sehr-gross");
+});
+
+test("website css follows the chosen font family and size", () => {
+  const draft = createDefaultDraft();
+  const standard = buildWebsiteHtml(draft);
+  assert.match(standard, /--display:Iowan Old Style/);
+  assert.match(standard, /font-size:100%/);
+  draft.theme.font = "klar";
+  draft.theme.fontSize = "gross";
+  const arial = buildWebsiteHtml(draft);
+  assert.match(arial, /--display:Arial/);
+  assert.match(arial, /--body:Arial/);
+  assert.match(arial, /font-size:110%/);
+});
+
 test("repairs blank draft ids and duplicate offer ids", () => {
   const draft = createDefaultDraft();
   const normalized = normalizeDraft({
