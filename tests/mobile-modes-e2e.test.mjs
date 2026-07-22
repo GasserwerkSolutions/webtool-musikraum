@@ -120,6 +120,8 @@ test("mobile edit and preview modes with separate scroll states", { timeout: 900
         editorHidden: getComputedStyle(document.querySelector(".control-surface")).display === "none",
         previewReachable: !previewArea.hasAttribute("inert") && getComputedStyle(previewArea).visibility !== "hidden",
         frameVisible: frameRect.width > 320 && frameRect.height > 300,
+        frameFillsWidth: frameRect.width >= innerWidth - 1,
+        frameFillsHeight: frameRect.height >= (document.querySelector(".preview-desk")?.getBoundingClientRect().height ?? 0) - 1,
         frameOnScreen: frameRect.left >= 0 && frameRect.right <= innerWidth,
         pressedStates: [...document.querySelectorAll("[data-mode]")].map((button) => `${button.dataset.mode}:${button.getAttribute("aria-pressed")}`).join(","),
         returnHidden: document.querySelector("[data-return-preview]").hidden,
@@ -131,8 +133,13 @@ test("mobile edit and preview modes with separate scroll states", { timeout: 900
     assert.equal(inPreview.editorHidden, true);
     assert.equal(inPreview.previewReachable, true);
     assert.equal(inPreview.frameVisible, true);
+    assert.equal(inPreview.frameFillsWidth, true, "Vorschau nutzt die Breite nicht voll aus");
+    assert.equal(inPreview.frameFillsHeight, true, "Vorschau nutzt die Höhe nicht voll aus");
     assert.equal(inPreview.frameOnScreen, true);
     assert.equal(inPreview.pressedStates, "edit:false,preview:true");
+
+    const innerOverflow = await preview.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    assert.ok(innerOverflow <= 0, `Vorschau scrollt horizontal: ${innerOverflow}`);
 
     await preview.evaluate(() => { const root = document.documentElement; root.style.scrollBehavior = "auto"; scrollTo(0, 400); });
     await new Promise((resolve) => setTimeout(resolve, 250));
@@ -162,6 +169,31 @@ test("mobile edit and preview modes with separate scroll states", { timeout: 900
     await page.waitForFunction(() => document.querySelector(".workspace").classList.contains("is-mode-preview"));
     assert.equal(await page.evaluate(() => document.querySelector("[data-return-preview]").hidden), true);
     preview = await previewFrame(page);
+
+    await page.setViewport({ width: 300, height: 640 });
+    await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 250)));
+    const scaled = await page.evaluate(() => {
+      const frame = document.querySelector("#previewFrame");
+      const rect = frame.getBoundingClientRect();
+      return {
+        transform: getComputedStyle(frame).transform,
+        styleWidth: frame.style.width,
+        right: rect.right,
+        viewportWidth: innerWidth,
+        bodyHorizontal: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      };
+    });
+    assert.notEqual(scaled.transform, "none", "Skalierung fehlt auf schmalem Display");
+    assert.equal(scaled.styleWidth, "320px");
+    assert.ok(scaled.right <= scaled.viewportWidth + .5, `Vorschau ragt seitlich hinaus: ${scaled.right}`);
+    assert.ok(scaled.bodyHorizontal <= Math.max(1, 320 - scaled.viewportWidth + 1), `Seite breiter als die 320px-Untergrenze des Editors: ${scaled.bodyHorizontal}`);
+    const narrowInner = await preview.evaluate(() => ({ width: document.documentElement.clientWidth, overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth }));
+    assert.equal(narrowInner.width, 320);
+    assert.ok(narrowInner.overflow <= 0, `Innere Vorschau scrollt horizontal: ${narrowInner.overflow}`);
+
+    await page.setViewport({ width: 390, height: 740 });
+    await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 250)));
+    assert.equal(await page.evaluate(() => document.querySelector("#previewFrame").style.width), "", "Skalierung muss auf normaler Breite entfallen");
 
     await page.reload({ waitUntil: "domcontentloaded" });
     await page.waitForFunction(() => (document.querySelector("#previewFrame")?.getAttribute("srcdoc")?.length ?? 0) > 100);

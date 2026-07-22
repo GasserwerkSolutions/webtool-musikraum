@@ -20,6 +20,7 @@ export function initMobileModes(context) {
             updateMobileChrome();
             refreshModeBarForKeyboard();
         }
+        fitMobilePreview(context);
     });
     document.addEventListener("focusin", (event) => { if (isEditableControl(event.target))
         scheduleKeyboardCheck(); });
@@ -108,11 +109,11 @@ export function setMobileMode(context, mode, announce = true) {
     if (current === "edit")
         context.mobileEditorScroll = window.scrollY;
     context.mobileMode = mode;
+    if (mode === "preview")
+        setPreviewReturnVisible(false);
     applyMobileMode(context);
     if (isMobileModeActive())
         window.scrollTo(0, mode === "edit" ? context.mobileEditorScroll ?? 0 : 0);
-    if (mode === "preview")
-        setPreviewReturnVisible(false);
     if (announce && context.announcer)
         context.announcer.textContent = mode === "edit" ? "Der Bearbeitungsmodus ist aktiv." : "Die Vorschau ist aktiv. Tippe auf einen Inhalt, um ihn zu bearbeiten.";
 }
@@ -143,6 +144,40 @@ export function applyMobileMode(context) {
         setPreviewReturnVisible(false);
     if (mobile)
         updateMobileChrome();
+    fitMobilePreview(context);
+}
+const PREVIEW_LAYOUT_WIDTH = 320;
+function fitMobilePreview(context) {
+    const frame = context.previewFrame ?? document.querySelector("#previewFrame");
+    const desk = document.querySelector(".preview-desk");
+    if (!frame || !desk)
+        return;
+    if (!isMobileModeActive() || (context.mobileMode ?? "edit") !== "preview") {
+        clearPreviewFit(frame);
+        return;
+    }
+    const deskStyles = getComputedStyle(desk);
+    const available = desk.clientWidth - (Number.parseFloat(deskStyles.paddingLeft) || 0) - (Number.parseFloat(deskStyles.paddingRight) || 0);
+    if (!Number.isFinite(available) || available <= 0 || available >= PREVIEW_LAYOUT_WIDTH) {
+        clearPreviewFit(frame);
+        return;
+    }
+    const availableHeight = desk.clientHeight - (Number.parseFloat(deskStyles.paddingTop) || 0) - (Number.parseFloat(deskStyles.paddingBottom) || 0);
+    const scale = available / PREVIEW_LAYOUT_WIDTH;
+    frame.style.transition = "none";
+    frame.style.maxWidth = "none";
+    frame.style.width = `${PREVIEW_LAYOUT_WIDTH}px`;
+    frame.style.height = `${Math.max(0, Math.floor(availableHeight / scale))}px`;
+    frame.style.transform = `scale(${scale})`;
+    frame.style.transformOrigin = "top left";
+}
+function clearPreviewFit(frame) {
+    frame.style.removeProperty("transition");
+    frame.style.removeProperty("max-width");
+    frame.style.removeProperty("width");
+    frame.style.removeProperty("height");
+    frame.style.removeProperty("transform");
+    frame.style.removeProperty("transform-origin");
 }
 function setInactive(element, inactive) {
     if (!element)
