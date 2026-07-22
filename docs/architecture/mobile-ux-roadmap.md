@@ -52,17 +52,21 @@ verdeckt nie das aktive Feld, und jeder Schritt sagt selbst, wie es weitergeht.
   kleine Karte: „Unten wechselst du zwischen Bearbeiten und Vorschau." Gemerkt
   per localStorage-Flag, nie wieder gezeigt.
 
-## Phase M2 — Navigation in den Daumenbereich
+## Phase M2 — Navigation in den Daumenbereich (bewusst maximal einfach umgesetzt)
 
-- **M2.1 Bereichs-Sheet statt Scroll-Leiste.** Die Modusleiste erhält einen
-  dritten Knopf „Bereiche". Er öffnet ein Bottom-Sheet mit allen 8 Schritten in
-  voller Breite, jeweils mit Status aus der bestehenden Vollständigkeits- bzw.
-  Readiness-Logik (vollständig / optional leer / unvollständig / Blocker). Das
-  Sheet nutzt die vorhandene Zielnavigation; die obere Leiste entfällt unter
-  700 px. Fokusfalle und `inert` für den Hintergrund wie bei den Modi.
-- **M2.2 Geführter Fluss.** Am Ende jedes Panels stehen grosse Knöpfe
-  „← Vorheriger Bereich" / „Nächster Bereich →" mit Namen des Ziels und der
-  Schrittanzeige („Schritt 3 von 8"). Kein Suchen, kein Hochscrollen.
+- **M2.1 Bereichs-Sheet statt Scroll-Leiste. ✅** Die Modusleiste hat einen
+  dritten Knopf „Bereiche". Er öffnet ein Bottom-Sheet mit allen 8 Schritten
+  in voller Breite als schlichte, nummerierte Liste — auf Wunsch ohne
+  Status-Chips, um die Bedienung maximal einfach zu halten. Das Sheet nutzt
+  die vorhandene Panel-Navigation; die obere Scroll-Leiste entfällt unter
+  700 px. Der Hintergrund ist `inert` (das ersetzt eine eigene Fokusfalle),
+  Escape und Backdrop schliessen.
+- **M2.2 Rückkehr zur Vorschau-Stelle. ✅** Nach einem Tipp auf Inhalt in der
+  Vorschau erscheint in der Modusleiste der Knopf „Zurück zur Vorschau", der
+  exakt an die vorherige Stelle zurückführt (die Vorschau-Scrollposition
+  bleibt während des Bearbeitens unangetastet). Der ursprünglich geplante
+  geführte „Weiter/Zurück"-Fluss ist zugunsten maximaler Einfachheit
+  zurückgestellt; das Sheet deckt die Navigation ab.
 
 ## Phase M3 — Formulare entzerren
 

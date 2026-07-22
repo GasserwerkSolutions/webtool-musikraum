@@ -7,7 +7,7 @@ import { inputValue, setAtPath, type UiContext } from "./ui-shared.js";
 import { bindStaticInputs, renderContentOverview, renderDynamicControls, renderExportState, renderFontControls, renderOffers, renderPreview, renderStructure, setViewport, showPanel, showToast, syncPresetInputs, updateReadiness } from "./ui-render.js";
 import { handleTextListAction, handleTextListInput } from "./text-list-actions.js";
 import { ensureEditorOpen } from "./sidebar.js";
-import { setMobileMode, type MobileMode } from "./mobile-modes.js";
+import { closeSectionSheet, openSectionSheet, setMobileMode, type MobileMode } from "./mobile-modes.js";
 import { navigateToEditorTarget } from "./preview-navigation.js";
 import { handleReorderClick } from "./reorder-actions.js";
 
@@ -22,9 +22,12 @@ export function handleClick(context: UiContext, event: Event): void {
     try { const parsed: unknown = JSON.parse(editorTarget.dataset.editorTarget ?? ""); if (isPreviewTargetShape(parsed)) navigateToEditorTarget(context, parsed); } catch { /* malformed UI target is ignored */ }
     return;
   }
-  const panelButton = target.closest<HTMLElement>("[data-panel-target]"); if (panelButton) { ensureEditorOpen(context); showPanel(context, panelButton.dataset.panelTarget ?? "site"); return; }
+  const sheetOpenButton = target.closest<HTMLElement>("[data-sheet-open]"); if (sheetOpenButton) { openSectionSheet(context); return; }
+  const sheetCloseButton = target.closest<HTMLElement>("[data-sheet-close]"); if (sheetCloseButton) { closeSectionSheet(context); return; }
+  const panelButton = target.closest<HTMLElement>("[data-panel-target]"); if (panelButton) { const fromSheet = Boolean(panelButton.closest("#sectionSheet")); ensureEditorOpen(context); showPanel(context, panelButton.dataset.panelTarget ?? "site"); if (fromSheet) closeSectionSheet(context, true); return; }
   const viewportButton = target.closest<HTMLElement>("[data-viewport]"); if (viewportButton) { setViewport(context, viewportButton.dataset.viewport ?? "desktop"); return; }
   const modeButton = target.closest<HTMLElement>("[data-mode]"); if (modeButton) { setMobileMode(context, (modeButton.dataset.mode === "preview" ? "preview" : "edit") satisfies MobileMode); return; }
+  const returnButton = target.closest<HTMLElement>("[data-return-preview]"); if (returnButton) { setMobileMode(context, "preview"); return; }
   const presetButton = target.closest<HTMLElement>("[data-preset]"); if (presetButton) { applyPreset(context, presetButton.dataset.preset as ThemePresetName); return; }
   const fontButton = target.closest<HTMLElement>("[data-font]"); if (fontButton) { applyFontPreset(context, fontButton.dataset.font as FontPresetName); return; }
   const fontSizeButton = target.closest<HTMLElement>("[data-font-size]"); if (fontSizeButton) { applyFontSize(context, fontSizeButton.dataset.fontSize as FontSizeName); return; }

@@ -17,7 +17,7 @@ import { PreviewRuntime } from "./preview-runtime.js";
 import { ExportPreflightController } from "./export-preflight.js";
 import { navigateToEditorTarget } from "./preview-navigation.js";
 import { ensureEditorOpen, initSidebar } from "./sidebar.js";
-import { initMobileModes, isMobileModeActive } from "./mobile-modes.js";
+import { initMobileModes, isMobileModeActive, markPreviewReturnAvailable } from "./mobile-modes.js";
 import { handleReorderKeydown, handleReorderPointerDown, handleReorderPointerEnd, handleReorderPointerMove } from "./reorder-actions.js";
 
 export class BuilderUi {
@@ -84,7 +84,11 @@ export class BuilderUi {
     const scroll = parseScrollMessage(event.data, runtime.instanceId, runtime.renderGeneration);
     if (scroll && scroll.revision === runtime.appliedRevision) { this.context.previewScroll = scroll.position; return; }
     const navigate = parseNavigateMessage(event.data, runtime.instanceId, this.context.store.snapshot, runtime.renderGeneration);
-    if (navigate && navigate.revision === runtime.appliedRevision) navigateToEditorTarget(this.context, navigate.target);
+    if (navigate && navigate.revision === runtime.appliedRevision) {
+      const fromMobilePreview = isMobileModeActive() && (this.context.mobileMode ?? "edit") === "preview";
+      navigateToEditorTarget(this.context, navigate.target);
+      if (fromMobilePreview) markPreviewReturnAvailable();
+    }
   }
 }
 

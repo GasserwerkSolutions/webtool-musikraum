@@ -138,8 +138,18 @@
   </main>
 
   <div class="mode-switch" role="group" aria-label="Ansicht wechseln">
+    <button class="mode-switch__return" type="button" data-return-preview hidden><span aria-hidden="true">↩</span><span>Zurück zur Vorschau</span></button>
     <button class="mode-switch__button is-active" type="button" data-mode="edit" aria-pressed="true"><span class="mode-switch__check" aria-hidden="true">✓</span><span>Bearbeiten</span></button>
+    <button class="mode-switch__button mode-switch__button--sections" type="button" data-sheet-open aria-haspopup="dialog" aria-expanded="false"><span aria-hidden="true">☰</span><span>Bereiche</span></button>
     <button class="mode-switch__button" type="button" data-mode="preview" aria-pressed="false"><span class="mode-switch__check" aria-hidden="true">✓</span><span>Vorschau</span></button>
+  </div>
+
+  <div id="sectionSheet" class="section-sheet" hidden>
+    <div class="section-sheet__backdrop" data-sheet-close></div>
+    <div class="section-sheet__card" role="dialog" aria-modal="true" aria-labelledby="sectionSheetTitle">
+      <div class="section-sheet__head"><h2 id="sectionSheetTitle">Bereiche</h2><button class="icon-button" type="button" data-sheet-close aria-label="Bereiche schliessen">×</button></div>
+      <div id="sectionSheetList" class="section-sheet__list"></div>
+    </div>
   </div>
 
   <template id="textItemTemplate">

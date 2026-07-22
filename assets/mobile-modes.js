@@ -6,7 +6,8 @@ const KEYBOARD_CHECK_FALLBACK_MS = 350;
 let baselineInnerHeight = 0;
 export function initMobileModes(context) {
     const media = window.matchMedia(MOBILE_MODE_MEDIA);
-    const onChange = () => applyMobileMode(context);
+    const onChange = () => { applyMobileMode(context); if (!isMobileModeActive())
+        closeSectionSheet(context); };
     if (typeof media.addEventListener === "function")
         media.addEventListener("change", onChange);
     else if (typeof media.addListener === "function")
@@ -24,8 +25,78 @@ export function initMobileModes(context) {
         scheduleKeyboardCheck(); });
     document.addEventListener("focusout", () => scheduleKeyboardCheck());
     window.visualViewport?.addEventListener("resize", () => refreshModeBarForKeyboard());
+    document.addEventListener("keydown", (event) => { if (event.key === "Escape" && isSectionSheetOpen()) {
+        event.preventDefault();
+        closeSectionSheet(context);
+    } });
     applyMobileMode(context);
     maybeShowMobileHint();
+}
+export function isSectionSheetOpen() { const sheet = document.getElementById("sectionSheet"); return Boolean(sheet && !sheet.hidden); }
+export function openSectionSheet(context) {
+    const sheet = document.getElementById("sectionSheet");
+    if (!sheet || !sheet.hidden)
+        return;
+    renderSectionSheet();
+    sheet.hidden = false;
+    toggleSheetBackground(context, true);
+    document.querySelector("[data-sheet-open]")?.setAttribute("aria-expanded", "true");
+    const preferred = sheet.querySelector("[data-panel-target][aria-current]") ?? sheet.querySelector("[data-panel-target]");
+    preferred?.focus();
+}
+export function closeSectionSheet(context, focusPanel = false) {
+    const sheet = document.getElementById("sectionSheet");
+    if (!sheet || sheet.hidden)
+        return;
+    sheet.hidden = true;
+    toggleSheetBackground(context, false);
+    const trigger = document.querySelector("[data-sheet-open]");
+    trigger?.setAttribute("aria-expanded", "false");
+    if (focusPanel) {
+        const heading = document.querySelector(".panel.is-active h1, .panel.is-active h2");
+        if (heading) {
+            heading.tabIndex = -1;
+            heading.focus();
+            return;
+        }
+    }
+    trigger?.focus();
+}
+function renderSectionSheet() {
+    const list = document.getElementById("sectionSheetList");
+    if (!list)
+        return;
+    const navButtons = [...document.querySelectorAll(".surface-nav [data-panel-target]")];
+    list.textContent = "";
+    navButtons.forEach((navButton, index) => {
+        const active = navButton.classList.contains("is-active");
+        const entry = document.createElement("button");
+        entry.type = "button";
+        entry.className = `section-sheet__entry${active ? " is-active" : ""}`;
+        entry.dataset.panelTarget = navButton.dataset.panelTarget ?? "site";
+        if (active)
+            entry.setAttribute("aria-current", "step");
+        const number = document.createElement("span");
+        number.className = "section-sheet__number";
+        number.setAttribute("aria-hidden", "true");
+        number.textContent = String(index + 1);
+        const label = document.createElement("span");
+        label.textContent = navButton.textContent?.trim() ?? "";
+        entry.append(number, label);
+        list.appendChild(entry);
+    });
+}
+function toggleSheetBackground(context, on) {
+    const elements = [document.querySelector(".topbar"), context.workspace ?? null, document.querySelector(".mode-switch")];
+    for (const element of elements) {
+        if (!element)
+            continue;
+        element.toggleAttribute("inert", on);
+        if (on)
+            element.setAttribute("aria-hidden", "true");
+        else
+            element.removeAttribute("aria-hidden");
+    }
 }
 export function isMobileModeActive() { return typeof window.matchMedia === "function" && window.matchMedia(MOBILE_MODE_MEDIA).matches; }
 export function setMobileMode(context, mode, announce = true) {
@@ -40,8 +111,16 @@ export function setMobileMode(context, mode, announce = true) {
     applyMobileMode(context);
     if (isMobileModeActive())
         window.scrollTo(0, mode === "edit" ? context.mobileEditorScroll ?? 0 : 0);
+    if (mode === "preview")
+        setPreviewReturnVisible(false);
     if (announce && context.announcer)
         context.announcer.textContent = mode === "edit" ? "Der Bearbeitungsmodus ist aktiv." : "Die Vorschau ist aktiv. Tippe auf einen Inhalt, um ihn zu bearbeiten.";
+}
+export function markPreviewReturnAvailable() { setPreviewReturnVisible(true); }
+function setPreviewReturnVisible(visible) {
+    const button = document.querySelector("[data-return-preview]");
+    if (button)
+        button.hidden = !visible;
 }
 export function ensureMobileEditMode(context) {
     if (isMobileModeActive() && (context.mobileMode ?? "edit") !== "edit")
@@ -60,6 +139,8 @@ export function applyMobileMode(context) {
     });
     setInactive(context.controlSurface ?? null, mobile && mode === "preview");
     setInactive(previewArea, mobile && mode === "edit");
+    if (!mobile)
+        setPreviewReturnVisible(false);
     if (mobile)
         updateMobileChrome();
 }

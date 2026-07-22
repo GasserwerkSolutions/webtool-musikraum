@@ -1,16 +1,19 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { JSDOM } from "jsdom";
-import { applyMobileMode, ensureMobileEditMode, initMobileModes, refreshModeBarForKeyboard, setMobileMode } from "../assets/mobile-modes.js";
+import { applyMobileMode, closeSectionSheet, ensureMobileEditMode, initMobileModes, markPreviewReturnAvailable, openSectionSheet, refreshModeBarForKeyboard, setMobileMode } from "../assets/mobile-modes.js";
 
 function fixture({ mobile = true } = {}) {
   const dom = new JSDOM(`<!doctype html><body>
     <header class="topbar"></header>
-    <main class="workspace"><aside class="control-surface"><input id="keyboardProbe"></aside><section class="preview-area"></section></main>
+    <main class="workspace"><aside class="control-surface"><nav class="surface-nav"><button class="surface-nav__item is-active" data-panel-target="site">Übersicht</button><button class="surface-nav__item" data-panel-target="hero">Einstieg</button></nav><input id="keyboardProbe"></aside><section class="preview-area"></section></main>
     <div class="mode-switch">
+      <button class="mode-switch__return" data-return-preview hidden>Zurück zur Vorschau</button>
       <button class="mode-switch__button is-active" data-mode="edit" aria-pressed="true">Bearbeiten</button>
+      <button class="mode-switch__button" data-sheet-open aria-expanded="false">Bereiche</button>
       <button class="mode-switch__button" data-mode="preview" aria-pressed="false">Vorschau</button>
     </div>
+    <div id="sectionSheet" class="section-sheet" hidden><div class="section-sheet__backdrop" data-sheet-close></div><div class="section-sheet__card"><button data-sheet-close>×</button><div id="sectionSheetList"></div></div></div>
     <div id="announcer"></div>
   </body>`, { url: "https://editor.test", pretendToBeVisual: true });
   const state = { mobile };
@@ -130,6 +133,38 @@ test("first mobile start shows the mode hint exactly once", () => {
   toast.remove();
   initMobileModes(context);
   assert.equal(dom.window.document.querySelector(".toast"), null);
+  dom.window.close();
+});
+
+test("section sheet lists the areas and makes the background inert", () => {
+  const { dom, context } = fixture();
+  applyMobileMode(context);
+  openSectionSheet(context);
+  const sheet = dom.window.document.getElementById("sectionSheet");
+  const entries = [...dom.window.document.querySelectorAll("#sectionSheetList [data-panel-target]")];
+  assert.equal(sheet.hidden, false);
+  assert.deepEqual(entries.map((entry) => entry.dataset.panelTarget), ["site", "hero"]);
+  assert.equal(entries[0].getAttribute("aria-current"), "step");
+  assert.equal(context.workspace.hasAttribute("inert"), true);
+  assert.equal(dom.window.document.querySelector(".mode-switch").hasAttribute("inert"), true);
+  assert.equal(dom.window.document.querySelector("[data-sheet-open]").getAttribute("aria-expanded"), "true");
+  closeSectionSheet(context);
+  assert.equal(sheet.hidden, true);
+  assert.equal(context.workspace.hasAttribute("inert"), false);
+  assert.equal(dom.window.document.querySelector("[data-sheet-open]").getAttribute("aria-expanded"), "false");
+  assert.equal(dom.window.document.activeElement, dom.window.document.querySelector("[data-sheet-open]"));
+  dom.window.close();
+});
+
+test("preview return button appears after preview navigation and disappears on return", () => {
+  const { dom, context } = fixture();
+  applyMobileMode(context);
+  const button = dom.window.document.querySelector("[data-return-preview]");
+  assert.equal(button.hidden, true);
+  markPreviewReturnAvailable();
+  assert.equal(button.hidden, false);
+  setMobileMode(context, "preview");
+  assert.equal(button.hidden, true);
   dom.window.close();
 });
 

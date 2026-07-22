@@ -7,7 +7,7 @@ import { inputValue, setAtPath } from "./ui-shared.js";
 import { bindStaticInputs, renderContentOverview, renderDynamicControls, renderExportState, renderFontControls, renderOffers, renderPreview, renderStructure, setViewport, showPanel, showToast, syncPresetInputs, updateReadiness } from "./ui-render.js";
 import { handleTextListAction, handleTextListInput } from "./text-list-actions.js";
 import { ensureEditorOpen } from "./sidebar.js";
-import { setMobileMode } from "./mobile-modes.js";
+import { closeSectionSheet, openSectionSheet, setMobileMode } from "./mobile-modes.js";
 import { navigateToEditorTarget } from "./preview-navigation.js";
 import { handleReorderClick } from "./reorder-actions.js";
 export const MAX_OFFERS = 12;
@@ -27,10 +27,23 @@ export function handleClick(context, event) {
         catch { /* malformed UI target is ignored */ }
         return;
     }
+    const sheetOpenButton = target.closest("[data-sheet-open]");
+    if (sheetOpenButton) {
+        openSectionSheet(context);
+        return;
+    }
+    const sheetCloseButton = target.closest("[data-sheet-close]");
+    if (sheetCloseButton) {
+        closeSectionSheet(context);
+        return;
+    }
     const panelButton = target.closest("[data-panel-target]");
     if (panelButton) {
+        const fromSheet = Boolean(panelButton.closest("#sectionSheet"));
         ensureEditorOpen(context);
         showPanel(context, panelButton.dataset.panelTarget ?? "site");
+        if (fromSheet)
+            closeSectionSheet(context, true);
         return;
     }
     const viewportButton = target.closest("[data-viewport]");
@@ -41,6 +54,11 @@ export function handleClick(context, event) {
     const modeButton = target.closest("[data-mode]");
     if (modeButton) {
         setMobileMode(context, (modeButton.dataset.mode === "preview" ? "preview" : "edit"));
+        return;
+    }
+    const returnButton = target.closest("[data-return-preview]");
+    if (returnButton) {
+        setMobileMode(context, "preview");
         return;
     }
     const presetButton = target.closest("[data-preset]");

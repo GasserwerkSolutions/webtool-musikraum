@@ -6,7 +6,7 @@ import { PreviewRuntime } from "./preview-runtime.js";
 import { ExportPreflightController } from "./export-preflight.js";
 import { navigateToEditorTarget } from "./preview-navigation.js";
 import { ensureEditorOpen, initSidebar } from "./sidebar.js";
-import { initMobileModes, isMobileModeActive } from "./mobile-modes.js";
+import { initMobileModes, isMobileModeActive, markPreviewReturnAvailable } from "./mobile-modes.js";
 import { handleReorderKeydown, handleReorderPointerDown, handleReorderPointerEnd, handleReorderPointerMove } from "./reorder-actions.js";
 export class BuilderUi {
     context;
@@ -85,8 +85,12 @@ export class BuilderUi {
             return;
         }
         const navigate = parseNavigateMessage(event.data, runtime.instanceId, this.context.store.snapshot, runtime.renderGeneration);
-        if (navigate && navigate.revision === runtime.appliedRevision)
+        if (navigate && navigate.revision === runtime.appliedRevision) {
+            const fromMobilePreview = isMobileModeActive() && (this.context.mobileMode ?? "edit") === "preview";
             navigateToEditorTarget(this.context, navigate.target);
+            if (fromMobilePreview)
+                markPreviewReturnAvailable();
+        }
     }
 }
 function renderHistoryState(context, state) {

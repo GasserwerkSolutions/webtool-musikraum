@@ -48,7 +48,7 @@ test("mobile edit and preview modes with separate scroll states", { timeout: 900
       const workspace = document.querySelector(".workspace");
       const previewArea = document.querySelector(".preview-area");
       const modeSwitch = document.querySelector(".mode-switch");
-      const targets = [...document.querySelectorAll("[data-mode], .surface-nav__item, .topbar .button")].map((element) => { const rect = element.getBoundingClientRect(); return { width: rect.width, height: rect.height, visible: getComputedStyle(element).display !== "none" }; });
+      const targets = [...document.querySelectorAll("[data-mode], .surface-nav__item, .topbar .button")].map((element) => { const rect = element.getBoundingClientRect(); return { width: rect.width, height: rect.height, visible: getComputedStyle(element).display !== "none" && rect.width > 0 && rect.height > 0 }; });
       return {
         editMode: workspace.classList.contains("is-mode-edit"),
         modeSwitchVisible: getComputedStyle(modeSwitch).display === "flex",
@@ -65,6 +65,32 @@ test("mobile edit and preview modes with separate scroll states", { timeout: 900
     assert.equal(initial.viewportSwitchHidden, true);
     assert.ok(initial.topbarActionsOverflow <= 1, `Topbar-Aktionen scrollen: ${initial.topbarActionsOverflow}`);
     assert.equal(initial.inputFontSize, "16px");
+
+    assert.equal(await page.evaluate(() => getComputedStyle(document.querySelector(".surface-nav")).display), "none");
+    await page.click("[data-sheet-open]");
+    await page.waitForFunction(() => !document.getElementById("sectionSheet").hidden);
+    const sheet = await page.evaluate(() => ({
+      entries: [...document.querySelectorAll("#sectionSheetList [data-panel-target]")].map((entry) => { const rect = entry.getBoundingClientRect(); return { key: entry.dataset.panelTarget, height: rect.height }; }),
+      backgroundInert: document.querySelector(".workspace").hasAttribute("inert") && document.querySelector(".topbar").hasAttribute("inert"),
+      focusInSheet: document.getElementById("sectionSheet").contains(document.activeElement),
+    }));
+    assert.equal(sheet.entries.length, 8);
+    assert.ok(sheet.entries.every((entry) => entry.height >= 44), "Sheet-Einträge unter 44px");
+    assert.equal(sheet.backgroundInert, true);
+    assert.equal(sheet.focusInSheet, true);
+    await page.keyboard.press("Escape");
+    await page.waitForFunction(() => document.getElementById("sectionSheet").hidden);
+    assert.equal(await page.evaluate(() => document.querySelector(".workspace").hasAttribute("inert")), false);
+    await page.click("[data-sheet-open]");
+    await page.waitForFunction(() => !document.getElementById("sectionSheet").hidden);
+    await page.click('#sectionSheetList [data-panel-target="services"]');
+    await page.waitForFunction(() => document.getElementById("sectionSheet").hidden);
+    assert.equal(await page.evaluate(() => document.querySelector('[data-panel="services"]')?.hidden), false);
+    assert.match(await page.evaluate(() => document.querySelector("#panelStatus").textContent ?? ""), /Schritt 4 von 8/);
+    await page.click("[data-sheet-open]");
+    await page.waitForFunction(() => !document.getElementById("sectionSheet").hidden);
+    await page.click('#sectionSheetList [data-panel-target="site"]');
+    await page.waitForFunction(() => document.getElementById("sectionSheet").hidden && document.querySelector('[data-panel="site"]')?.hidden === false);
     assert.equal(initial.editMode, true);
     assert.equal(initial.modeSwitchVisible, true);
     assert.equal(initial.previewInert, true);
@@ -96,8 +122,10 @@ test("mobile edit and preview modes with separate scroll states", { timeout: 900
         frameVisible: frameRect.width > 320 && frameRect.height > 300,
         frameOnScreen: frameRect.left >= 0 && frameRect.right <= innerWidth,
         pressedStates: [...document.querySelectorAll("[data-mode]")].map((button) => `${button.dataset.mode}:${button.getAttribute("aria-pressed")}`).join(","),
+        returnHidden: document.querySelector("[data-return-preview]").hidden,
       };
     });
+    assert.equal(inPreview.returnHidden, true, "Rückkehr-Knopf darf nach manuellem Wechsel nicht erscheinen");
     assert.equal(inPreview.previewMode, true);
     assert.equal(inPreview.editorInert, true);
     assert.equal(inPreview.editorHidden, true);
@@ -128,6 +156,12 @@ test("mobile edit and preview modes with separate scroll states", { timeout: 900
     await page.waitForFunction(() => document.activeElement?.getAttribute("data-bind") === "copy.heroTitle");
     assert.equal(await page.evaluate(() => document.querySelector('[data-panel="hero"]')?.hidden), false);
     assert.equal(await page.evaluate(() => location.hash), "");
+
+    assert.equal(await page.evaluate(() => document.querySelector("[data-return-preview]").hidden), false, "Rückkehr-Knopf fehlt nach Vorschau-Navigation");
+    await page.click("[data-return-preview]");
+    await page.waitForFunction(() => document.querySelector(".workspace").classList.contains("is-mode-preview"));
+    assert.equal(await page.evaluate(() => document.querySelector("[data-return-preview]").hidden), true);
+    preview = await previewFrame(page);
 
     await page.reload({ waitUntil: "domcontentloaded" });
     await page.waitForFunction(() => (document.querySelector("#previewFrame")?.getAttribute("srcdoc")?.length ?? 0) > 100);

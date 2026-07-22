@@ -138,7 +138,9 @@ export function renderSaveState(context: UiContext, state: SaveState, error?: un
 export function showPanel(context: UiContext, panelName: string): void {
   const buttons = [...document.querySelectorAll<HTMLElement>("[data-panel-target]")]; buttons.forEach((button) => { const active = button.dataset.panelTarget === panelName; button.classList.toggle("is-active", active); if (active) button.setAttribute("aria-current", "step"); else button.removeAttribute("aria-current"); });
   document.querySelectorAll<HTMLElement>("[data-panel]").forEach((panel) => { const active = panel.dataset.panel === panelName; panel.hidden = !active; panel.classList.toggle("is-active", active); });
-  const index = Math.max(0, buttons.findIndex((button) => button.dataset.panelTarget === panelName)); context.panelStatus.textContent = `Schritt ${index + 1} von ${buttons.length}: ${buttons[index]?.textContent?.trim() ?? "Bearbeiten"}`;
+  const navButtons = buttons.filter((button) => button.closest(".surface-nav"));
+  const steps = navButtons.length ? navButtons : buttons;
+  const index = Math.max(0, steps.findIndex((button) => button.dataset.panelTarget === panelName)); context.panelStatus.textContent = `Schritt ${index + 1} von ${steps.length}: ${steps[index]?.textContent?.trim() ?? "Bearbeiten"}`;
   context.surfaceCard.classList.remove("is-turning"); void context.surfaceCard.offsetWidth; context.surfaceCard.classList.add("is-turning"); if (panelName === "site") renderContentOverview(context); if (panelName === "publish") updateReadiness(context);
   context.exportController?.setPanelVisible(panelName === "publish");
 }
