@@ -22,13 +22,27 @@ async function previewFrame(page) {
   return frame;
 }
 
+async function waitForStablePreview(page) {
+  let last = await page.$eval("#previewFrame", (frame) => frame.getAttribute("srcdoc"));
+  for (;;) {
+    await new Promise((resolve) => setTimeout(resolve, 2300));
+    const next = await page.$eval("#previewFrame", (frame) => frame.getAttribute("srcdoc"));
+    if (next === last) return;
+    last = next;
+  }
+}
+
 test("mobile edit and preview modes with separate scroll states", { timeout: 90000 }, async () => {
   const { server, url } = await staticServer();
   const browser = await puppeteer.launch({ args: chromium.args, defaultViewport: { width: 390, height: 740 }, executablePath: await chromium.executablePath(), headless: true });
   try {
     const page = await browser.newPage();
     await page.goto(url, { waitUntil: "domcontentloaded" });
+    await page.waitForSelector(".toast", { timeout: 8000 });
+    assert.match(await page.$eval(".toast", (toast) => toast.textContent ?? ""), /Bearbeiten und Vorschau/);
     let preview = await previewFrame(page);
+    await waitForStablePreview(page);
+    preview = await previewFrame(page);
 
     const initial = await page.evaluate(() => {
       const workspace = document.querySelector(".workspace");
@@ -43,8 +57,14 @@ test("mobile edit and preview modes with separate scroll states", { timeout: 900
         editorVisible: getComputedStyle(document.querySelector(".control-surface")).display !== "none",
         targets,
         bodyHorizontal: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        viewportSwitchHidden: getComputedStyle(document.querySelector(".viewport-switch--topbar")).display === "none",
+        topbarActionsOverflow: ((actions) => actions.scrollWidth - actions.clientWidth)(document.querySelector(".topbar__actions")),
+        inputFontSize: getComputedStyle(document.querySelector('[data-bind="site.name"]')).fontSize,
       };
     });
+    assert.equal(initial.viewportSwitchHidden, true);
+    assert.ok(initial.topbarActionsOverflow <= 1, `Topbar-Aktionen scrollen: ${initial.topbarActionsOverflow}`);
+    assert.equal(initial.inputFontSize, "16px");
     assert.equal(initial.editMode, true);
     assert.equal(initial.modeSwitchVisible, true);
     assert.equal(initial.previewInert, true);
@@ -53,6 +73,13 @@ test("mobile edit and preview modes with separate scroll states", { timeout: 900
     assert.ok(initial.bodyHorizontal <= 1);
     assert.ok(initial.targets.length > 0);
     for (const target of initial.targets.filter((entry) => entry.visible)) { assert.ok(target.width >= 44, `Touch-Ziel zu schmal: ${target.width}`); assert.ok(target.height >= 44, `Touch-Ziel zu niedrig: ${target.height}`); }
+
+    await page.evaluate(() => Object.defineProperty(window, "visualViewport", { value: { height: 320, offsetTop: 0, width: innerWidth, addEventListener() {}, removeEventListener() {} }, configurable: true }));
+    await page.focus('[data-bind="site.name"]');
+    await page.waitForFunction(() => getComputedStyle(document.querySelector(".mode-switch")).display === "none");
+    await page.evaluate(() => { if (document.activeElement instanceof HTMLElement) document.activeElement.blur(); });
+    await page.waitForFunction(() => getComputedStyle(document.querySelector(".mode-switch")).display === "flex");
+    await page.evaluate(() => { delete window.visualViewport; });
 
     await page.evaluate(() => { document.documentElement.style.scrollBehavior = "auto"; scrollTo(0, 260); });
     await page.click('[data-mode="preview"]');
@@ -80,6 +107,7 @@ test("mobile edit and preview modes with separate scroll states", { timeout: 900
     assert.equal(inPreview.pressedStates, "edit:false,preview:true");
 
     await preview.evaluate(() => { const root = document.documentElement; root.style.scrollBehavior = "auto"; scrollTo(0, 400); });
+    await new Promise((resolve) => setTimeout(resolve, 250));
     const previewScroll = await preview.evaluate(() => scrollY);
     assert.ok(previewScroll > 300);
 
@@ -100,5 +128,9 @@ test("mobile edit and preview modes with separate scroll states", { timeout: 900
     await page.waitForFunction(() => document.activeElement?.getAttribute("data-bind") === "copy.heroTitle");
     assert.equal(await page.evaluate(() => document.querySelector('[data-panel="hero"]')?.hidden), false);
     assert.equal(await page.evaluate(() => location.hash), "");
+
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.waitForFunction(() => (document.querySelector("#previewFrame")?.getAttribute("srcdoc")?.length ?? 0) > 100);
+    assert.equal(await page.evaluate(() => document.querySelector(".toast")?.textContent ?? ""), "");
   } catch (error) { console.error("Mobile-E2E failure:", error); throw error; } finally { await browser.close(); await new Promise((resolve) => server.close(resolve)); }
 });

@@ -1,12 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { JSDOM } from "jsdom";
-import { applyMobileMode, ensureMobileEditMode, setMobileMode } from "../assets/mobile-modes.js";
+import { applyMobileMode, ensureMobileEditMode, initMobileModes, refreshModeBarForKeyboard, setMobileMode } from "../assets/mobile-modes.js";
 
 function fixture({ mobile = true } = {}) {
   const dom = new JSDOM(`<!doctype html><body>
     <header class="topbar"></header>
-    <main class="workspace"><aside class="control-surface"></aside><section class="preview-area"></section></main>
+    <main class="workspace"><aside class="control-surface"><input id="keyboardProbe"></aside><section class="preview-area"></section></main>
     <div class="mode-switch">
       <button class="mode-switch__button is-active" data-mode="edit" aria-pressed="true">Bearbeiten</button>
       <button class="mode-switch__button" data-mode="preview" aria-pressed="false">Vorschau</button>
@@ -18,7 +18,7 @@ function fixture({ mobile = true } = {}) {
   dom.window.matchMedia = () => ({ matches: state.mobile, addEventListener: () => {}, addListener: () => {} });
   Object.defineProperty(dom.window, "scrollY", { get: () => scrollY, configurable: true });
   dom.window.scrollTo = (_x, y) => { scrollY = y; };
-  Object.assign(globalThis, { window: dom.window, document: dom.window.document, HTMLElement: dom.window.HTMLElement });
+  Object.assign(globalThis, { window: dom.window, document: dom.window.document, HTMLElement: dom.window.HTMLElement, localStorage: dom.window.localStorage, requestAnimationFrame: (callback) => { callback(0); return 1; } });
   const context = {
     workspace: dom.window.document.querySelector(".workspace"),
     controlSurface: dom.window.document.querySelector(".control-surface"),
@@ -78,6 +78,39 @@ test("ensureMobileEditMode leaves the preview mode without an announcement", () 
   assert.equal(context.announcer.textContent, "");
   ensureMobileEditMode(context);
   assert.equal(context.mobileMode, "edit");
+  dom.window.close();
+});
+
+test("mode bar hides only while a field has focus and the viewport is shrunk", () => {
+  const { dom, context } = fixture();
+  applyMobileMode(context);
+  const bar = dom.window.document.querySelector(".mode-switch");
+  const input = dom.window.document.getElementById("keyboardProbe");
+  dom.window.visualViewport = { height: 300, offsetTop: 0, addEventListener: () => {}, removeEventListener: () => {} };
+  refreshModeBarForKeyboard();
+  assert.equal(bar.classList.contains("is-keyboard-hidden"), false);
+  input.focus();
+  refreshModeBarForKeyboard();
+  assert.equal(bar.classList.contains("is-keyboard-hidden"), true);
+  dom.window.visualViewport.height = dom.window.innerHeight;
+  refreshModeBarForKeyboard();
+  assert.equal(bar.classList.contains("is-keyboard-hidden"), false);
+  dom.window.visualViewport.height = 300;
+  input.blur();
+  refreshModeBarForKeyboard();
+  assert.equal(bar.classList.contains("is-keyboard-hidden"), false);
+  dom.window.close();
+});
+
+test("first mobile start shows the mode hint exactly once", () => {
+  const { dom, context } = fixture();
+  initMobileModes(context);
+  const toast = dom.window.document.querySelector(".toast");
+  assert.ok(toast, "Hinweis-Toast fehlt");
+  assert.match(toast.textContent, /Bearbeiten und Vorschau/);
+  toast.remove();
+  initMobileModes(context);
+  assert.equal(dom.window.document.querySelector(".toast"), null);
   dom.window.close();
 });
 

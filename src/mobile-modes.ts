@@ -1,7 +1,12 @@
 import type { UiContext } from "./ui-shared.js";
+import { showToast } from "./ui-render.js";
 
 export type MobileMode = "edit" | "preview";
 export const MOBILE_MODE_MEDIA = "(max-width: 700px)";
+
+const MOBILE_HINT_KEY = "musikraum-ui-mobile-hint-v1";
+const KEYBOARD_VIEWPORT_RATIO = 0.85;
+const KEYBOARD_CHECK_FALLBACK_MS = 350;
 
 export function initMobileModes(context: UiContext): void {
   const media = window.matchMedia(MOBILE_MODE_MEDIA);
@@ -9,7 +14,11 @@ export function initMobileModes(context: UiContext): void {
   if (typeof media.addEventListener === "function") media.addEventListener("change", onChange);
   else if (typeof media.addListener === "function") media.addListener(onChange);
   window.addEventListener("resize", () => { if (isMobileModeActive()) updateMobileChrome(); });
+  document.addEventListener("focusin", (event) => { if (isEditableControl(event.target)) scheduleKeyboardCheck(); });
+  document.addEventListener("focusout", () => scheduleKeyboardCheck());
+  window.visualViewport?.addEventListener("resize", () => refreshModeBarForKeyboard());
   applyMobileMode(context);
+  maybeShowMobileHint();
 }
 
 export function isMobileModeActive(): boolean { return typeof window.matchMedia === "function" && window.matchMedia(MOBILE_MODE_MEDIA).matches; }
@@ -49,6 +58,39 @@ function setInactive(element: HTMLElement | null, inactive: boolean): void {
   element.toggleAttribute("inert", inactive);
   if (inactive) element.setAttribute("aria-hidden", "true");
   else element.removeAttribute("aria-hidden");
+}
+
+export function refreshModeBarForKeyboard(): void {
+  const bar = document.querySelector<HTMLElement>(".mode-switch");
+  if (!bar) return;
+  bar.classList.toggle("is-keyboard-hidden", isMobileModeActive() && keyboardLikelyOpen());
+}
+
+function scheduleKeyboardCheck(): void {
+  refreshModeBarForKeyboard();
+  requestAnimationFrame(() => requestAnimationFrame(refreshModeBarForKeyboard));
+  window.setTimeout(refreshModeBarForKeyboard, KEYBOARD_CHECK_FALLBACK_MS);
+}
+
+function keyboardLikelyOpen(): boolean {
+  const active = document.activeElement;
+  if (!(active instanceof HTMLElement) || !active.matches("input, textarea, select")) return false;
+  const viewport = window.visualViewport;
+  if (!viewport) return true;
+  return viewport.height < window.innerHeight * KEYBOARD_VIEWPORT_RATIO;
+}
+
+function isEditableControl(target: EventTarget | null): boolean {
+  return target instanceof HTMLElement && target.matches("input, textarea, select");
+}
+
+function maybeShowMobileHint(): void {
+  if (!isMobileModeActive()) return;
+  try {
+    if (localStorage.getItem(MOBILE_HINT_KEY)) return;
+    localStorage.setItem(MOBILE_HINT_KEY, "1");
+  } catch { return; }
+  showToast("Neu: Unten wechselst du zwischen Bearbeiten und Vorschau.");
 }
 
 function updateMobileChrome(): void {
