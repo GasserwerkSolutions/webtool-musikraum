@@ -7,7 +7,7 @@ Bedienung mit einer Hand auf dem Telefon.
 
 ## Zielbild
 
-Franz bearbeitet die Website unterwegs auf dem iPhone, ohne zu suchen, ohne
+Franz bearbeitet die Website unterwegs auf seinem Android-Telefon, ohne zu suchen, ohne
 Präzisionsarbeit mit den Fingern und ohne den Überblick zu verlieren. Die
 wichtigsten Aktionen liegen im Daumenbereich (unten), die Bildschirmtastatur
 verdeckt nie das aktive Feld, und jeder Schritt sagt selbst, wie es weitergeht.
@@ -40,10 +40,14 @@ verdeckt nie das aktive Feld, und jeder Schritt sagt selbst, wie es weitergeht.
 - **M1.2 Modusleiste bei offener Tastatur ausblenden.** `focusin`/`focusout`
   auf Eingabefelder plus `visualViewport`-Höhenvergleich (mit RAF- und
   Timeout-Fallback, analog zur bestehenden Fokuskorrektur — nie nur
-  `visualViewport.resize`). Die Leiste kehrt beim Schliessen der Tastatur zurück.
-- **M1.3 iOS-Zoom absichern.** Eingaben erben heute 16 px über `font: inherit`;
+  `visualViewport.resize`). Zusätzlich eine Baseline über `window.innerHeight`,
+  weil älteres Android Chrome (vor Version 108) bei offener Tastatur den
+  Layout-Viewport statt nur den visuellen Viewport verkleinert. Die Leiste
+  kehrt beim Schliessen der Tastatur zurück.
+- **M1.3 Auto-Zoom absichern.** Eingaben erben heute 16 px über `font: inherit`;
   das wird explizit festgeschrieben (`font-size: 16px` für `input`, `textarea`,
-  `select` unter 700 px), damit iOS beim Fokussieren nie automatisch zoomt.
+  `select` unter 700 px), damit iOS Safari beim Fokussieren nie automatisch
+  zoomt (auf Android wirkungslos, aber unschädlich).
 - **M1.4 Einmaliger Hinweis beim ersten mobilen Start.** Ein Toast oder eine
   kleine Karte: „Unten wechselst du zwischen Bearbeiten und Vorschau." Gemerkt
   per localStorage-Flag, nie wieder gezeigt.
@@ -121,8 +125,11 @@ Zusätzlich pro Phase:
 
 ## Wichtigste Abnahme
 
-Das Werkzeug hat genau einen Nutzer. Nach Phase M1 und M2 je ein kurzer
-Praxistest mit Franz am echten iPhone (15 Minuten, drei Aufgaben: Text ändern,
-Klangmoment umsortieren, Export starten). Was ihn dort stolpern lässt, schlägt
-jede Heuristik in diesem Dokument und wird vor der nächsten Phase behoben.
-Ergänzend gilt weiterhin die Checkliste `../testing/manual-ios-safari.md`.
+Das Werkzeug hat genau einen Nutzer, und Franz nutzt ein Android-Telefon mit
+Chrome. Nach Phase M1 und M2 je ein kurzer Praxistest auf seinem Gerät
+(15 Minuten, drei Aufgaben: Text ändern, Klangmoment umsortieren, Export
+starten). Was ihn dort stolpern lässt, schlägt jede Heuristik in diesem
+Dokument und wird vor der nächsten Phase behoben. Massgeblich ist die
+Checkliste `../testing/manual-android-chrome.md`; die iOS-Checkliste
+`../testing/manual-ios-safari.md` bleibt für die exportierte Website wichtig,
+weil deren Besucherinnen und Besucher auch iPhones verwenden.

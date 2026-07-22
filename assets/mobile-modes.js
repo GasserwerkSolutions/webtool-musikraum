@@ -3,6 +3,7 @@ export const MOBILE_MODE_MEDIA = "(max-width: 700px)";
 const MOBILE_HINT_KEY = "musikraum-ui-mobile-hint-v1";
 const KEYBOARD_VIEWPORT_RATIO = 0.85;
 const KEYBOARD_CHECK_FALLBACK_MS = 350;
+let baselineInnerHeight = 0;
 export function initMobileModes(context) {
     const media = window.matchMedia(MOBILE_MODE_MEDIA);
     const onChange = () => applyMobileMode(context);
@@ -10,8 +11,15 @@ export function initMobileModes(context) {
         media.addEventListener("change", onChange);
     else if (typeof media.addListener === "function")
         media.addListener(onChange);
-    window.addEventListener("resize", () => { if (isMobileModeActive())
-        updateMobileChrome(); });
+    baselineInnerHeight = window.innerHeight;
+    window.addEventListener("resize", () => {
+        if (!isEditableControl(document.activeElement))
+            baselineInnerHeight = window.innerHeight;
+        if (isMobileModeActive()) {
+            updateMobileChrome();
+            refreshModeBarForKeyboard();
+        }
+    });
     document.addEventListener("focusin", (event) => { if (isEditableControl(event.target))
         scheduleKeyboardCheck(); });
     document.addEventListener("focusout", () => scheduleKeyboardCheck());
@@ -76,13 +84,14 @@ function scheduleKeyboardCheck() {
     window.setTimeout(refreshModeBarForKeyboard, KEYBOARD_CHECK_FALLBACK_MS);
 }
 function keyboardLikelyOpen() {
-    const active = document.activeElement;
-    if (!(active instanceof HTMLElement) || !active.matches("input, textarea, select"))
+    if (!isEditableControl(document.activeElement))
         return false;
     const viewport = window.visualViewport;
-    if (!viewport)
+    if (viewport && viewport.height < window.innerHeight * KEYBOARD_VIEWPORT_RATIO)
         return true;
-    return viewport.height < window.innerHeight * KEYBOARD_VIEWPORT_RATIO;
+    if (baselineInnerHeight > 0 && window.innerHeight < baselineInnerHeight * KEYBOARD_VIEWPORT_RATIO)
+        return true;
+    return !viewport && baselineInnerHeight === 0;
 }
 function isEditableControl(target) {
     return target instanceof HTMLElement && target.matches("input, textarea, select");

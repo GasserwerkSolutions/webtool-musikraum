@@ -102,6 +102,25 @@ test("mode bar hides only while a field has focus and the viewport is shrunk", (
   dom.window.close();
 });
 
+test("legacy Android layout-resize keyboards also hide the mode bar", () => {
+  const { dom, context } = fixture();
+  initMobileModes(context);
+  dom.window.document.querySelector(".toast")?.remove();
+  const bar = dom.window.document.querySelector(".mode-switch");
+  const input = dom.window.document.getElementById("keyboardProbe");
+  assert.equal(dom.window.visualViewport, undefined);
+  input.focus();
+  refreshModeBarForKeyboard();
+  assert.equal(bar.classList.contains("is-keyboard-hidden"), false, "voller Layout-Viewport darf die Leiste nicht verstecken");
+  Object.defineProperty(dom.window, "innerHeight", { value: 320, configurable: true });
+  refreshModeBarForKeyboard();
+  assert.equal(bar.classList.contains("is-keyboard-hidden"), true, "geschrumpfter Layout-Viewport muss die Leiste verstecken");
+  input.blur();
+  refreshModeBarForKeyboard();
+  assert.equal(bar.classList.contains("is-keyboard-hidden"), false);
+  dom.window.close();
+});
+
 test("first mobile start shows the mode hint exactly once", () => {
   const { dom, context } = fixture();
   initMobileModes(context);

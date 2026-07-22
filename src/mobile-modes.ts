@@ -8,12 +8,18 @@ const MOBILE_HINT_KEY = "musikraum-ui-mobile-hint-v1";
 const KEYBOARD_VIEWPORT_RATIO = 0.85;
 const KEYBOARD_CHECK_FALLBACK_MS = 350;
 
+let baselineInnerHeight = 0;
+
 export function initMobileModes(context: UiContext): void {
   const media = window.matchMedia(MOBILE_MODE_MEDIA);
   const onChange = () => applyMobileMode(context);
   if (typeof media.addEventListener === "function") media.addEventListener("change", onChange);
   else if (typeof media.addListener === "function") media.addListener(onChange);
-  window.addEventListener("resize", () => { if (isMobileModeActive()) updateMobileChrome(); });
+  baselineInnerHeight = window.innerHeight;
+  window.addEventListener("resize", () => {
+    if (!isEditableControl(document.activeElement)) baselineInnerHeight = window.innerHeight;
+    if (isMobileModeActive()) { updateMobileChrome(); refreshModeBarForKeyboard(); }
+  });
   document.addEventListener("focusin", (event) => { if (isEditableControl(event.target)) scheduleKeyboardCheck(); });
   document.addEventListener("focusout", () => scheduleKeyboardCheck());
   window.visualViewport?.addEventListener("resize", () => refreshModeBarForKeyboard());
@@ -73,11 +79,11 @@ function scheduleKeyboardCheck(): void {
 }
 
 function keyboardLikelyOpen(): boolean {
-  const active = document.activeElement;
-  if (!(active instanceof HTMLElement) || !active.matches("input, textarea, select")) return false;
+  if (!isEditableControl(document.activeElement)) return false;
   const viewport = window.visualViewport;
-  if (!viewport) return true;
-  return viewport.height < window.innerHeight * KEYBOARD_VIEWPORT_RATIO;
+  if (viewport && viewport.height < window.innerHeight * KEYBOARD_VIEWPORT_RATIO) return true;
+  if (baselineInnerHeight > 0 && window.innerHeight < baselineInnerHeight * KEYBOARD_VIEWPORT_RATIO) return true;
+  return !viewport && baselineInnerHeight === 0;
 }
 
 function isEditableControl(target: EventTarget | null): boolean {
