@@ -50,6 +50,19 @@ test("website css follows the chosen font family and size", () => {
   assert.match(arial, /font-size:110%/);
 });
 
+test("website css keeps readable fallbacks for very old browsers", () => {
+  const html = buildWebsiteHtml(createDefaultDraft());
+  const css = html.slice(html.indexOf("<style>"), html.indexOf("</style>"));
+  assert.match(css, /\.hero\{min-height:calc\(100vh - 76px\);min-height:calc\(100svh - 76px\)/);
+  assert.match(css, /background-color:#494840;background-image:url\(/);
+  assert.match(css, /\.hero:after\{content:"";position:absolute;top:0;right:0;bottom:0;left:0/);
+  assert.doesNotMatch(css, /inset:0/);
+  assert.match(css, /body\{margin:0;min-width:320px;background:#f6e4c2;background:var\(--bg\);color:#2f2b25;color:var\(--text\)/);
+  assert.match(css, /font-size:3\.4rem;line-height:\.98;font:700 clamp\(3rem,8vw,6\.5rem\)/);
+  assert.match(css, /\.section\{padding:5\.5rem 0;padding:clamp\(4\.5rem,9vw,7\.5rem\) 0;background:#f6e4c2;background:linear-gradient/);
+  assert.match(css, /\.dark-band,\.contact\{color:#fff;background:#403b34;background:linear-gradient/);
+});
+
 test("repairs blank draft ids and duplicate offer ids", () => {
   const draft = createDefaultDraft();
   const normalized = normalizeDraft({

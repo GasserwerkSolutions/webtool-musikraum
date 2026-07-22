@@ -3,6 +3,7 @@ import type { PreviewRuntime } from "./preview-runtime.js";
 import type { BuilderStore } from "./store.js";
 import type { PreviewScrollState } from "./preview-contract.js";
 import type { ExportPreflightController, ExportPreparationState } from "./export-preflight.js";
+import type { MobileMode } from "./mobile-modes.js";
 
 export type UiContext = {
   store: BuilderStore;
@@ -39,6 +40,8 @@ export type UiContext = {
   previewInstanceId: string;
   previewScroll: PreviewScrollState | null;
   volatileStorage: boolean;
+  mobileMode?: MobileMode;
+  mobileEditorScroll?: number;
 };
 
 function requiredElement<T extends Element>(id: string): T {
@@ -83,6 +86,8 @@ export function createUiContext(store: BuilderStore, repository: DraftRepository
     previewInstanceId: "",
     previewScroll: null,
     volatileStorage: false,
+    mobileMode: "edit",
+    mobileEditorScroll: 0,
   };
 }
 

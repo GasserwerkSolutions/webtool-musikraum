@@ -8,6 +8,11 @@ test("static entry loads the compiled Musikraum tool", async () => {
   assert.match(html, /rel="icon" type="image\/svg\+xml" href="favicon\.svg"/);
   assert.match(html, /src="logo\.svg"/);
   assert.match(html, /data-bind="site\.name"/);
+  assert.match(html, /data-mode="edit"[^>]*aria-pressed="true"/);
+  assert.match(html, /data-mode="preview"[^>]*aria-pressed="false"/);
+  assert.match(html, /data-sheet-open[^>]*aria-haspopup="dialog"/);
+  assert.match(html, /id="sectionSheet"[^>]*hidden/);
+  assert.match(html, /data-return-preview[^>]*hidden/);
 });
 
 test("product source contains no legacy vertical vocabulary", async () => {

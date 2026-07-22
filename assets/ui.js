@@ -5,7 +5,8 @@ import { parseNavigateMessage, parseScrollMessage } from "./preview-contract.js"
 import { PreviewRuntime } from "./preview-runtime.js";
 import { ExportPreflightController } from "./export-preflight.js";
 import { navigateToEditorTarget } from "./preview-navigation.js";
-import { initSidebar } from "./sidebar.js";
+import { ensureEditorOpen, initSidebar } from "./sidebar.js";
+import { initMobileModes, isMobileModeActive, markPreviewReturnAvailable } from "./mobile-modes.js";
 import { handleReorderKeydown, handleReorderPointerDown, handleReorderPointerEnd, handleReorderPointerMove } from "./reorder-actions.js";
 export class BuilderUi {
     context;
@@ -27,6 +28,9 @@ export class BuilderUi {
     init(options) {
         this.context.volatileStorage = Boolean(options.volatileStorage);
         initSidebar(this.context);
+        initMobileModes(this.context);
+        if (isMobileModeActive())
+            ensureEditorOpen(this.context);
         bindStaticInputs(this.context);
         renderDynamicControls(this.context);
         renderContentOverview(this.context);
@@ -81,8 +85,12 @@ export class BuilderUi {
             return;
         }
         const navigate = parseNavigateMessage(event.data, runtime.instanceId, this.context.store.snapshot, runtime.renderGeneration);
-        if (navigate && navigate.revision === runtime.appliedRevision)
+        if (navigate && navigate.revision === runtime.appliedRevision) {
+            const fromMobilePreview = isMobileModeActive() && (this.context.mobileMode ?? "edit") === "preview";
             navigateToEditorTarget(this.context, navigate.target);
+            if (fromMobilePreview)
+                markPreviewReturnAvailable();
+        }
     }
 }
 function renderHistoryState(context, state) {

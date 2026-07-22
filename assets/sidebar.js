@@ -1,3 +1,4 @@
+import { ensureMobileEditMode } from "./mobile-modes.js";
 const WIDTH_KEY = "musikraum-ui-sidebar-width-v1";
 const COLLAPSED_KEY = "musikraum-ui-sidebar-collapsed-v1";
 const MIN_WIDTH = 420;
@@ -11,7 +12,7 @@ export function initSidebar(context) {
     context.sidebarResizer.addEventListener("pointerdown", (event) => beginResize(context, event));
     context.sidebarResizer.addEventListener("keydown", (event) => resizeByKeyboard(context, event));
 }
-export function ensureEditorOpen(context) { if (context.controlSurface.classList.contains("is-collapsed"))
+export function ensureEditorOpen(context) { ensureMobileEditMode(context); if (context.controlSurface.classList.contains("is-collapsed"))
     setSidebarCollapsed(context, false); }
 function setSidebarCollapsed(context, collapsed, persist = true) {
     context.controlSurface.classList.toggle("is-collapsed", collapsed);

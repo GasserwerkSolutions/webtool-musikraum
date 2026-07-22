@@ -42,7 +42,37 @@ function revealTarget(context: UiContext, target: HTMLElement): void {
   const controlRect = control.getBoundingClientRect(); const previewRect = preview.getBoundingClientRect(); const sideBySide = Math.abs(controlRect.top - previewRect.top) < 80 && controlRect.right <= previewRect.left + 2;
   if (sideBySide) { const stageRect = stage.getBoundingClientRect(); const targetRect = target.getBoundingClientRect(); stage.scrollTo({ top: Math.max(0, stage.scrollTop + targetRect.top - stageRect.top - stageRect.height / 2 + targetRect.height / 2), behavior: reducedMotion() ? "auto" : "smooth" }); return; }
   target.scrollIntoView({ block: "center", behavior: reducedMotion() ? "auto" : "smooth" });
-  const viewport = window.visualViewport; if (viewport) { const reposition = () => { target.scrollIntoView({ block: "center", behavior: "auto" }); viewport.removeEventListener("resize", reposition); }; viewport.addEventListener("resize", reposition, { once: true }); setTimeout(() => viewport.removeEventListener("resize", reposition), 1200); }
+  scheduleFocusCorrection(target);
+}
+
+const FOCUS_CORRECTION_FALLBACK_MS = 350;
+const FOCUS_CORRECTION_WINDOW_MS = 1200;
+
+function scheduleFocusCorrection(target: HTMLElement): void {
+  const correct = () => {
+    if (!target.isConnected || !targetStillFocused(target) || targetFullyVisible(target)) return;
+    target.scrollIntoView({ block: "center", behavior: "auto" });
+  };
+  requestAnimationFrame(() => requestAnimationFrame(correct));
+  window.setTimeout(correct, FOCUS_CORRECTION_FALLBACK_MS);
+  const viewport = window.visualViewport;
+  if (!viewport) return;
+  const onViewportChange = () => correct();
+  viewport.addEventListener("resize", onViewportChange);
+  window.setTimeout(() => viewport.removeEventListener("resize", onViewportChange), FOCUS_CORRECTION_WINDOW_MS);
+}
+
+function targetStillFocused(target: HTMLElement): boolean {
+  const active = document.activeElement;
+  return active === target || (active instanceof HTMLElement && target.contains(active));
+}
+
+function targetFullyVisible(target: HTMLElement): boolean {
+  const rect = target.getBoundingClientRect();
+  const viewport = window.visualViewport;
+  const top = viewport ? viewport.offsetTop : 0;
+  const height = viewport ? viewport.height : window.innerHeight;
+  return rect.top >= top && rect.bottom <= top + height;
 }
 
 function reducedMotion(): boolean { return matchMedia("(prefers-reduced-motion: reduce)").matches; }

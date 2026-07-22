@@ -15,11 +15,14 @@ Ein bewusst einfaches, persönliches Website-Werkzeug für Franz Gasser. Datenmo
 - vier kuratierte Farbwelten
 - vier Schriftarten zur Auswahl (Klassisch, Klar/Arial, Elegant/Georgia, Modern) und vier Schriftgrössen (Kompakt bis Sehr gross)
 - responsive Live-Vorschau für Desktop, Tablet und Mobiltelefon
+- auf schmalen Bildschirmen (bis 700 px) getrennte Bearbeiten- und Vorschau-Modi mit eigener Scrollposition und Touch-Zielen von mindestens 44 × 44 px
 - direkte Bearbeitung: Ein Klick auf sichtbaren Inhalt öffnet das zugehörige Feld
 - falt- und per Maus, Touch oder Tastatur grössenveränderbare Bearbeitungsfläche
 - Rückgängig/Wiederholen per Knopf oder Tastatur
 - herunterladbare und wieder einlesbare Entwurfssicherung
 - Export als einzelne HTML-Datei
+
+Die exportierte Website enthält klassische CSS-Fallbacks (Farben, Schriftgrössen, Hero-Hintergrund), damit sie auch auf sehr alten Browsern ohne `var()`, `clamp()`, `color-mix()` oder `svh` lesbar bleibt; der Hero behält dort immer einen dunklen Hintergrund hinter dem weissen Text.
 
 Änderungen werden während der Eingabe unmittelbar in der Vorschau gerendert. Die Geräteauswahl sitzt im Header; die Vorschau bleibt innerhalb der verfügbaren Breite und verwendet 12-Pixel-Ecken. Der Button „Klangmoment hinzufügen“ bleibt auch bei minimaler Sidebar-Breite sichtbar.
 
