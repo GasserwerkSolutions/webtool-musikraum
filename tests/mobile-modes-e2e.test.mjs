@@ -60,11 +60,17 @@ test("mobile edit and preview modes with separate scroll states", { timeout: 900
         viewportSwitchHidden: getComputedStyle(document.querySelector(".viewport-switch--topbar")).display === "none",
         topbarActionsOverflow: ((actions) => actions.scrollWidth - actions.clientWidth)(document.querySelector(".topbar__actions")),
         inputFontSize: getComputedStyle(document.querySelector('[data-bind="site.name"]')).fontSize,
+        stageOverflowY: getComputedStyle(document.querySelector(".surface-stage")).overflowY,
+        stageIndependentScroll: ((stage) => stage.scrollHeight - stage.clientHeight)(document.querySelector(".surface-stage")),
+        pageScrolls: document.documentElement.scrollHeight - document.documentElement.clientHeight,
       };
     });
     assert.equal(initial.viewportSwitchHidden, true);
     assert.ok(initial.topbarActionsOverflow <= 1, `Topbar-Aktionen scrollen: ${initial.topbarActionsOverflow}`);
     assert.equal(initial.inputFontSize, "16px");
+    assert.equal(initial.stageOverflowY, "visible", "Bearbeitungsfläche darf mobil kein eigener Scrollcontainer sein");
+    assert.ok(initial.stageIndependentScroll <= 0, `Verschachtelter Scroll in der Bearbeitungsfläche: ${initial.stageIndependentScroll}`);
+    assert.ok(initial.pageScrolls > 0, "Seite muss als einziger Scrollcontainer scrollen");
 
     assert.equal(await page.evaluate(() => getComputedStyle(document.querySelector(".surface-nav")).display), "none");
     await page.click("[data-sheet-open]");
