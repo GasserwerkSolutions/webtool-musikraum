@@ -500,6 +500,8 @@ button { color: inherit; }
   .control-surface.is-collapsed .surface-stage { display: none; }
   .surface-nav { position: sticky; top: 68px; z-index: 30; flex-direction: row; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--line); padding: 8px; scrollbar-width: thin; }
   .surface-nav__item { min-width: 84px; min-height: 46px; }
+  .surface-stage { overflow: visible; perspective: none; }
+  .surface-card { min-height: 0; }
   .panel-status { padding: 14px 16px 0; }
   .surface-card { padding: 18px 14px 24px; }
   .panel__header--action { display: grid; }
