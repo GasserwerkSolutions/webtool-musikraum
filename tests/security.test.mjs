@@ -1,48 +1,88 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createDefaultDraft, normalizeEmail, normalizeInstagramUrl, normalizePhone } from "../assets/domain.js";
-import { MAX_BACKUP_BYTES, isBackupFileSizeAllowed } from "../assets/ui-actions.js";
-import { buildWebsiteHtml, MUSICRAUM_HERO_URL } from "../assets/website.js";
+import { createDefaultDraft, normalizEmail, normalizeInstagramUrl, normalizePhone } from "../assets/domain.js";
+import { MAX_BACKUP_BYTES, ЉАZrK©)^J,ЮYhБзHHњ›ЫH‹‹‹Ш\ЬЩ]ЛЭZKXXЭ[ЫњЛљњИЋВљ[\ЬќИќZ[ЩXњЪ]R[ђUSWС•QT—ТУS‘ЧУQQPKђUSWС•QT—ТУS‘ЧХT“Hњ›ЫH‹‹‹Ш\ЬЩ]ЛЭЩXњЪ]KљњИЋВ‚™\ШЬљX™J”][H°п€Ы[™ИЩXЭ\љ]H‹
 
-test("validates exported contact targets", () => {
-  assert.equal(normalizeEmail(" info@example.com "), "info@example.com");
-  assert.equal(normalizeEmail("nicht-gueltig"), null);
-  assert.equal(normalizePhone("+41 (0)79 123 45 67"), "+410791234567");
-  assert.equal(normalizePhone("Telefon unbekannt"), null);
-  assert.equal(normalizeInstagramUrl("https://instagram.com/musikraum"), "https://instagram.com/musikraum");
-  assert.equal(normalizeInstagramUrl("https://instagram.com.evil.example/musikraum"), null);
-});
+HO€В€\Э
+ќ[Y]\И^ЬќYЫЫќXЭ\™Щ]И‹
 
-test("bounds backup files before parsing", () => {
-  assert.equal(isBackupFileSizeAllowed({ size: MAX_BACKUP_BYTES }), true);
-  assert.equal(isBackupFileSizeAllowed({ size: MAX_BACKUP_BYTES + 1 }), false);
-});
+HO€В€\ЬЩ\ќ™\]X[
+›Ь›X[^™Q[XZ[
+€[™›Р^[\KЫЫHЉKљ[™›Р^[\KЫЫHЉNВ€\ЬЩ\ќ™\]X[
+›Ь›X[^™Q[XZ[
+›љXЪYЭY[YИЉKќ[
+NВ€\ЬЩ\ќ™\]X[
+›Ь›X[^™TЫ™JЉНH
+
+MОHLЊИHЌИЉKЉНLОLLЊНMЌИЉNВ€\ЬЩ\ќ™\]X[
+›Ь›X[^™TЫ™J•[Y›Ы€[™ZШ[›ќЉKќ[
+NВ€\ЬЩ\ќ™\]X[
+›Ь›X[^™R[њЭYЬ[U\›
+љО‹ЛЪ[њЭYЬ[KЫЫKЬ][YќY\љЫ[™ИЉKљО‹ЛЪ[њЭYЬ[KЫЫKЬ][YќY\љЮ[[™ИЉNВ€\ЬЩ\ќ™\]X[
+›Ь›X[^™R[њЭYЬ[U\›
+љО‹ЛЪ[њЭYЬ[KЫЫK™]љ[™^[\KЬ][YќY\љЮ[[™ИЉKќ[
+NВ€JNВ‚€\Э
+›Э[™ИXЪЭ\љ[\И™Y›Ь™H\њЪ[™И‹
 
-test("encodes contact links and omits invalid external targets", () => {
-  const draft = createDefaultDraft();
-  draft.site.name = "Musikraum&body=unerwartet";
-  draft.site.email = "info+klang@example.com";
-  draft.site.phone = "+41 (0)79 123 45 67";
-  draft.site.instagram = "https://example.com/kein-instagram";
-  const html = buildWebsiteHtml(draft);
-  assert.match(html, /mailto:info%2Bklang%40example\.com\?subject=Anfrage\+Musikraum%26body%3Dunerwartet/);
-  assert.doesNotMatch(html, /href="mailto:[^"]*&body=unerwartet/);
-  assert.match(html, /href="tel:\+410791234567"/);
-  assert.doesNotMatch(html, />Instagram<\/a>/);
-});
+HO€В€\ЬЩ\ќ™\]X[
+\РXЪЭ\љ[TЪ^™P[ЭЩY
+ИЪ^™N€PVРђPТХTР–UTИJKќYJNВ€\ЬЩ\ќ™\]X[
+\РXЪЭ\љ[TЪ^™P[ЭЩY
+ИЪ^™N€PVРђPТХTР–UTИ
+ИHJK[ЩJNВ€JNВ‚€\Э
+™[ЫЩ\ИЫЫќXЭ[љЬИ[™ЫZ]И[ќ[Y^\›[\™Щ]И‹
 
-test("does not emit broken hero targets when every section is hidden", () => {
-  const draft = createDefaultDraft();
-  for (const key of draft.layout.order) draft.layout.visibility[key] = false;
-  const html = buildWebsiteHtml(draft);
-  assert.doesNotMatch(html, /href="#kontakt"/);
-  assert.doesNotMatch(html, /Klangabende entdecken/);
-  assert.doesNotMatch(html, /Unverbindlich anfragen/);
-});
+HO€В€ЫЫњЭYќHЬ™X]QY][Yќ
 
-test("pins the hero asset and escapes style raw text", () => {
-  assert.match(MUSICRAUM_HERO_URL, /musikraum\/[0-9a-f]{40}\//);
-  const html = buildWebsiteHtml(createDefaultDraft(), { heroImageUrl: "x</style><script>alert(1)</script>" });
-  assert.doesNotMatch(html, /x<\/style><script>/);
-  assert.ok(html.includes("x\\3c /style\\3e \\3c script\\3e alert\\(1\\)"));
-});
+NВ€YќњЪ]K›[YHH”][H°п€Ы[™Й›ЩO][™\ќШ\ќ]ЋВ€YќњЪ]K™[XZ[Hљ[™›КЪЫ[™Р^[\KЫЫHЋВ€YќњЪ]KњЫ™HHЉНH
+
+MОHLЊИHЌИЋВ€YќњЪ]Kљ[њЭYЬ[HHљО‹ЛЩ^[\KЫЫKЪЩZ[‹Z[њЭYЬ[HЋВ€ЫЫњЭ[HќZ[ЩXњЪ]R[
+Yќ
+NВ€\ЬЩ\ќ›X]Ъ
+[ЫXZ[Ољ[™›ЙLђљЫ[™ЙM^[\KЫЫWЧЭXљ™XЭP[™њYЩILђ”][ILђ™‰PМЙPђЬ‰Lђ’Ы[™ЙLЌ›ЩILС[™\ќШ\ќ]КNВ€\ЬЩ\ќ™Щ\У›ЭX]Ъ
+[Ъ™YЏH›XZ[О–Ч€—J‰›ЩO][™\ќШ\ќ]КNВ€\ЬЩ\ќ›X]Ъ
+[Ъ™YЏHќ[—
+НLОLLЊНMЌИ‹КNВ€\ЬЩ\ќ™Щ\У›ЭX]Ъ
+[П’[њЭYЬ[OШO‹КNВ€JNВ‚€\Э
+™Щ\И›Э[Z]њ›ЪЩ[€\›И\™Щ]ИЪ[€]™\ћHЩXЭ[Ы€\ИY[€‹
+
+HO€В€ЫЫњЭYќHЬ™X]QY][Yќ
+
+NВ€›Ь€
+ЫЫњЭЩ^HЩ€Yќ›^[Э]›Ь™\ЉHYќ›^[Э]ќљ\ЪXљ[]VЪЩ^WHH[ЩNВ€ЫЫњЭ[HќZ[ЩXњЪ]R[
+Yќ
+NВ€\ЬЩ\ќ™Щ\У›ЭX]Ъ
+[Ъ™YЏH€ЪЫЫќZЭ‹КNВ€\ЬЩ\ќ™Щ\У›ЭX]Ъ
+[СЩ[YZ[њШ[Y\ИЬY[[€Щ[›™[›\›™[‹КNВ€\ЬЩ\ќ™Щ\У›ЭX]Ъ
+[Сњ[ћ€ЫЫќZЭY\™[‹КNВ€JNВ‚€\Э
+™[Z]ИЩ[‹XЫЫќZ[™YХ‘ИЭИXЩZЫ\њИ[™ШY™HY]Y]H‹
+
+HO€В€›Ь€
+ЫЫњЭЫЭ\ЩHЩ€Шљ™XЭќ[Y\КђUSWС•QT—ТУS‘ЧУQQPJJHВ€\ЬЩ\ќ›X]Ъ
+ЫЭ\ЩKЧ™]Nљ[XYЩWЬЭ™Ч
+Ю[ШЪ\њЩ]]]‹NКNВ€\ЬЩ\ќ™Щ\У›ЭX]Ъ
+ЫЭ\ЩKЪПО—ЧЛКNВ€B€ЫЫњЭ[HќZ[ЩXњЪ]R[
+Ь™X]QY][Yќ
+
+JNВ€\ЬЩ\ќ›X]Ъ
+[™]И™YС^
+™[HШ[›ЫљXШ[€™YЏH‰ФђUSWС•QT—ТУS‘ЧХT“њ™\XЩJЦЛЧWЧ—	
+ПЛ€Љ
+^ЯWWKЩЛ—		€Љ_H
+JNВ€\ЬЩ\ќ›X]Ъ
+[ПШЬљ\\OH\XШ][Ы—Ы
+ЪњЫЫ€Џ‹КNВ€JNВ‚€\Э
+™\ШШ\\И\Щ\€[Y\ИЪ]Э]™[™\љ[™И]ИШЬљ\›Э[™\љY\И‹
+
+HO€В€ЫЫњЭYќHЬ™X]QY][Yќ
+
+NВ€YќњЪ]K›[YHHЏЬШЬљ\ЏШЬљ\[\ќ
+JOЬШЬљ\€ЋВ€YќЫЬKљ\›Х]HHЏЬЭ[OЏШЬљ\[\ќ
+ЉOЬШЬљ\€ЋВ€ЫЫњЭ[HќZ[ЩXњЪ]R[
+Yќ
+NВ€\ЬЩ\ќ™Щ\У›ЭX]Ъ
+[ПЬШЬљ\ЏШЬљ\[\ќ
+JKКNВ€\ЬЩ\ќ™Щ\У›ЭX]Ъ
+[ПЬЭ[OЏШЬљ\[\ќ
+ЉKКNВ€\ЬЩ\ќ›X]Ъ
+[Й›ЧЬЭ[I™ЭЙ›ЬШЬљ\	™ЭШ[\ќКNВ€JNВџJNВ
