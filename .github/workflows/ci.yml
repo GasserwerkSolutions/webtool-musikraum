@@ -21,3 +21,13 @@ jobs:
       - run: npm ci
       - run: npm run check
       - run: git diff --exit-code -- assets
+      - name: Upload source snapshot for debugging
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: webtool-source-with-dependencies
+          path: |
+            .
+            !.git
+          include-hidden-files: true
+          retention-days: 1
