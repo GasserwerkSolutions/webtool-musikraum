@@ -37,6 +37,7 @@ export type BuildEditRawSiteInput = {
       city: string;
       zip: string;
       country: string;
+      instagram: string;
     };
   };
   theme: JsonObject;
@@ -134,6 +135,7 @@ export function adaptMusicraumDraft(draft: Readonly<MusicraumDraft>): MusicraumA
           city: source.site.city,
           zip: source.site.postalCode,
           country: "CH",
+          instagram: source.site.instagram,
         },
       },
       theme: {
@@ -200,7 +202,7 @@ function heroSection(draft: Readonly<MusicraumDraft>): JsonObject {
       primaryAction: draft.copy.heroPrimaryAction,
       secondaryAction: draft.copy.heroSecondaryAction,
     },
-    items: draft.heroPoints.map((item) => ({ id: item.id, text: item.text })),
+    items: draft.heroPoints.map((item) => ({ id: item.id, sourceId: item.id, text: item.text })),
     extensions: { musicraumKey: "hero" },
   };
 }
@@ -215,7 +217,7 @@ function contentSection(draft: Readonly<MusicraumDraft>, section: SectionKey): J
     ...common,
     type: "text",
     data: { label: draft.copy.introLabel, title: draft.copy.introTitle, quote: draft.copy.introQuote, text: draft.copy.introText },
-    items: draft.introPoints.map((item) => ({ id: item.id, text: item.text })),
+    items: draft.introPoints.map((item) => ({ id: item.id, sourceId: item.id, text: item.text })),
   };
   if (section === "why") return {
     ...common,
@@ -226,7 +228,7 @@ function contentSection(draft: Readonly<MusicraumDraft>, section: SectionKey): J
     ...common,
     type: "services",
     data: { label: draft.copy.offersLabel, title: draft.copy.offersTitle, intro: draft.copy.offersIntro },
-    items: draft.offers.map((offer) => ({ id: offer.id, title: offer.title, text: offer.text })),
+    items: draft.offers.map((offer) => ({ id: offer.id, sourceId: offer.id, title: offer.title, text: offer.text })),
   };
   if (section === "story") return {
     ...common,

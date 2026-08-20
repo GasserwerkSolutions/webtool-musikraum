@@ -1,4 +1,4 @@
-import { escapeAttr, escapeHtml, type MusicraumDraft, type MusicraumTextItem } from "./domain.js";
+import { escapeAttr, escapeHtml, type MusicraumTextItem } from "./domain.js";
 import {
   EDITOR_FIELD_REGISTRY,
   PREVIEW_CHANNEL,
@@ -9,6 +9,7 @@ import {
   type TextListKey,
 } from "./preview-contract.js";
 import { buildPreviewBridgeScript } from "./preview-bridge.js";
+import type { MusicraumWebsiteModel } from "./website-model.js";
 import type { BuildOptions } from "./website-contract.js";
 
 export function renderTextList(items: readonly MusicraumTextItem[], list: TextListKey, tag: "span" | "li", options: BuildOptions): string {
@@ -55,7 +56,7 @@ export function editableOffer(value: string, offerId: string, field: "title" | "
 export function previewAction(value: string, field: StaticEditableField, href: string, classes: string, occurrence: string, options: BuildOptions): string { return options.preview ? `<button class="${classes} preview-action" type="button"${previewTargetAttr(options, { kind: "field", field }, occurrence, true)}>${escapeHtml(value)}</button>` : `<a class="${classes}" href="${href}">${escapeHtml(value)}</a>`; }
 export function previewLink(value: string, field: StaticEditableField, href: string, classes: string, occurrence: string, options: BuildOptions): string { return options.preview ? `<a class="${classes}" href="${escapeAttr(href)}"${previewTargetAttr(options, { kind: "field", field }, occurrence, true)}>${escapeHtml(value)}</a>` : `<a class="${classes}" href="${escapeAttr(href)}">${escapeHtml(value)}</a>`; }
 export function previewNavigationLink(value: string, field: StaticEditableField, href: string, occurrence: string, options: BuildOptions): string { return options.preview ? `<a href="${href}"${previewTargetAttr(options, { kind: "field", field }, occurrence, true)}>${escapeHtml(value)}</a>` : `<a href="${href}">${escapeHtml(value)}</a>`; }
-export function addressParts(draft: MusicraumDraft, prefix: string, options: BuildOptions): string {
+export function addressParts(draft: MusicraumWebsiteModel, prefix: string, options: BuildOptions): string {
   const street = draft.site.address ? editable(draft.site.address, "site.address", `${prefix}-street`, options) : "";
   const postal = draft.site.postalCode ? editable(draft.site.postalCode, "site.postalCode", `${prefix}-postal-code`, options) : "";
   const city = draft.site.city ? editable(draft.site.city, "site.city", `${prefix}-city`, options) : "";

@@ -1,6 +1,6 @@
 import { PREVIEW_CHANNEL, PREVIEW_PROTOCOL_VERSION, isPreviewMessageEnvelope, parseReadyMessage, parseUpdateResult, } from "./preview-contract.js";
 import { planPreviewUpdate } from "./preview-update-planner.js";
-import { buildWebsiteHtml } from "./website.js";
+import { compileMusicraumWebsiteHtml } from "./musicraum-compiler.js";
 const COALESCE_MS = 40;
 const PATCH_TIMEOUT_MS = 350;
 const READY_TIMEOUT_MS = 2_000;
@@ -177,13 +177,14 @@ export class PreviewRuntime {
         this.fullRenderRevision = revision;
         this.desiredRevisionValue = Math.max(this.desiredRevisionValue, revision);
         this.pendingMutations = this.pendingMutations.filter((mutation) => mutation.revision > revision);
-        this.frame.srcdoc = buildWebsiteHtml(structuredClone(this.readDraft()), {
+        this.frame.srcdoc = compileMusicraumWebsiteHtml(structuredClone(this.readDraft()), {
             preview: true,
             previewInstanceId: this.instanceIdValue,
             parentOrigin: this.parentOrigin,
             previewScroll: this.readScroll(),
             previewRevision: revision,
             renderGeneration: this.renderGenerationValue,
+            sourceRevision: revision,
         });
         const generation = this.renderGenerationValue;
         const instanceId = this.instanceIdValue;

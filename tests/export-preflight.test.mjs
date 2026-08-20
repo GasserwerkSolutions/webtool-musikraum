@@ -32,6 +32,7 @@ function controllerFixture(overrides = {}) {
     clickDownload: (url, filename) => clicks.push({ url, filename }),
     assetTimeoutMs: overrides.assetTimeoutMs ?? 50,
     quietWindowMs: overrides.quietWindowMs ?? 10,
+    totalAssetMaxBytes: overrides.totalAssetMaxBytes,
     mediaAssets: overrides.mediaAssets ?? { hero: TEST_HERO_URL, portrait: INLINE_PIXEL, detail: INLINE_PIXEL },
   });
   return { draft, controller, states, builds, clicks, revoked, get revision() { return revision; }, set revision(value) { revision = value; } };
@@ -129,6 +130,27 @@ test("asset loader enforces MIME and both declared and actual size limits", asyn
   await assert.rejects(() => fetchWebsiteMediaAsset(TEST_HERO_URL, async () => imageResponse(new Uint8Array([1]), "image/png", { "content-length": String(EXPORT_ASSET_MAX_BYTES + 1) }), signal), (error) => error instanceof ExportAssetError && error.code === "size");
   const oversized = new Uint8Array(EXPORT_ASSET_MAX_BYTES + 1);
   await assert.rejects(() => fetchWebsiteMediaAsset(TEST_HERO_URL, async () => imageResponse(oversized), signal), (error) => error instanceof ExportAssetError && error.code === "size");
+});
+
+test("export enforces one aggregate limit across embedded media", async () => {
+  const fixture = controllerFixture({
+    mediaAssets: { hero: INLINE_PIXEL, portrait: INLINE_PIXEL, detail: INLINE_PIXEL },
+    totalAssetMaxBytes: 2,
+  });
+  const state = await fixture.controller.prepare();
+  assert.equal(state.status, "failed");
+  assert.match(state.message, /zusammen/);
+  assert.equal(fixture.builds.length, 0);
+  fixture.controller.destroy();
+});
+
+test("asset requests reject redirects at the fetch boundary", async () => {
+  let redirect;
+  await fetchWebsiteMediaAsset(TEST_HERO_URL, async (_url, options) => {
+    redirect = options.redirect;
+    return imageResponse();
+  }, new AbortController().signal);
+  assert.equal(redirect, "error");
 });
 
 test("asset timeout is an asset failure while parent abort remains a generation abort", async () => {

@@ -1,8 +1,10 @@
 import { cloneDraft, normalizeEmail, normalizePhone, slugify } from "./domain.js";
 import { evaluateReadiness } from "./readiness.js";
-import { buildWebsiteHtml, RAUM_FUER_KLANG_MEDIA } from "./website.js";
+import { compileMusicraumWebsiteHtml } from "./musicraum-compiler.js";
+import { RAUM_FUER_KLANG_MEDIA } from "./website.js";
 export const EXPORT_ASSET_TIMEOUT_MS = 8_000;
 export const EXPORT_ASSET_MAX_BYTES = 5 * 1024 * 1024;
+export const EXPORT_TOTAL_ASSET_MAX_BYTES = 12 * 1024 * 1024;
 export const EXPORT_QUIET_WINDOW_MS = 500;
 export const EXPORT_IMAGE_MIME_TYPES = new Set(["image/webp", "image/jpeg", "image/png", "image/avif"]);
 export class ExportAssetError extends Error {
@@ -28,18 +30,20 @@ export class ExportPreflightController {
     clickDownload;
     assetTimeoutMs;
     quietWindowMs;
+    totalAssetMaxBytes;
     liveObjectUrl = null;
     revokeTimer = null;
     constructor(options) {
         this.options = options;
         this.fetchAsset = options.fetchAsset ?? fetch.bind(globalThis);
-        this.buildHtml = options.buildHtml ?? buildWebsiteHtml;
+        this.buildHtml = options.buildHtml ?? compileMusicraumWebsiteHtml;
         this.mediaAssets = { ...RAUM_FUER_KLANG_MEDIA, ...options.mediaAssets };
         this.createObjectUrl = options.createObjectUrl ?? ((blob) => URL.createObjectURL(blob));
         this.revokeObjectUrl = options.revokeObjectUrl ?? ((url) => URL.revokeObjectURL(url));
         this.clickDownload = options.clickDownload ?? defaultClickDownload;
         this.assetTimeoutMs = options.assetTimeoutMs ?? EXPORT_ASSET_TIMEOUT_MS;
         this.quietWindowMs = options.quietWindowMs ?? EXPORT_QUIET_WINDOW_MS;
+        this.totalAssetMaxBytes = options.totalAssetMaxBytes ?? EXPORT_TOTAL_ASSET_MAX_BYTES;
     }
     get state() { return this.stateValue; }
     get generation() { return this.exportGeneration; }
@@ -98,6 +102,7 @@ export class ExportPreflightController {
                     heroImageUrl: preparedMedia.assets.hero,
                     portraitImageUrl: preparedMedia.assets.portrait,
                     detailImageUrl: preparedMedia.assets.detail,
+                    sourceRevision: revision,
                 });
                 const blob = new Blob([html], { type: "text/html;charset=utf-8" });
                 const result = {
@@ -154,6 +159,9 @@ export class ExportPreflightController {
                 return [key, source, isDataImageUrl(source)];
             }
         }));
+        const totalBytes = prepared.reduce((sum, [, source, embedded]) => sum + (embedded ? dataImageByteSize(source) : 0), 0);
+        if (totalBytes > this.totalAssetMaxBytes)
+            throw new ExportAssetError("total-size", `Die eingebetteten Bilder überschreiten zusammen ${Math.round(this.totalAssetMaxBytes / 1024 / 1024)} MiB.`);
         return {
             assets: Object.fromEntries(prepared.map(([key, source]) => [key, source])),
             allEmbedded: prepared.every(([, , embedded]) => embedded),
@@ -205,7 +213,7 @@ export async function fetchWebsiteMediaAsset(source, fetchAsset, signal, options
         try {
             if (signal.aborted)
                 throw abortError();
-            request = Promise.resolve(fetchAsset(source, { signal: controller.signal }));
+            request = Promise.resolve(fetchAsset(source, { signal: controller.signal, redirect: "error" }));
         }
         catch (error) {
             request = Promise.reject(error);
@@ -256,6 +264,23 @@ export async function fetchWebsiteMediaAsset(source, fetchAsset, signal, options
             clearTimeout(timer);
         if (abortFromParent)
             signal.removeEventListener("abort", abortFromParent);
+    }
+}
+function dataImageByteSize(value) {
+    if (!isDataImageUrl(value))
+        return 0;
+    const comma = value.indexOf(",");
+    const metadata = value.slice(0, comma);
+    const payload = value.slice(comma + 1);
+    if (/;base64(?:;|$)/i.test(metadata)) {
+        const padding = payload.endsWith("==") ? 2 : payload.endsWith("=") ? 1 : 0;
+        return Math.max(0, Math.floor(payload.length * 3 / 4) - padding);
+    }
+    try {
+        return new TextEncoder().encode(decodeURIComponent(payload)).byteLength;
+    }
+    catch {
+        return new TextEncoder().encode(payload).byteLength;
     }
 }
 function isDataImageUrl(value) { return /^data:image\/[a-z0-9.+-]+(?:;[^,]*)?,/i.test(value); }

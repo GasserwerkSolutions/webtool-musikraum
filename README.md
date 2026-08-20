@@ -58,7 +58,13 @@ Danach `http://localhost:8080` öffnen.
 
 Die TypeScript-Quellen liegen unter `src/`; die kompilierten, statisch auslieferbaren Browsermodule unter `assets/` werden bewusst mitcommittet. `npm run check` umfasst Typprüfung, Logik- und Sicherheitstests sowie eine echte Chromium-Abnahme für Live-Rendering, iframe-Navigation, Breakpoints, Scrollcontainer, Footer-Abstände und Sidebar-Bedienung.
 
-Editorvorschau und HTML-Export entstehen aus demselben Renderer. Nur `preview: true` ergänzt kurzlebige Zielkennungen, das versionierte Nachrichtenprotokoll und Bedienhilfen. Der Export enthält diese Editorbestandteile nicht.
+Editorvorschau und HTML-Export entstehen aus demselben `build-edit`-Compiler,
+demselben `ResolvedSite` und demselben vertikalen Renderer. Nur `preview: true`
+ergänzt kurzlebige Zielkennungen, das versionierte Nachrichtenprotokoll und
+Bedienhilfen. Der Export enthält diese Editorbestandteile nicht. Das lokale
+`npm run check:vendor` verifiziert den vollständigen Core-Commit sowie die
+SHA-256-Hashes der Runtime und ihrer TypeScript-Deklarationen. Die genaue
+Entscheidung steht in [ADR-010](docs/architecture/adr-010-core-preview-export-pipeline.md).
 
 ### Editor-Architektur und Roadmap
 
