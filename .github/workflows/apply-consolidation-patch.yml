@@ -1,0 +1,27 @@
+name: Apply final consolidation patch
+
+on:
+  push:
+    branches: [chore/consolidate-main-2026-08-20]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: chore/consolidate-main-2026-08-20
+      - name: Apply verified patch
+        run: |
+          cat .github/consolidation-patch.b64.part-* | base64 --decode > /tmp/consolidation.patch
+          git apply --binary /tmp/consolidation.patch
+          rm .github/consolidation-patch.b64.part-* .github/workflows/apply-consolidation-patch.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "fix: restore a clean verified project state"
+          git push origin HEAD:chore/consolidate-main-2026-08-20
