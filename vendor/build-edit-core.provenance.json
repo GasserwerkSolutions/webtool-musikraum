@@ -1,0 +1,14 @@
+{
+  "sourceRepository": "https://github.com/GasserwerkSolutions/build-edit",
+  "sourceCommit": "1e9cee381a8e7fc3722316a101d47039823422dc",
+  "packageVersion": "0.2.0",
+  "compilerVersion": "0.3.0",
+  "runtime": {
+    "path": "build-edit-core.mjs",
+    "sha256": "26644ffa3c77c2c848bb5a09f063040e9a406bccea71e41bf0c6590b314eee34"
+  },
+  "declarations": {
+    "path": "build-edit-core.d.mts",
+    "sha256": "8b3df8593ddcdb08a86b2e0033ac1417ade8bdfc1c4d05b0735aa4f77a3dbab5"
+  }
+}

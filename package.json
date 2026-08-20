@@ -8,9 +8,10 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "check:vendor": "node scripts/verify-build-edit-runtime.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "npm run build && node --test --test-concurrency=1 tests/*.test.mjs",
-    "check": "npm run typecheck && npm test"
+    "check": "npm run check:vendor && npm run typecheck && npm test"
   },
   "devDependencies": {
     "@sparticuz/chromium": "^149.0.0",

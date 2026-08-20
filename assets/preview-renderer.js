@@ -1,13 +1,14 @@
-import { buildWebsiteHtml } from "./website.js";
+import { compileMusicraumWebsiteHtml } from "./musicraum-compiler.js";
 export function renderPreviewRegions(regions, draft, options) {
     const parser = new DOMParser();
-    const html = buildWebsiteHtml(structuredClone(draft), {
+    const html = compileMusicraumWebsiteHtml(structuredClone(draft), {
         preview: true,
         previewInstanceId: options.previewInstanceId,
         parentOrigin: options.parentOrigin,
         previewScroll: options.previewScroll,
         previewRevision: options.revision,
         renderGeneration: options.renderGeneration,
+        sourceRevision: options.revision,
     });
     const document = parser.parseFromString(html, "text/html");
     const rendered = new Map();

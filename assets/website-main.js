@@ -1,8 +1,9 @@
-import { FONT_PRESETS, FONT_SIZES, PRESETS, escapeAttr, escapeHtml, normalizeEmail, normalizePhone, safeJson, } from "./domain.js";
+import { escapeAttr, escapeHtml, normalizeEmail, normalizePhone, safeJson } from "./domain.js";
 import { HARFE_FAVICON, RAUM_FUER_KLANG_MEDIA, RAUM_FUER_KLANG_URL } from "./website-media.js";
 import { PREVIEW_CSS, websiteCss } from "./website-styles.js";
 import { addressParts, buildMailtoHref, editable, previewAction, previewBridge, previewLink, previewNavigationLink, previewRegionAttr, previewSectionAttr, renderTextList } from "./website-preview.js";
 import { photoSlot, renderSection } from "./website-sections.js";
+import { websiteModelFromDraft } from "./website-model.js";
 const SECTION_META = {
     intro: { id: "franz", panel: "content" },
     why: { id: "frei-spielen", panel: "content" },
@@ -18,17 +19,10 @@ const NAV_COPY_KEYS = {
     contact: "navContact",
 };
 export function buildWebsiteHtml(draft, options = {}) {
-    const preset = PRESETS[draft.theme.preset] ?? PRESETS.musikraum;
-    const font = FONT_PRESETS[draft.theme.font] ?? FONT_PRESETS.klassisch;
-    const fontSize = FONT_SIZES[draft.theme.fontSize] ?? FONT_SIZES.normal;
-    const theme = {
-        ...preset,
-        primary: draft.theme.primary,
-        accent: draft.theme.accent,
-        display: font.display,
-        body: font.body,
-        fontScale: fontSize.scale,
-    };
+    return renderMusicraumWebsiteHtml(websiteModelFromDraft(draft), options);
+}
+export function renderMusicraumWebsiteHtml(draft, options = {}) {
+    const theme = draft.theme;
     const media = {
         hero: options.heroImageUrl || RAUM_FUER_KLANG_MEDIA.hero,
         portrait: options.portraitImageUrl || RAUM_FUER_KLANG_MEDIA.portrait,
@@ -124,7 +118,7 @@ export function buildWebsiteHtml(draft, options = {}) {
     <div class="container footer-grid">
       <div><strong>${editable(draft.site.name, "site.name", "footer-brand-name", options)}</strong><p>${editable(draft.site.tagline, "site.tagline", "footer-brand-tagline", options)}</p></div>
       <div class="footer-contact">${address ? `<span class="footer-address">${addressParts(draft, "footer-address", options)}</span>` : ""}${email ? `<span class="footer-email">${previewLink(draft.site.email, "site.email", mailtoHref, "preview-inline-link", "footer-email", options)}</span>` : ""}</div>
-      <p data-preview-no-action>© ${new Date().getFullYear()} ${options.preview ? editable(draft.site.name, "site.name", "footer-copyright-name", options) : escapeHtml(draft.site.name)}</p>
+      <p data-preview-no-action>© ${draft.copyrightYear} ${options.preview ? editable(draft.site.name, "site.name", "footer-copyright-name", options) : escapeHtml(draft.site.name)}</p>
     </div>
   </footer>
   <script>(()=>{document.addEventListener('click',e=>{const t=e.target instanceof Element?e.target:null,n=document.querySelector('.main-nav');if(!t||!n)return;const b=t.closest('.menu-button');if(b){const o=b.getAttribute('aria-expanded')==='true';b.setAttribute('aria-expanded',String(!o));n.classList.toggle('is-open',!o);return}if(t.closest('.main-nav a')){const m=document.querySelector('.menu-button');if(m){m.setAttribute('aria-expanded','false');n.classList.remove('is-open')}}})})();</script>

@@ -1,9 +1,10 @@
-import { escapeAttr, escapeHtml, normalizeEmail, normalizeInstagramUrl, normalizePhone, type MusicraumDraft, type SectionKey } from "./domain.js";
+import { escapeAttr, escapeHtml, normalizeEmail, normalizeInstagramUrl, normalizePhone, type SectionKey } from "./domain.js";
 import type { BuildOptions } from "./website-contract.js";
 import { RAUM_FUER_KLANG_MEDIA, pendulumTraceMarkup, type WebsiteMediaAssets } from "./website-media.js";
+import type { MusicraumWebsiteModel } from "./website-model.js";
 import { addressParts, buildMailtoHref, editable, editableOffer, previewLink, previewRegionAttr, previewSectionAttr, renderTextList } from "./website-preview.js";
 
-export function renderSection(key: SectionKey, draft: MusicraumDraft, address: string, media: WebsiteMediaAssets, options: BuildOptions): string {
+export function renderSection(key: SectionKey, draft: MusicraumWebsiteModel, address: string, media: WebsiteMediaAssets, options: BuildOptions): string {
   const copy = draft.copy;
   if (key === "intro") {
     const points = renderTextList(draft.introPoints, "introPoints", "li", options);

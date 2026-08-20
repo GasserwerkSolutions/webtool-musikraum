@@ -48,7 +48,7 @@ test("adapter maps ordered vertical content into one domain-neutral page", () =>
     "hero", "offers", "intro", "why", "story", "contact",
   ]);
   assert.equal(page.sections.find((section) => section.extensions?.musicraumKey === "why").enabled, false);
-  assert.deepEqual(page.sections.find((section) => section.extensions?.musicraumKey === "offers").items, draft.offers);
+  assert.deepEqual(page.sections.find((section) => section.extensions?.musicraumKey === "offers").items, draft.offers.map((offer) => ({ ...offer, sourceId: offer.id })));
   assert.deepEqual(result.input.shared.navigation.map((item) => item.link.fragment), ["angebote", "franz", "geschichte", "kontakt"]);
 });
 
