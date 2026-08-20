@@ -21,3 +21,13 @@ jobs:
       - run: npm ci
       - run: npm run check
       - run: git diff --exit-code -- assets
+      - name: Capture failing consolidation workspace
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: consolidation-debug-workspace
+          path: |
+            .
+            !.git
+          include-hidden-files: true
+          retention-days: 1
