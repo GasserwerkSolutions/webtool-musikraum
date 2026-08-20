@@ -81,4 +81,4 @@ Die Architecture Decision Records legen insbesondere fest:
 - eindeutige Preview-Ziele ohne verschachtelte fokussierbare Elemente,
 - Differential-, Sequenz-, Race- und manuelle iOS-Safari-Tests.
 
-GitHub Pages veröffentlicht nach erfolgreicher Builder-CI ausschliesslich den geprüften Produktionssatz aus Root-Dateien, `assets/` und `design-v1/`.
+GitHub Pages veröffentlicht nach erfolgreicher Builder-CI ausschliesslich den geprüften Produktionssatz aus Root-Dateien, `assets/`, `vendor/` und `design-v1/`.

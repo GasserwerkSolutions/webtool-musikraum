@@ -51,6 +51,7 @@ jobs:
           mkdir -p _site/design-v1
           cp index.html styles.css layout-overrides.css favicon.svg logo.svg _site/
           cp -R assets _site/assets
+          cp -R vendor _site/vendor
           cp design-v1/index.html design-v1/site.js design-v1/styles.css _site/design-v1/
           cp -R design-v1/klangbehandlungen _site/design-v1/klangbehandlungen
           touch _site/.nojekyll
