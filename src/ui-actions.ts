@@ -114,7 +114,7 @@ async function handleExport(context: UiContext): Promise<void> {
   if (!controller) { showToast("Die Exportvorbereitung ist noch nicht verfügbar."); return; }
   const downloaded = controller.download();
   if (downloaded) {
-    showToast(downloaded.imageEmbedded ? "Website fertig: Die vorbereitete HTML-Datei wurde heruntergeladen." : "Website heruntergeladen. Das Titelbild benötigt beim Öffnen eine Internetverbindung.");
+    showToast(downloaded.imageEmbedded ? "Website fertig: Die vorbereitete HTML-Datei wurde heruntergeladen." : "Website heruntergeladen. Mindestens ein Bild benötigt beim Öffnen eine Internetverbindung.");
     return;
   }
   const state = await controller.prepare();

@@ -13,21 +13,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
       - run: npm ci
       - run: npm run check
       - run: git diff --exit-code -- assets
-      - name: Upload source snapshot for debugging
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: webtool-source-with-dependencies
-          path: |
-            .
-            !.git
-          include-hidden-files: true
-          retention-days: 1

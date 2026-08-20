@@ -84,9 +84,9 @@ export function createDefaultDraft(now = new Date().toISOString()) {
             { id: "intro-point-pressure", text: "klare Begleitung ohne Leistungsdruck" },
         ],
         offers: [
-            { id: "offer-instrumente", title: "Instrumente entdecken", text: "Harfe, Didgeridoo, Floten, Trommeln und weitere Instrumente laden zum Ausprobieren ein. Franz zeigt einfache Zugange und hilft bei den ersten gemeinsamen Klangen." },
-            { id: "offer-frei", title: "Miteinander spielen", text: "Das Stuck ist nicht vorgegeben. Wir horen aufeinander, greifen Rhythmen und Tone auf und finden eine Richtung, die fur die Gruppe tragt." },
-            { id: "offer-begleitung", title: "Klar begleitet", text: "Franz gibt Orientierung und einen verlasslichen Rahmen. So kann freies Spiel entstehen, ohne beliebig zu werden und ohne dass du Noten lesen musst." },
+            { id: "offer-instrumente", title: "Instrumente entdecken", text: "Harfe, Didgeridoo, Flöten, Trommeln und weitere Instrumente laden zum Ausprobieren ein. Franz zeigt einfache Zugänge und hilft bei den ersten gemeinsamen Klängen." },
+            { id: "offer-frei", title: "Miteinander spielen", text: "Das Stück ist nicht vorgegeben. Wir hören aufeinander, greifen Rhythmen und Töne auf und finden eine Richtung, die für die Gruppe trägt." },
+            { id: "offer-begleitung", title: "Klar begleitet", text: "Franz gibt Orientierung und einen verlässlichen Rahmen. So kann freies Spiel entstehen, ohne beliebig zu werden und ohne dass du Noten lesen musst." },
         ],
         layout: { order: ["intro", "why", "offers", "story", "contact"], visibility: { intro: true, why: true, offers: true, story: true, contact: true } },
         theme: { preset: "musikraum", primary: PRESETS.musikraum.primary, accent: PRESETS.musikraum.accent, font: "klassisch", fontSize: "normal" },

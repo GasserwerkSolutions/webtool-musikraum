@@ -58,7 +58,7 @@ function placeholderSvg(options) {
     const trace = variant === "hero" ? heroTrace : variant === "portrait" ? portraitTrace : detailTrace;
     return svgDataUrl(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}">
     <defs>
-      <linearGradient id="bg" x1="0" x2="1" y2="1"><stop stop-color="#dbe9ed"/><stop offset=".52" stop-color="#f5f0e6"/><stop offset="1" stop-color="#d9e4df"/></linearGradient>
+      <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#dbe9ed"/><stop offset=".52" stop-color="#f5f0e6"/><stop offset="1" stop-color="#d9e4df"/></linearGradient>
       <pattern id="grain" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="3" cy="4" r="1" fill="#214f68" opacity=".035"/><circle cx="15" cy="13" r="1" fill="#a45b2a" opacity=".04"/></pattern>
     </defs>
     <rect width="${width}" height="${height}" fill="url(#bg)"/>
