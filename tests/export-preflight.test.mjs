@@ -5,9 +5,11 @@ import {
   EXPORT_ASSET_MAX_BYTES,
   ExportAssetError,
   ExportPreflightController,
-  fetchPinnedHeroImage,
+  fetchWebsiteMediaAsset,
 } from "../assets/export-preflight.js";
-import { MUSICRAUM_HERO_URL } from "../assets/website.js";
+
+const TEST_HERO_URL = "https://assets.example.test/hero.png";
+const INLINE_PIXEL = "data:image/png;base64,AQ==";
 
 const wait = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 const imageResponse = (body = new Uint8Array([1, 2, 3]), type = "image/png", headers = {}) => new Response(body, { status: 200, headers: { "content-type": type, ...headers } });
@@ -30,6 +32,7 @@ function controllerFixture(overrides = {}) {
     clickDownload: (url, filename) => clicks.push({ url, filename }),
     assetTimeoutMs: overrides.assetTimeoutMs ?? 50,
     quietWindowMs: overrides.quietWindowMs ?? 10,
+    mediaAssets: overrides.mediaAssets ?? { hero: TEST_HERO_URL, portrait: INLINE_PIXEL, detail: INLINE_PIXEL },
   });
   return { draft, controller, states, builds, clicks, revoked, get revision() { return revision; }, set revision(value) { revision = value; } };
 }
@@ -45,7 +48,7 @@ test("successful preparation pins revision and creates no object URL before down
   assert.equal(fixture.revoked.length, 0);
   const downloaded = fixture.controller.download();
   assert.ok(downloaded);
-  assert.deepEqual(fixture.clicks, [{ url: "blob:prepared", filename: "musikraum.html" }]);
+  assert.deepEqual(fixture.clicks, [{ url: "blob:prepared", filename: "raum-fur-klang.html" }]);
   fixture.controller.destroy();
   assert.deepEqual(fixture.revoked, ["blob:prepared"]);
 });
@@ -86,7 +89,7 @@ test("asset error may complete the current generation with the pinned online sou
   const state = await fixture.controller.prepare();
   assert.equal(state.status, "ready");
   assert.equal(state.result.imageEmbedded, false);
-  assert.equal(fixture.builds[0].options.heroImageUrl, MUSICRAUM_HERO_URL);
+  assert.equal(fixture.builds[0].options.heroImageUrl, TEST_HERO_URL);
   fixture.controller.destroy();
 });
 
@@ -122,16 +125,16 @@ test("readiness blockers prevent asset fetching and HTML generation", async () =
 
 test("asset loader enforces MIME and both declared and actual size limits", async () => {
   const signal = new AbortController().signal;
-  await assert.rejects(() => fetchPinnedHeroImage(async () => imageResponse(new Uint8Array([1]), "image/svg+xml"), signal), (error) => error instanceof ExportAssetError && error.code === "mime");
-  await assert.rejects(() => fetchPinnedHeroImage(async () => imageResponse(new Uint8Array([1]), "image/png", { "content-length": String(EXPORT_ASSET_MAX_BYTES + 1) }), signal), (error) => error instanceof ExportAssetError && error.code === "size");
+  await assert.rejects(() => fetchWebsiteMediaAsset(TEST_HERO_URL, async () => imageResponse(new Uint8Array([1]), "image/svg+xml"), signal), (error) => error instanceof ExportAssetError && error.code === "mime");
+  await assert.rejects(() => fetchWebsiteMediaAsset(TEST_HERO_URL, async () => imageResponse(new Uint8Array([1]), "image/png", { "content-length": String(EXPORT_ASSET_MAX_BYTES + 1) }), signal), (error) => error instanceof ExportAssetError && error.code === "size");
   const oversized = new Uint8Array(EXPORT_ASSET_MAX_BYTES + 1);
-  await assert.rejects(() => fetchPinnedHeroImage(async () => imageResponse(oversized), signal), (error) => error instanceof ExportAssetError && error.code === "size");
+  await assert.rejects(() => fetchWebsiteMediaAsset(TEST_HERO_URL, async () => imageResponse(oversized), signal), (error) => error instanceof ExportAssetError && error.code === "size");
 });
 
 test("asset timeout is an asset failure while parent abort remains a generation abort", async () => {
-  await assert.rejects(() => fetchPinnedHeroImage(() => new Promise(() => {}), new AbortController().signal, { timeoutMs: 5 }), (error) => error instanceof ExportAssetError && error.code === "timeout");
+  await assert.rejects(() => fetchWebsiteMediaAsset(TEST_HERO_URL, () => new Promise(() => {}), new AbortController().signal, { timeoutMs: 5 }), (error) => error instanceof ExportAssetError && error.code === "timeout");
   const controller = new AbortController();
-  const operation = fetchPinnedHeroImage((_url, options) => new Promise((_resolve, reject) => options.signal.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")), { once: true })), controller.signal, { timeoutMs: 100 });
+  const operation = fetchWebsiteMediaAsset(TEST_HERO_URL, (_url, options) => new Promise((_resolve, reject) => options.signal.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")), { once: true })), controller.signal, { timeoutMs: 100 });
   controller.abort();
   await assert.rejects(() => operation, (error) => error instanceof DOMException && error.name === "AbortError");
 });

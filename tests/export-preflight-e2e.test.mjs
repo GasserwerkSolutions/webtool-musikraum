@@ -44,7 +44,7 @@ test("readiness results control preflight and download only after preparation", 
     assert.equal(await page.evaluate(() => window.__exportDownloads.length), 0);
 
     await page.click('[data-panel="publish"] [data-action="export"]');
-    assert.deepEqual(await page.evaluate(() => window.__exportDownloads), [{ href: "blob:prepared-export", download: "musikraum.html" }]);
+    assert.deepEqual(await page.evaluate(() => window.__exportDownloads), [{ href: "blob:prepared-export", download: "raum-fur-klang.html" }]);
 
     await page.$eval('[data-bind="site.name"]', (input) => { input.value = ""; input.dispatchEvent(new Event("input", { bubbles: true })); });
     await page.waitForFunction(() => document.querySelector("#readinessSummary")?.classList.contains("is-blocked"));
@@ -66,7 +66,7 @@ test("readiness results control preflight and download only after preparation", 
     await page.$eval('[data-bind="site.name"]', (input) => { input.value = "Neuer Musikraum"; input.dispatchEvent(new Event("input", { bubbles: true })); });
     await page.click('[data-panel-target="publish"]');
     await page.waitForFunction(() => document.querySelector("#exportStatus")?.classList.contains("is-ready"));
-    assert.match(await page.$eval("#exportStatus", (node) => node.textContent), /Titelbild eingebettet/);
+    assert.match(await page.$eval("#exportStatus", (node) => node.textContent), /Bilder eingebettet/);
     assert.equal(await page.$eval('.topbar [data-export-label]', (node) => node.textContent.trim()), "HTML exportieren");
   } finally {
     await browser.close();

@@ -108,10 +108,10 @@ export function renderExportState(context: UiContext, state: ExportPreparationSt
   const summary = evaluateReadiness(context.store.snapshot);
   let message = summary.ready ? "Der Export ist noch nicht vorbereitet." : "Der Export ist blockiert, bis die roten Punkte behoben sind.";
   let visual = summary.ready ? "idle" : "blocked";
-  if (state.status === "preparing") { message = "Titelbild und HTML-Datei werden sicher vorbereitet …"; visual = "preparing"; }
+  if (state.status === "preparing") { message = "Bilder und HTML-Datei werden sicher vorbereitet …"; visual = "preparing"; }
   else if (state.status === "stale") { message = "Der Entwurf wurde geändert. Die vorbereitete Datei ist nicht mehr gültig."; visual = "stale"; }
   else if (state.status === "failed") { message = state.message; visual = "failed"; }
-  else if (state.status === "ready") { message = state.result.imageEmbedded ? `Bereit: ${formatBytes(state.result.byteSize)}, Titelbild eingebettet.` : `Bereit: ${formatBytes(state.result.byteSize)}. Das Titelbild benötigt beim Öffnen Internet.`; visual = "ready"; }
+  else if (state.status === "ready") { message = state.result.imageEmbedded ? `Bereit: ${formatBytes(state.result.byteSize)}, Bilder eingebettet.` : `Bereit: ${formatBytes(state.result.byteSize)}. Mindestens ein Bild benötigt beim Öffnen Internet.`; visual = "ready"; }
   context.exportStatus.className = `export-status is-${visual}`;
   context.exportStatus.textContent = message;
   context.exportStatus.setAttribute("aria-label", message);

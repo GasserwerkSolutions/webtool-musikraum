@@ -467,6 +467,7 @@ button { color: inherit; }
   color: white;
   box-shadow: var(--shadow);
   font-size: 13px;
+  pointer-events: none;
 }
 
 @media (max-width: 1050px) {

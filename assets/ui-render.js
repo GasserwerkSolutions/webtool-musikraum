@@ -157,7 +157,7 @@ export function renderExportState(context, state) {
     let message = summary.ready ? "Der Export ist noch nicht vorbereitet." : "Der Export ist blockiert, bis die roten Punkte behoben sind.";
     let visual = summary.ready ? "idle" : "blocked";
     if (state.status === "preparing") {
-        message = "Titelbild und HTML-Datei werden sicher vorbereitet …";
+        message = "Bilder und HTML-Datei werden sicher vorbereitet …";
         visual = "preparing";
     }
     else if (state.status === "stale") {
@@ -169,7 +169,7 @@ export function renderExportState(context, state) {
         visual = "failed";
     }
     else if (state.status === "ready") {
-        message = state.result.imageEmbedded ? `Bereit: ${formatBytes(state.result.byteSize)}, Titelbild eingebettet.` : `Bereit: ${formatBytes(state.result.byteSize)}. Das Titelbild benötigt beim Öffnen Internet.`;
+        message = state.result.imageEmbedded ? `Bereit: ${formatBytes(state.result.byteSize)}, Bilder eingebettet.` : `Bereit: ${formatBytes(state.result.byteSize)}. Mindestens ein Bild benötigt beim Öffnen Internet.`;
         visual = "ready";
     }
     context.exportStatus.className = `export-status is-${visual}`;

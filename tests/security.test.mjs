@@ -1,88 +1,49 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createDefaultDraft, normalizEmail, normalizeInstagramUrl, normalizePhone } from "../assets/domain.js";
-import { MAX_BACKUP_BYTES, ŠÀZrK©)^J,ÞYhÁçHHœ›ÛH‹‹‹Ø\ÜÙ]ËÝZKXXÝ[ÛœËšœÈŽÂš[\ÜÈZ[ÙXœÚ]R[USWÑ•QT—ÒÓS‘×ÓQQPKUSWÑ•QT—ÒÓS‘×ÕT“Hœ›ÛH‹‹‹Ø\ÜÙ]ËÝÙXœÚ]KšœÈŽÂ‚™\ØÜšX™J”˜][H°ïˆÛ[™ÈÙXÝ\š]H‹
+import { createDefaultDraft, normalizeEmail, normalizeInstagramUrl, normalizePhone } from "../assets/domain.js";
+import { MAX_BACKUP_BYTES, isBackupFileSizeAllowed } from "../assets/ui-actions.js";
+import { buildWebsiteHtml, RAUM_FUER_KLANG_MEDIA, RAUM_FUER_KLANG_URL } from "../assets/website.js";
 
-HOˆÂˆ\Ý
-˜[Y]\È^ÜYÛÛXÝ\™Ù]È‹
+test("validates exported contact targets", () => {
+  assert.equal(normalizeEmail(" info@example.com "), "info@example.com");
+  assert.equal(normalizeEmail("nicht-gueltig"), null);
+  assert.equal(normalizePhone("+41 (0)79 123 45 67"), "+410791234567");
+  assert.equal(normalizePhone("Telefon unbekannt"), null);
+  assert.equal(normalizeInstagramUrl("https://instagram.com/musikraum"), "https://instagram.com/musikraum");
+  assert.equal(normalizeInstagramUrl("https://instagram.com.evil.example/musikraum"), null);
+});
 
-HOˆÂˆ\ÜÙ\™\]X[
-›Ü›X[^™Q[XZ[
-ˆ[™›Ð^[\K˜ÛÛHŠKš[™›Ð^[\K˜ÛÛHŠNÂˆ\ÜÙ\™\]X[
-›Ü›X[^™Q[XZ[
-›šXÚYÝY[YÈŠK[
-NÂˆ\ÜÙ\™\]X[
-›Ü›X[^™TÛ™JŠÍH
-
-MÎHLŒÈHÈŠKŠÍLÎLLŒÍMÈŠNÂˆ\ÜÙ\™\]X[
-›Ü›X[^™TÛ™J•[Y›Ûˆ[˜™ZØ[›ŠK[
-NÂˆ\ÜÙ\™\]X[
-›Ü›X[^™R[œÝYÜ˜[U\›
-šÎ‹ËÚ[œÝYÜ˜[K˜ÛÛKÜ˜][YY\šÛ[™ÈŠKšÎ‹ËÚ[œÝYÜ˜[K˜ÛÛKÜ˜][YY\šÞ[[™ÈŠNÂˆ\ÜÙ\™\]X[
-›Ü›X[^™R[œÝYÜ˜[U\›
-šÎ‹ËÚ[œÝYÜ˜[K˜ÛÛK™]š[™^[\KÜ˜][YY\šÞ[[™ÈŠK[
-NÂˆJNÂ‚ˆ\Ý
-˜›Ý[™È˜XÚÝ\š[\È™Y›Ü™H\œÚ[™È‹
+test("bounds backup files before parsing", () => {
+  assert.equal(isBackupFileSizeAllowed({ size: MAX_BACKUP_BYTES }), true);
+  assert.equal(isBackupFileSizeAllowed({ size: MAX_BACKUP_BYTES + 1 }), false);
+});
 
-HOˆÂˆ\ÜÙ\™\]X[
-\Ð˜XÚÝ\š[TÚ^™P[ÝÙY
-ÈÚ^™NˆPVÐPÒÕTÐ–UTÈJKYJNÂˆ\ÜÙ\™\]X[
-\Ð˜XÚÝ\š[TÚ^™P[ÝÙY
-ÈÚ^™NˆPVÐPÒÕTÐ–UTÈ
-ÈHJK˜[ÙJNÂˆJNÂ‚ˆ\Ý
-™[˜ÛÙ\ÈÛÛXÝ[šÜÈ[™ÛZ]È[˜[Y^\›˜[\™Ù]È‹
+test("encodes contact links and omits invalid external targets", () => {
+  const draft = createDefaultDraft();
+  draft.site.name = "Raum fÃ¼r Klang&body=unerwartet";
+  draft.site.email = "info+klang@example.com";
+  draft.site.phone = "+41 (0)79 123 45 67";
+  draft.site.instagram = "https://example.com/kein-instagram";
+  const html = buildWebsiteHtml(draft);
+  assert.match(html, /mailto:info%2Bklang%40example\.com\?subject=Anfrage\+Raum\+f%C3%BCr\+Klang%26body%3Dunerwartet/);
+  assert.doesNotMatch(html, /href="mailto:[^"]*&body=unerwartet/);
+  assert.match(html, /href="tel:\+410791234567"/);
+  assert.doesNotMatch(html, />Instagram<\/a>/);
+});
 
-HOˆÂˆÛÛœÝ˜YHÜ™X]QY˜][˜Y
+test("does not emit broken hero targets when every section is hidden", () => {
+  const draft = createDefaultDraft();
+  for (const key of draft.layout.order) draft.layout.visibility[key] = false;
+  const html = buildWebsiteHtml(draft);
+  assert.doesNotMatch(html, /href="#kontakt"/);
+  assert.doesNotMatch(html, /Gemeinsames Spielen kennenlernen/);
+  assert.doesNotMatch(html, /Franz kontaktieren/);
+});
 
-NÂˆ˜YœÚ]K›˜[YHH”˜][H°ïˆÛ[™É˜›ÙO][™\Ø\]ŽÂˆ˜YœÚ]K™[XZ[Hš[™›ÊÚÛ[™Ð^[\K˜ÛÛHŽÂˆ˜YœÚ]KœÛ™HHŠÍH
-
-MÎHLŒÈHÈŽÂˆ˜YœÚ]Kš[œÝYÜ˜[HHšÎ‹ËÙ^[\K˜ÛÛKÚÙZ[‹Z[œÝYÜ˜[HŽÂˆÛÛœÝ[HZ[ÙXœÚ]R[
-˜Y
-NÂˆ\ÜÙ\›X]Ú
-[ÛXZ[Îš[™›ÉLšÛ[™ÉM^[\K˜ÛÛW×ÝXš™XÝP[™œ˜YÙIL”˜][IL™‰PÌÉPÜ‰L’Û[™ÉL˜›ÙILÑ[™\Ø\]ÊNÂˆ\ÜÙ\™Ù\Ó›ÝX]Ú
-[Ú™YH›XZ[Î–×ˆ—J‰˜›ÙO][™\Ø\]ÊNÂˆ\ÜÙ\›X]Ú
-[Ú™YH[—
-ÍLÎLLŒÍMÈ‹ÊNÂˆ\ÜÙ\™Ù\Ó›ÝX]Ú
-[Ï’[œÝYÜ˜[OØO‹ÊNÂˆJNÂ‚ˆ\Ý
-™Ù\È›Ý[Z]œ›ÚÙ[ˆ\›È\™Ù]ÈÚ[ˆ]™\žHÙXÝ[Ûˆ\ÈY[ˆ‹
-
-HOˆÂˆÛÛœÝ˜YHÜ™X]QY˜][˜Y
-
-NÂˆ›Üˆ
-ÛÛœÝÙ^HÙˆ˜Y›^[Ý]›Ü™\ŠH˜Y›^[Ý]š\ÚXš[]VÚÙ^WHH˜[ÙNÂˆÛÛœÝ[HZ[ÙXœÚ]R[
-˜Y
-NÂˆ\ÜÙ\™Ù\Ó›ÝX]Ú
-[Ú™YHˆÚÛÛZÝ‹ÊNÂˆ\ÜÙ\™Ù\Ó›ÝX]Ú
-[ÑÙ[YZ[œØ[Y\ÈÜY[[ˆÙ[›™[›\›™[‹ÊNÂˆ\ÜÙ\™Ù\Ó›ÝX]Ú
-[Ñœ˜[žˆÛÛZÝY\™[‹ÊNÂˆJNÂ‚ˆ\Ý
-™[Z]ÈÙ[‹XÛÛZ[™YÕ‘ÈÝÈXÙZÛ\œÈ[™ØY™HY]Y]H‹
-
-HOˆÂˆ›Üˆ
-ÛÛœÝÛÝ\˜ÙHÙˆØš™XÝ˜[Y\ÊUSWÑ•QT—ÒÓS‘×ÓQQPJJHÂˆ\ÜÙ\›X]Ú
-ÛÝ\˜ÙK×™]Nš[XYÙWÜÝ™×
-Þ[ØÚ\œÙ]]]‹NÊNÂˆ\ÜÙ\™Ù\Ó›ÝX]Ú
-ÛÝ\˜ÙKÚÏÎ—×ËÊNÂˆBˆÛÛœÝ[HZ[ÙXœÚ]R[
-Ü™X]QY˜][˜Y
-
-JNÂˆ\ÜÙ\›X]Ú
-[™]È™YÑ^
-™[H˜Ø[›ÛšXØ[ˆ™YH‰ÔUSWÑ•QT—ÒÓS‘×ÕT“œ™\XÙJÖË×W×—	
-ÏËˆŠ
-^ßWWKÙË—		ˆŠ_H˜
-JNÂˆ\ÜÙ\›X]Ú
-[ÏØÜš\\OH˜\XØ][Û—Û
-ÚœÛÛˆ‹ÊNÂˆJNÂ‚ˆ\Ý
-™\ØØ\\È\Ù\ˆ˜[Y\ÈÚ]Ý]™[™\š[™È˜]ÈØÜš\›Ý[™\šY\È‹
-
-HOˆÂˆÛÛœÝ˜YHÜ™X]QY˜][˜Y
-
-NÂˆ˜YœÚ]K›˜[YHHÜØÜš\ØÜš\˜[\
-JOÜØÜš\ˆŽÂˆ˜Y˜ÛÜKš\›Õ]HHÜÝ[OØÜš\˜[\
-ŠOÜØÜš\ˆŽÂˆÛÛœÝ[HZ[ÙXœÚ]R[
-˜Y
-NÂˆ\ÜÙ\™Ù\Ó›ÝX]Ú
-[ÏÜØÜš\ØÜš\˜[\
-JKÊNÂˆ\ÜÙ\™Ù\Ó›ÝX]Ú
-[ÏÜÝ[OØÜš\˜[\
-ŠKÊNÂˆ\ÜÙ\›X]Ú
-[É›×ÜÝ[I™ÝÉ›ÜØÜš\	™ÝØ[\ÊNÂˆJNÂŸJNÂ
+test("keeps all default media offline and escapes style raw text", () => {
+  assert.equal(RAUM_FUER_KLANG_URL, "https://xn--raum-fr-klang-1ob.ch/");
+  for (const source of Object.values(RAUM_FUER_KLANG_MEDIA)) assert.match(source, /^data:image\/svg\+xml;charset=utf-8,/);
+  const html = buildWebsiteHtml(createDefaultDraft(), { heroImageUrl: "x</style><script>alert(1)</script>" });
+  assert.doesNotMatch(html, /x<\/style><script>/);
+  assert.match(html, /src="x&lt;\/style&gt;&lt;script&gt;alert\(1\)&lt;\/script&gt;"/);
+});

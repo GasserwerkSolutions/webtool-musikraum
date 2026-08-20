@@ -1,4 +1,4 @@
-import test from "node:test";
+import test, { describe } from "node:test";
 import assert from "node:assert/strict";
 import { createDefaultDraft, normalizeDraft } from "../assets/domain.js";
 import { buildWebsiteHtml } from "../assets/website.js";
@@ -59,7 +59,7 @@ describe("Raum für Klang domain", () => {
     const css = html.slice(html.indexOf("<style>"), html.indexOf("</style>"));
     assert.match(css, /\.hero\{min-height:calc\(100vh - 78px\);min-height:calc\(100svh - 78px\)/);
     assert.match(css, /body\{margin:0;min-width:320px;background:#f5f2e9;background:var\(--bg\);color:#22333d;color:var\(--text\)/);
-    assert.match(css, /\.section\{opadding:5\.5rem 0;padding:clamp\(5rem,9vw,8rem\) 0;background:#f5f2e9;background:var\(--bg\)/);
+    assert.match(css, /\.section\{padding:5\.5rem 0;padding:clamp\(5rem,9vw,8rem\) 0;background:#f5f2e9;background:var\(--bg\)/);
     assert.doesNotMatch(css, /\.hero\{[^}]*background-image:url\(/);
   });
 

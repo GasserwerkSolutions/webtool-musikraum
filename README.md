@@ -42,7 +42,7 @@ Bestehende Entwürfe und Sicherungen der ersten Schema-Version bleiben kompatibe
 
 ## Bewusste Grenze
 
-Die allgemeine Bildverwaltung des Ausgangs-Builders ist noch nicht fertig. Deshalb verwendet dieses Werkzeug vorerst das kuratierte Musikraum-Titelbild aus `GasserwerkSolutions/musikraum`. Die Quelle ist auf einen konkreten Commit festgelegt. Beim Export versucht der Browser, das Bild direkt als Data-URL in die HTML-Datei einzubetten. Falls das Laden blockiert ist, bleibt die feste Online-Quelle als Rückfall erhalten.
+Die allgemeine Bildverwaltung des Ausgangs-Builders ist noch nicht fertig. Bis dahin verwendet der gemeinsame Renderer drei kuratierte, direkt eingebettete SVG-Fotoplatzhalter für Sandpendel, Franz und Instrumentendetail. Sie funktionieren in Vorschau und Einzeldatei-Export offline. Spätere Fotografien können über die drei Medienplätze eingesetzt werden; externe Bildquellen werden beim Export auf Typ, Grösse und Ladezeit geprüft und nach Möglichkeit in die HTML-Datei eingebettet.
 
 ## Entwicklung
 

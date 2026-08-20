@@ -13,10 +13,10 @@ class FakeStorage {
   setItem(key, value) { this.data.set(key, String(value)); }
 }
 
-test("creates one local Musikraum draft and stores only its pointer", async () => {
+test("creates one local Raum-für-Klang draft and stores only its pointer", async () => {
   const storage = new FakeStorage(); const repository = new MemoryDraftRepository();
   const result = await loadOrCreateDraft(repository, storage);
-  assert.equal(result.draft.site.name, "Musikraum");
+  assert.equal(result.draft.site.name, "Raum für Klang");
   assert.equal(storage.getItem(ACTIVE_DRAFT_POINTER_KEY), result.draft.draftId);
   assert.deepEqual([...storage.data.keys()], [ACTIVE_DRAFT_POINTER_KEY]);
 });

@@ -213,7 +213,7 @@ async function handleExport(context) {
     }
     const downloaded = controller.download();
     if (downloaded) {
-        showToast(downloaded.imageEmbedded ? "Website fertig: Die vorbereitete HTML-Datei wurde heruntergeladen." : "Website heruntergeladen. Das Titelbild benötigt beim Öffnen eine Internetverbindung.");
+        showToast(downloaded.imageEmbedded ? "Website fertig: Die vorbereitete HTML-Datei wurde heruntergeladen." : "Website heruntergeladen. Mindestens ein Bild benötigt beim Öffnen eine Internetverbindung.");
         return;
     }
     const state = await controller.prepare();
