@@ -3,20 +3,21 @@ import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import { readFile, stat } from "node:fs/promises";
 import { extname, join, normalize } from "node:path";
-import chromium from "@sparticuz/chromium";
+import { fileURLToPath } from "node:url";
+import { browserLaunchOptions } from "./browser-launch.mjs";
 import puppeteer from "puppeteer-core";
 import { createDefaultDraft } from "../assets/domain.js";
 import { buildWebsiteHtml } from "../assets/website.js";
 
 const MIME = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".svg": "image/svg+xml", ".webp": "image/webp" };
 async function staticServer() {
-  const root = new URL("../", import.meta.url).pathname;
+  const root = normalize(fileURLToPath(new URL("../", import.meta.url)));
   const server = createServer(async (request, response) => { try { const pathname = decodeURIComponent(new URL(request.url ?? "/", "http://local").pathname); const relative = pathname === "/" ? "index.html" : pathname.slice(1); const path = normalize(join(root, relative)); if (!path.startsWith(root) || !(await stat(path)).isFile()) throw new Error("not found"); response.setHeader("content-type", MIME[extname(path)] ?? "application/octet-stream"); response.end(await readFile(path)); } catch { response.statusCode = 404; response.end("Not found"); } });
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve)); const address = server.address(); return { server, url: `http://127.0.0.1:${address.port}` };
 }
 
 test("real browser layout, live editing and sidebar contract", { timeout: 90000 }, async () => {
-  const { server, url } = await staticServer(); const browser = await puppeteer.launch({ args: chromium.args, defaultViewport: { width: 1440, height: 900 }, executablePath: await chromium.executablePath(), headless: true });
+  const { server, url } = await staticServer(); const browser = await puppeteer.launch(await browserLaunchOptions({ defaultViewport: { width: 1440, height: 900 } }));
   try {
     const page = await browser.newPage(); await page.goto(url, { waitUntil: "domcontentloaded" }); await page.waitForSelector("#previewFrame"); let preview = await waitForPreview(page);
 
