@@ -44,6 +44,7 @@ export class BuilderUi {
             updateReadiness(this.context);
         });
         this.context.store.subscribeSave((state, error) => renderSaveState(this.context, state, error));
+        renderSaveState(this.context, "saved");
         this.context.store.subscribeHistory((state) => renderHistoryState(this.context, state));
         document.addEventListener("click", (event) => handleClick(this.context, event));
         document.addEventListener("input", (event) => handleInput(this.context, event));
