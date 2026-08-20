@@ -35,7 +35,7 @@ async function waitForStablePreview(page) {
 
 test("mobile edit and preview modes with separate scroll states", { timeout: 90000 }, async () => {
   const { server, url } = await staticServer();
-  const browser = await puppeteer.launch(await browserLaunchOptions({ defaultViewport: { width: 390, height: 740 } }));
+  const browser = await puppeteer.launch(await browserLaunchOptions({ defaultViewport: { width: 390, height: 740, isMobile: true, hasTouch: true } }));
   try {
     const page = await browser.newPage();
     await page.goto(url, { waitUntil: "domcontentloaded" });
@@ -177,7 +177,7 @@ test("mobile edit and preview modes with separate scroll states", { timeout: 900
     assert.equal(await page.evaluate(() => document.querySelector("[data-return-preview]").hidden), true);
     preview = await previewFrame(page);
 
-    await page.setViewport({ width: 300, height: 640 });
+    await page.setViewport({ width: 300, height: 640, isMobile: true, hasTouch: true });
     await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 250)));
     const scaled = await page.evaluate(() => {
       const frame = document.querySelector("#previewFrame");
@@ -193,12 +193,12 @@ test("mobile edit and preview modes with separate scroll states", { timeout: 900
     assert.notEqual(scaled.transform, "none", "Skalierung fehlt auf schmalem Display");
     assert.equal(scaled.styleWidth, "320px");
     assert.ok(scaled.right <= scaled.viewportWidth + .5, `Vorschau ragt seitlich hinaus: ${scaled.right}`);
-    assert.ok(scaled.bodyHorizontal <= Math.max(1, 320 - scaled.viewportWidth + 1), `Seite breiter als die 320px-Untergrenze des Editors: ${scaled.bodyHorizontal}`);
+    assert.ok(scaled.bodyHorizontal <= 1, `Seite breiter als die 320px-Untergrenze des Editors: ${scaled.bodyHorizontal}`);
     const narrowInner = await preview.evaluate(() => ({ width: document.documentElement.clientWidth, overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth }));
     assert.equal(narrowInner.width, 320);
     assert.ok(narrowInner.overflow <= 0, `Innere Vorschau scrollt horizontal: ${narrowInner.overflow}`);
 
-    await page.setViewport({ width: 390, height: 740 });
+    await page.setViewport({ width: 390, height: 740, isMobile: true, hasTouch: true });
     await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 250)));
     assert.equal(await page.evaluate(() => document.querySelector("#previewFrame").style.width), "", "Skalierung muss auf normaler Breite entfallen");
 
