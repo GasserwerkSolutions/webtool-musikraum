@@ -3,6 +3,9 @@ name: Apply final consolidation patch
 on:
   push:
     branches: [chore/consolidate-main-2026-08-20]
+  pull_request:
+    branches: [main]
+    types: [synchronize]
 
 permissions:
   contents: write
